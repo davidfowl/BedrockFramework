@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29112.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BedrockTransports", "WebApplicationMuxingTest\BedrockTransports.csproj", "{A3EBA44E-E459-4D07-9DF8-84A75D39738A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BedrockTransports", "BedrockTransports\BedrockTransports.csproj", "{A3EBA44E-E459-4D07-9DF8-84A75D39738A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

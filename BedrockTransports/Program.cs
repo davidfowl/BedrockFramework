@@ -75,6 +75,7 @@ namespace BedrockTransports
             var connection = await factory.ConnectAsync(endpoint);
 
             Console.WriteLine($"Connected to {endpoint}");
+            Console.WriteLine("Echo server running, type into the console");
 
             var reading = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, cancellationToken);
             var writing = connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), cancellationToken);
