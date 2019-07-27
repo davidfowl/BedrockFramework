@@ -28,7 +28,7 @@ public interface IConnectionFactory
 }
 ```
 
-Why?
+## Why?
 
 The goal of this project is to abstract the networking stack from the application layer so that protocols could be written agnostic of the underlying transport. This
 enables new transports (like QUIC) to be adopted without changing the code written against the abstraction. The design also allows reaching into the abstraction
