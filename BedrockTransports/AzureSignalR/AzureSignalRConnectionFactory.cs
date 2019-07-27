@@ -102,12 +102,12 @@ namespace BedrockTransports
                     }
                 }
             }
-            catch (InvalidDataException ex)
+            catch (InvalidDataException)
             {
                 // Log.ErrorInvalidHandshakeResponse(_logger, ex);
                 throw;
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 //if (handshakeCts.IsCancellationRequested)
                 //{
@@ -120,7 +120,7 @@ namespace BedrockTransports
 
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Log.ErrorReceivingHandshakeResponse(_logger, ex);
                 throw;

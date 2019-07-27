@@ -28,6 +28,7 @@ namespace BedrockTransports
 
             (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetHttp2Transport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetAzureSignalRTransport(loggerFactory);
+            // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetNamedPipesTransport(loggerFactory);
 
             // Connect to the server endpoint
             var listener = await serverFactory.BindAsync(serverEndPoint);
@@ -74,6 +75,16 @@ namespace BedrockTransports
             var serverFactory = new Http2ConnectionListenerFactory(loggerFactory);
             var clientFactory = new Http2ConnectionFactory();
             var endPoint = new UriEndPoint(new Uri("https://localhost:5003"));
+
+            return (serverFactory, clientFactory, endPoint, endPoint);
+        }
+
+        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetNamedPipesTransport(ILoggerFactory loggerFactory)
+        {
+            // This is a transport using named pipes
+            var serverFactory = new NamedPipeConnectionListenerFactory();
+            var clientFactory = new NamedPipeConnectionFactory();
+            var endPoint = new NamedPipeEndPoint("mypipe");
 
             return (serverFactory, clientFactory, endPoint, endPoint);
         }

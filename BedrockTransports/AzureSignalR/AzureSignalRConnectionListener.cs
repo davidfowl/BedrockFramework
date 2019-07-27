@@ -97,7 +97,7 @@ namespace BedrockTransports
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Log.FailToWriteMessageToApplication(Logger, connectionDataMessage.ConnectionId, ex);
                 }
@@ -129,7 +129,7 @@ namespace BedrockTransports
                             // Forward the message to the service
                             await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             // Log.ErrorSendingMessage(Logger, ex);
                         }
@@ -144,7 +144,7 @@ namespace BedrockTransports
                     connection.Application.Input.AdvanceTo(buffer.End);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // The exception means application fail to process input anymore
                 // Cancel any pending flush so that we can quit and perform disconnect
