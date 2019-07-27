@@ -16,7 +16,7 @@ namespace BedrockTransports
         private ConcurrentDictionary<string, AzureSignalRConnectionContext> _connections = new ConcurrentDictionary<string, AzureSignalRConnectionContext>();
 
         public AzureSignalRConnectionListener(Uri uri, string token, ILoggerFactory loggerFactory)
-            : base(uri, token, NullLoggerFactory.Instance)
+            : base(uri, token, loggerFactory)
         {
         }
 

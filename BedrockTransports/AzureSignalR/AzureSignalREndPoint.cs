@@ -50,6 +50,10 @@ namespace BedrockTransports
             }
         }
 
+        public override string ToString()
+        {
+            return Uri.ToString();
+        }
 
         static string GenerateClientAccessToken(string signingKey, string endpoint, string hubName)
         {

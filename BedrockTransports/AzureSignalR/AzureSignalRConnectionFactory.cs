@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +36,7 @@ namespace BedrockTransports
             options.Headers["Authorization"] = $"Bearer {azEndpoint.AccessToken}";
             var httpConnection = new HttpConnection(options, _loggerFactory);
             await httpConnection.StartAsync();
-            
+
             await HandshakeAsync(httpConnection);
 
             return httpConnection;
