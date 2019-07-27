@@ -1,11 +1,12 @@
 using System;
 using System.IO.Pipelines;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace BedrockTransports
 {
@@ -30,12 +31,18 @@ namespace BedrockTransports
             (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetHttp2Transport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetAzureSignalRTransport(loggerFactory);
 
+            // Connect to the server endpoint
             var listener = await serverFactory.BindAsync(serverEndPoint);
-
             Console.WriteLine($"Listening on {serverEndPoint}");
 
+            // Open a client connection to the listener
+            var connection = await clientFactory.ConnectAsync(clientEndPoint);
+            Console.WriteLine($"Connected to {clientEndPoint}");
+
             var serverTask = RunEchoServerAsync(listener, token);
-            var clientTask = RunClientAsync(clientFactory, clientEndPoint, token);
+            var clientTask = RunClientAsync(connection, token);
+
+            Console.WriteLine("Echo server running, type into the console");
 
             try
             {
@@ -47,8 +54,11 @@ namespace BedrockTransports
             }
         }
 
-        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint serverEndpoint, EndPoint clientEndpoint) GetAzureSignalRTransport(ILoggerFactory loggerFactory)
+        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetAzureSignalRTransport(ILoggerFactory loggerFactory)
         {
+            // This is a transport based on the AzureSignalR protocol, it gives you a full duplex mutliplexed connection over the 
+            // the internet
+
             // Put your azure SignalR connection string here (securely of course!)
             var connectionString = "";
 
@@ -60,7 +70,7 @@ namespace BedrockTransports
             return (serverFactory, clientFactory, serverEndPoint, clientEndPoint);
         }
 
-        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint serverEndpoint, EndPoint clientEndpoint) GetHttp2Transport(ILoggerFactory loggerFactory)
+        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetHttp2Transport(ILoggerFactory loggerFactory)
         {
             // This is an http/2 transport based on kestrel and httpclient, each connection is mapped to an HTTP/2 stream
             var serverFactory = new Http2ConnectionListenerFactory(loggerFactory);
@@ -70,13 +80,8 @@ namespace BedrockTransports
             return (serverFactory, clientFactory, endPoint, endPoint);
         }
 
-        public static async Task RunClientAsync(IConnectionFactory factory, EndPoint endpoint, CancellationToken cancellationToken = default)
+        public static async Task RunClientAsync(ConnectionContext connection, CancellationToken cancellationToken = default)
         {
-            var connection = await factory.ConnectAsync(endpoint);
-
-            Console.WriteLine($"Connected to {endpoint}");
-            Console.WriteLine("Echo server running, type into the console");
-
             var reading = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, cancellationToken);
             var writing = connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), cancellationToken);
 
@@ -94,6 +99,7 @@ namespace BedrockTransports
                 {
                     try
                     {
+                        // This is the simplest implementation of an echo server, copy the input to the output
                         await connection.Transport.Input.CopyToAsync(connection.Transport.Output, cancellationToken);
                     }
                     finally
