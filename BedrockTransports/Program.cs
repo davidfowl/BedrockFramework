@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     public class Program
     {

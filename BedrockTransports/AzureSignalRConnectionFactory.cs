@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     public class AzureSignalRConnectionFactory : IConnectionFactory
     {

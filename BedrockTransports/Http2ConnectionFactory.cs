@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     public class Http2ConnectionFactory : IConnectionFactory
     {

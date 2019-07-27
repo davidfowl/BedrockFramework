@@ -1,4 +1,4 @@
-﻿namespace WebApplicationMuxingTest
+﻿namespace BedrockTransports
 {
     public enum AzureSignalREndpointType
     {

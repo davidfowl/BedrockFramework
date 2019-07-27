@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     internal class AzureSignalRConnectionContext : ConnectionContext,
                                               IConnectionUserFeature,

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     internal class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
     {

@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     internal abstract class AzureSignalRDispatcher
     {

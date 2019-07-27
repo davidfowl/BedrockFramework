@@ -8,7 +8,7 @@ using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace WebApplicationMuxingTest
+namespace BedrockTransports
 {
     internal class AzureSignalRConnectionListener : AzureSignalRDispatcher, IConnectionListener
     {
