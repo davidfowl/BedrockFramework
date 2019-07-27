@@ -39,6 +39,7 @@ namespace BedrockTransports
             var connection = new HttpClientConnectionContext();
             request.Content = new HttpClientConnectionContextContent(connection);
             var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            connection.HttpResponseMessage = response;
             var responseStream = await response.Content.ReadAsStreamAsync();
             connection.Input = PipeReader.Create(responseStream);
 
