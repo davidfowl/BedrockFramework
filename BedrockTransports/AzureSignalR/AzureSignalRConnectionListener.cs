@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BedrockTransports
 {
@@ -44,33 +43,43 @@ namespace BedrockTransports
 
         protected override Task CleanupConnectionsAsync()
         {
+            foreach (var pair in _connections)
+            {
+                pair.Value.Disconnect();
+            }
+
             _acceptQueue.Writer.TryComplete();
             return Task.CompletedTask;
         }
 
         protected override Task OnConnectedAsync(OpenConnectionMessage openConnectionMessage)
         {
-            var connection = new AzureSignalRConnectionContext(openConnectionMessage, OnDisposeAsync);
+            var connection = new AzureSignalRConnectionContext(openConnectionMessage, this);
             _connections[openConnectionMessage.ConnectionId] = connection;
-            _ = ProcessOutgoingMessagesAsync(connection);
-            _acceptQueue.Writer.TryWrite(connection);
+            _ = ProcessHandshakeAsync(connection);
 
             return Task.CompletedTask;
         }
 
-        private ValueTask OnDisposeAsync(ConnectionContext connectionContext)
+        private async Task ProcessHandshakeAsync(AzureSignalRConnectionContext connection)
         {
-            // TODO: Send disconnect message
-            return default;
+            if (await connection.ProcessHandshakeAsync())
+            {
+                // The connection is accepted
+                _acceptQueue.Writer.TryWrite(connection);
+
+                // Start processing messages from the application
+                connection.Start();
+            }
         }
 
         protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)
         {
             if (_connections.TryRemove(closeConnectionMessage.ConnectionId, out var connection))
             {
-                // TODO: fix this
-                connection.Application.Output.Complete();
+                connection.Disconnect();
             }
+
             return Task.CompletedTask;
         }
 
@@ -108,51 +117,5 @@ namespace BedrockTransports
                 // Log.ReceivedMessageForNonExistentConnection(Logger, connectionDataMessage.ConnectionId);
             }
         }
-
-        private async Task ProcessOutgoingMessagesAsync(AzureSignalRConnectionContext connection)
-        {
-            try
-            {
-                while (true)
-                {
-                    var result = await connection.Application.Input.ReadAsync();
-                    if (result.IsCanceled)
-                    {
-                        break;
-                    }
-
-                    var buffer = result.Buffer;
-                    if (!buffer.IsEmpty)
-                    {
-                        try
-                        {
-                            // Forward the message to the service
-                            await WriteAsync(new ConnectionDataMessage(connection.ConnectionId, buffer));
-                        }
-                        catch (Exception)
-                        {
-                            // Log.ErrorSendingMessage(Logger, ex);
-                        }
-                    }
-
-                    if (result.IsCompleted)
-                    {
-                        // This connection ended (the application itself shut down) we should remove it from the list of connections
-                        break;
-                    }
-
-                    connection.Application.Input.AdvanceTo(buffer.End);
-                }
-            }
-            catch (Exception)
-            {
-                // The exception means application fail to process input anymore
-                // Cancel any pending flush so that we can quit and perform disconnect
-                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
-                // Log.SendLoopStopped(Logger, connection.ConnectionId, ex);
-                connection.Application.Output.CancelPendingFlush();
-            }
-        }
-
     }
 }

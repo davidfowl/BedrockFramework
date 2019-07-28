@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 
 namespace BedrockTransports
@@ -24,14 +25,16 @@ namespace BedrockTransports
             readerScheduler: PipeScheduler.ThreadPool,
             useSynchronizationContext: false);
 
-        private readonly Func<ConnectionContext, ValueTask> _onDisposeAsync;
+        private readonly AzureSignalRConnectionListener _listener;
         private readonly object _heartbeatLock = new object();
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
+        private Task _processingTask;
+        private bool _disconnectReceived;
 
-        public AzureSignalRConnectionContext(OpenConnectionMessage serviceMessage, Func<ConnectionContext, ValueTask> onDisposeAsync, PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
+        public AzureSignalRConnectionContext(OpenConnectionMessage serviceMessage, AzureSignalRConnectionListener listener,  PipeOptions transportPipeOptions = null, PipeOptions appPipeOptions = null)
         {
             ConnectionId = serviceMessage.ConnectionId;
-            _onDisposeAsync = onDisposeAsync;
+            _listener = listener;
             // User = serviceMessage.GetUserPrincipal();
 
             // Create the Duplix Pipeline for the virtual connection
@@ -57,6 +60,51 @@ namespace BedrockTransports
             }
         }
 
+        internal void Start()
+        {
+            _processingTask = ProcessOutgoingMessagesAsync();
+        }
+
+        internal async Task<bool> ProcessHandshakeAsync()
+        {
+            // This is a limitation of the current implementation, we need to eat the signalr handshake protocol
+            // The service lets this get through to the application layer but we don't want to leak it.
+            while (true)
+            {
+                var result = await Transport.Input.ReadAsync();
+                var buffer = result.Buffer;
+                var consumed = buffer.Start;
+                var examined = buffer.End;
+                try
+                {
+                    if (!buffer.IsEmpty)
+                    {
+                        if (HandshakeProtocol.TryParseRequestMessage(ref buffer, out _))
+                        {
+                            // We parsed the handshake
+                            consumed = buffer.Start;
+                            examined = consumed;
+                            break;
+                        }
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        // The connection closed before we were able to parse the handshake
+                        // Don't expose it as an accepted connection
+                        await DisposeAsync();
+                        return false;
+                    }
+                }
+                finally
+                {
+                    Transport.Input.AdvanceTo(consumed, examined);
+                }
+            }
+
+            return true;
+        }
+
         public void TickHeartbeat()
         {
             lock (_heartbeatLock)
@@ -72,9 +120,6 @@ namespace BedrockTransports
                 }
             }
         }
-
-        // Send "Abort" to service on close except that Service asks SDK to close
-        public bool AbortOnClose { get; set; } = true;
 
         public override string ConnectionId { get; set; }
 
@@ -99,15 +144,70 @@ namespace BedrockTransports
             return features;
         }
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
-            return _onDisposeAsync(this);
+            Transport.Input.Complete();
+            Transport.Output.Complete();
+
+            await (_processingTask ?? Task.CompletedTask);
+
+            if (!_disconnectReceived)
+            {
+                await _listener.WriteAsync(new CloseConnectionMessage(ConnectionId));
+            }
         }
 
-        public override void Abort(ConnectionAbortedException abortReason)
+        public void Disconnect()
         {
-            AbortOnClose = true;
-            base.Abort(abortReason);
+            _disconnectReceived = true;
+            Application.Output.Complete();
+        }
+
+        private async Task ProcessOutgoingMessagesAsync()
+        {
+            try
+            {
+                while (true)
+                {
+                    var result = await Application.Input.ReadAsync();
+                    if (result.IsCanceled)
+                    {
+                        break;
+                    }
+
+                    var buffer = result.Buffer;
+                    if (!buffer.IsEmpty)
+                    {
+                        try
+                        {
+                            // Forward the message to the service
+                            await _listener.WriteAsync(new ConnectionDataMessage(ConnectionId, buffer));
+                        }
+                        catch (Exception)
+                        {
+                            // Log.ErrorSendingMessage(Logger, ex);
+                        }
+                    }
+
+                    if (result.IsCompleted)
+                    {
+                        // This connection ended (the application itself shut down) we should remove it from the list of connections
+                        break;
+                    }
+
+                    Application.Input.AdvanceTo(buffer.End);
+                }
+            }
+            catch (Exception)
+            {
+                // The exception means application fail to process input anymore
+                // Cancel any pending flush so that we can quit and perform disconnect
+                // Here is abort close and WaitOnApplicationTask will send close message to notify client to disconnect
+                // Log.SendLoopStopped(Logger, connection.ConnectionId, ex);
+                Application.Output.CancelPendingFlush();
+            }
+
+            Application.Input.Complete();
         }
     }
 }
