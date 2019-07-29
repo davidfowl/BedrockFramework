@@ -90,9 +90,7 @@ namespace BedrockTransports
         public static async Task RunClientAsync(ConnectionContext connection, CancellationToken cancellationToken = default)
         {
             _ = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, cancellationToken);
-            var writing = connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), cancellationToken);
-
-            await writing;
+            await connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), cancellationToken);
         }
 
         public static async Task RunEchoServerAsync(IConnectionListener listener, CancellationToken cancellationToken = default)
