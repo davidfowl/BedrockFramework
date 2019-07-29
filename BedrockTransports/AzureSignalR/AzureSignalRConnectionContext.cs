@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -153,6 +154,8 @@ namespace BedrockTransports
 
             if (!_disconnectReceived)
             {
+                // Send a close message to the service, this should eventually raise a disconnect message
+                // so we don't have to clean anything up here
                 await _listener.WriteAsync(new CloseConnectionMessage(ConnectionId));
             }
         }
