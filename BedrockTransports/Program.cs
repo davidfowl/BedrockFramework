@@ -43,13 +43,11 @@ namespace BedrockTransports
 
             Console.WriteLine("Echo server running, type into the console");
 
-            try
+            var task = await Task.WhenAny(clientTask, serverTask);
+
+            if (task == clientTask)
             {
-                await Task.WhenAll(clientTask, serverTask);
-            }
-            catch (OperationCanceledException)
-            {
-                // Graceful shutdown
+                Console.WriteLine("Client ended");
             }
         }
 
@@ -91,10 +89,9 @@ namespace BedrockTransports
 
         public static async Task RunClientAsync(ConnectionContext connection, CancellationToken cancellationToken = default)
         {
-            var reading = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, cancellationToken);
+            _ = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, cancellationToken);
             var writing = connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), cancellationToken);
 
-            await reading;
             await writing;
         }
 
