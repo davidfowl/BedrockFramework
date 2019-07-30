@@ -116,10 +116,15 @@ namespace BedrockTransports
                 _connectionContext = connectionContext;
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
+                // Immediately flush request stream to send headers
+                // https://github.com/dotnet/corefx/issues/39586#issuecomment-516210081
+                await stream.FlushAsync().ConfigureAwait(false);
+
                 _connectionContext.Output = PipeWriter.Create(stream);
-                return _connectionContext.ExecutionTask;
+
+                await _connectionContext.ExecutionTask.ConfigureAwait(false);
             }
 
             protected override bool TryComputeLength(out long length)
