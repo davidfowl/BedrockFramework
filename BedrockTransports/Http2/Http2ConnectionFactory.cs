@@ -118,11 +118,11 @@ namespace BedrockTransports
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
+                _connectionContext.Output = PipeWriter.Create(stream);
+
                 // Immediately flush request stream to send headers
                 // https://github.com/dotnet/corefx/issues/39586#issuecomment-516210081
                 await stream.FlushAsync().ConfigureAwait(false);
-
-                _connectionContext.Output = PipeWriter.Create(stream);
 
                 await _connectionContext.ExecutionTask.ConfigureAwait(false);
             }
