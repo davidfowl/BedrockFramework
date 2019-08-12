@@ -10,10 +10,12 @@ namespace BedrockTransports
     public class AzureSignalRConnectionListenerFactory : IConnectionListenerFactory
     {
         private readonly ILoggerFactory _loggerFactory;
+        private readonly bool _isNewEndpoint;
 
-        public AzureSignalRConnectionListenerFactory(ILoggerFactory loggerFactory)
+        public AzureSignalRConnectionListenerFactory(ILoggerFactory loggerFactory, bool isNewEndpoint)
         {
             _loggerFactory = loggerFactory;
+            _isNewEndpoint = isNewEndpoint;
         }
 
         public async ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
@@ -23,7 +25,7 @@ namespace BedrockTransports
                 throw new NotSupportedException($"{endpoint} is not supported");
             }
 
-            var listener = new AzureSignalRConnectionListener(azEndpoint.Uri, azEndpoint.AccessToken, _loggerFactory)
+            var listener = new AzureSignalRConnectionListener(azEndpoint.Uri, azEndpoint.AccessToken, _loggerFactory, _isNewEndpoint)
             {
                 EndPoint = endpoint
             };

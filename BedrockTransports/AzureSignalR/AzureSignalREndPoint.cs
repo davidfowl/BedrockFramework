@@ -9,6 +9,7 @@ namespace BedrockTransports
 {
     public class AzureSignalREndPoint : EndPoint
     {
+        private string _endpointPath = string.Empty;
         public Uri Uri { get; set; }
 
         public string AccessToken { get; set; }
@@ -16,11 +17,15 @@ namespace BedrockTransports
 
         public AzureSignalREndPoint(string connectionString,
                                     string hubName,
-                                    AzureSignalREndpointType type)
+                                    AzureSignalREndpointType type, bool isNewEndpoint)
         {
             var endpoint = "";
             var accessKey = "";
-
+            string port = null;
+            if (isNewEndpoint)
+            {
+                _endpointPath = "/endpoint";
+            }
             foreach (var item in connectionString.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
                 var index = item.IndexOf('=');
@@ -35,17 +40,21 @@ namespace BedrockTransports
                 {
                     accessKey = value;
                 }
+                else if (key == "Port")
+                {
+                    port = ":" + value;
+                }
             }
 
             if (type == AzureSignalREndpointType.Server)
             {
                 var cid = Guid.NewGuid();
-                Uri = new Uri($"{endpoint}/server/?hub={hubName}&cid={cid}");
+                Uri = new Uri($"{endpoint}{port}{_endpointPath}/server/?hub={hubName}&cid={cid}");
                 AccessToken = GenerateServerAccessToken(accessKey, endpoint, hubName);
             }
             else if (type == AzureSignalREndpointType.Client)
             {
-                Uri = new Uri($"{endpoint}/client/?hub={hubName}");
+                Uri = new Uri($"{endpoint}{port}{_endpointPath}/client/?hub={hubName}");
                 AccessToken = GenerateClientAccessToken(accessKey, endpoint, hubName);
             }
         }
@@ -55,11 +64,11 @@ namespace BedrockTransports
             return Uri.ToString();
         }
 
-        static string GenerateClientAccessToken(string signingKey, string endpoint, string hubName)
+        private string GenerateClientAccessToken(string signingKey, string endpoint, string hubName)
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            var audience = $"{endpoint}/client/?hub={hubName}";
+            var audience = $"{endpoint}{_endpointPath}/client/?hub={hubName}";
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -73,11 +82,11 @@ namespace BedrockTransports
             return jwtTokenHandler.WriteToken(token);
         }
 
-        static string GenerateServerAccessToken(string signingKey, string endpoint, string hubName)
+        private string GenerateServerAccessToken(string signingKey, string endpoint, string hubName)
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            var audience = $"{endpoint}/server/?hub={hubName}";
+            var audience = $"{endpoint}{_endpointPath}/server/?hub={hubName}";
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);

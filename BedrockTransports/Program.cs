@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Net;
 using System.Threading;
@@ -26,13 +27,15 @@ namespace BedrockTransports
                 builder.AddConsole();
             });
 
-            (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetHttp2Transport(loggerFactory);
+            (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetAzureSignalRTransport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetAzureSignalRTransport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetNamedPipesTransport(loggerFactory);
 
             // Connect to the server endpoint
             var listener = await serverFactory.BindAsync(serverEndPoint);
             Console.WriteLine($"Listening on {serverEndPoint}");
+
+            Console.Read();
 
             // Open a client connection to the listener
             var connection = await clientFactory.ConnectAsync(clientEndPoint);
@@ -59,10 +62,12 @@ namespace BedrockTransports
             // Put your azure SignalR connection string here (securely of course!)
             var connectionString = "";
 
-            var serverFactory = new AzureSignalRConnectionListenerFactory(loggerFactory);
-            var clientFactory = new AzureSignalRConnectionFactory(loggerFactory);
-            var serverEndPoint = new AzureSignalREndPoint(connectionString, "myhub", AzureSignalREndpointType.Server);
-            var clientEndPoint = new AzureSignalREndPoint(connectionString, "myhub", AzureSignalREndpointType.Client);
+            var isNewEndpoint = true;
+
+            var serverFactory = new AzureSignalRConnectionListenerFactory(loggerFactory, isNewEndpoint);
+            var clientFactory = new AzureSignalRConnectionFactory(loggerFactory, isNewEndpoint);
+            var serverEndPoint = new AzureSignalREndPoint(connectionString, "myhub", AzureSignalREndpointType.Server, isNewEndpoint);
+            var clientEndPoint = new AzureSignalREndPoint(connectionString, "myhub", AzureSignalREndpointType.Client, isNewEndpoint);
 
             return (serverFactory, clientFactory, serverEndPoint, clientEndPoint);
         }
@@ -72,7 +77,7 @@ namespace BedrockTransports
             // This is an http/2 transport based on kestrel and httpclient, each connection is mapped to an HTTP/2 stream
             var serverFactory = new Http2ConnectionListenerFactory(loggerFactory);
             var clientFactory = new Http2ConnectionFactory();
-            var endPoint = new UriEndPoint(new Uri("https://localhost:5003"));
+            var endPoint = new UriEndPoint(new Uri("http://localhost:5003"));
 
             return (serverFactory, clientFactory, endPoint, endPoint);
         }

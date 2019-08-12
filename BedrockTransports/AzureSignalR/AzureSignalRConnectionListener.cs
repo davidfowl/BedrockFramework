@@ -11,12 +11,14 @@ namespace BedrockTransports
 {
     internal class AzureSignalRConnectionListener : AzureSignalRDispatcher, IConnectionListener
     {
+        private readonly bool _isNewEndpoint;
         private Channel<ConnectionContext> _acceptQueue = Channel.CreateUnbounded<ConnectionContext>();
         private ConcurrentDictionary<string, AzureSignalRConnectionContext> _connections = new ConcurrentDictionary<string, AzureSignalRConnectionContext>();
 
-        public AzureSignalRConnectionListener(Uri uri, string token, ILoggerFactory loggerFactory)
+        public AzureSignalRConnectionListener(Uri uri, string token, ILoggerFactory loggerFactory, bool isNewEndpoint)
             : base(uri, token, loggerFactory)
         {
+            _isNewEndpoint = isNewEndpoint;
         }
 
         public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
@@ -63,7 +65,7 @@ namespace BedrockTransports
 
         private async Task ProcessHandshakeAsync(AzureSignalRConnectionContext connection)
         {
-            if (await connection.ProcessHandshakeAsync())
+            if (await Prepare(connection))
             {
                 // The connection is accepted
                 _acceptQueue.Writer.TryWrite(connection);
@@ -71,6 +73,16 @@ namespace BedrockTransports
                 // Start processing messages from the application
                 connection.Start();
             }
+        }
+
+        private async Task<bool> Prepare(AzureSignalRConnectionContext connection)
+        {
+            if (_isNewEndpoint)
+            {
+                return true;
+            }
+
+            return await connection.ProcessHandshakeAsync();
         }
 
         protected override Task OnDisconnectedAsync(CloseConnectionMessage closeConnectionMessage)

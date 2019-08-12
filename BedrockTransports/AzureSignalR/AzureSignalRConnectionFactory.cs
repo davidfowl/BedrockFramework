@@ -14,10 +14,12 @@ namespace BedrockTransports
     public class AzureSignalRConnectionFactory : IConnectionFactory
     {
         private readonly ILoggerFactory _loggerFactory;
+        private readonly bool _isNewEndpoint;
 
-        public AzureSignalRConnectionFactory(ILoggerFactory loggerFactory)
+        public AzureSignalRConnectionFactory(ILoggerFactory loggerFactory, bool isNewEndpoint)
         {
             _loggerFactory = loggerFactory;
+            _isNewEndpoint = isNewEndpoint;
         }
 
         public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
@@ -38,9 +40,12 @@ namespace BedrockTransports
             var httpConnection = new HttpConnection(options, _loggerFactory);
             await httpConnection.StartAsync();
 
-            // The SignalR service expects the handshake in default mode, this isn't relevant when using it like a byte stream
-            HandshakeProtocol.WriteRequestMessage(new HandshakeRequestMessage("unknown", 1), httpConnection.Transport.Output);
-            await httpConnection.Transport.Output.FlushAsync();
+            if (!_isNewEndpoint)
+            {
+                // The SignalR service expects the handshake in default mode, this isn't relevant when using it like a byte stream
+                HandshakeProtocol.WriteRequestMessage(new HandshakeRequestMessage("unknown", 1), httpConnection.Transport.Output);
+                await httpConnection.Transport.Output.FlushAsync();
+            }
 
             return httpConnection;
         }
