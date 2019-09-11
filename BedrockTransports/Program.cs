@@ -70,7 +70,7 @@ namespace BedrockTransports
 
         private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetWebSocketTransport(ILoggerFactory loggerFactory)
         {
-            // This is an http/2 transport based on kestrel and httpclient, each connection is mapped to an HTTP/2 stream
+            // This is an websockets transport based on Kestrel and ClientWebSocket
             var serverFactory = new WebSocketConnectionListenerFactory(loggerFactory);
             var clientFactory = new WebSocketConnectionFactory(loggerFactory);
             var endPoint = new UriEndPoint(new Uri("https://localhost:5004"));
