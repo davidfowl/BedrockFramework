@@ -24,7 +24,7 @@ public interface IConnectionListener : IAsyncDisposable
 ```C#
 public interface IConnectionFactory
 {
-    ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default);
+    ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default);
 }
 ```
 
