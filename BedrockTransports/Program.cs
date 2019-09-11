@@ -26,7 +26,8 @@ namespace BedrockTransports
                 builder.AddConsole();
             });
 
-            (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetHttp2Transport(loggerFactory);
+            // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetHttp2Transport(loggerFactory);
+            (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetWebSocketTransport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetAzureSignalRTransport(loggerFactory);
             // (var serverFactory, var clientFactory, var serverEndPoint, var clientEndPoint) = GetNamedPipesTransport(loggerFactory);
 
@@ -65,6 +66,16 @@ namespace BedrockTransports
             var clientEndPoint = new AzureSignalREndPoint(connectionString, "myhub", AzureSignalREndpointType.Client);
 
             return (serverFactory, clientFactory, serverEndPoint, clientEndPoint);
+        }
+
+        private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetWebSocketTransport(ILoggerFactory loggerFactory)
+        {
+            // This is an http/2 transport based on kestrel and httpclient, each connection is mapped to an HTTP/2 stream
+            var serverFactory = new WebSocketConnectionListenerFactory(loggerFactory);
+            var clientFactory = new WebSocketConnectionFactory(loggerFactory);
+            var endPoint = new UriEndPoint(new Uri("https://localhost:5004"));
+
+            return (serverFactory, clientFactory, endPoint, endPoint);
         }
 
         private static (IConnectionListenerFactory, IConnectionFactory, EndPoint, EndPoint) GetHttp2Transport(ILoggerFactory loggerFactory)

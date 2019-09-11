@@ -43,5 +43,6 @@ A sample of a couple bedrock transports using new APIs added in .NET Core 3.0
 
 - **Pipes** - A named pipes transport based on NamedPipeClientStream and NamedPipeServerStream
 - **Http2** - An HTTP/2 based transport that uses turns each request into a duplex connection using HTTP/2 streams. Uses Kestrel on the server and HttpClient on the client
+- **WebSockets** - A WebSockets transport (uses Kestrel and the building blocks of SignalR internally).
 - **AzureSignalR** - A transport that uses AzureSignalR as a low level connection proxy. It implements the [Azure SignalR Service protocol](https://github.com/Azure/azure-signalr/blob/dev/specs/ServiceProtocol.md) in order
 to do the connection multiplexing.
