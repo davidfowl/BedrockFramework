@@ -72,7 +72,7 @@ namespace BedrockTransports
             var server = new KestrelServer(serverOptions, new SocketTransportFactory(socketOptions, _loggerFactory), _loggerFactory);
             ListenOptions listenOptions = null;
 
-            // Bind an HTTP/2 endpoint
+            // Bind an HTTP/1 endpoint
             server.Options.Listen(iPEndPoint, o =>
             {
                 o.UseHttps();
