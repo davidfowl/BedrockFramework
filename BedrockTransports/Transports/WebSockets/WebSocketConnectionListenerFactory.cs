@@ -20,10 +20,12 @@ namespace BedrockTransports
     public partial class WebSocketConnectionListenerFactory : IConnectionListenerFactory, IHostApplicationLifetime
     {
         private readonly ILoggerFactory _loggerFactory;
+        private readonly Action<Microsoft.AspNetCore.Http.Connections.WebSocketOptions> _configure;
 
-        public WebSocketConnectionListenerFactory(ILoggerFactory loggerFactory)
+        public WebSocketConnectionListenerFactory(ILoggerFactory loggerFactory, Action<Microsoft.AspNetCore.Http.Connections.WebSocketOptions> configure = null)
         {
             _loggerFactory = loggerFactory;
+            _configure = configure ?? new Action<Microsoft.AspNetCore.Http.Connections.WebSocketOptions>(o => { });
         }
 
         public CancellationToken ApplicationStarted => default;
@@ -81,7 +83,7 @@ namespace BedrockTransports
                 listenOptions = o;
             });
 
-            var listener = new WebSocketConnectionListener(server, serverOptions.Value.ApplicationServices, path);
+            var listener = new WebSocketConnectionListener(server, _configure, serverOptions.Value.ApplicationServices, path);
 
             await listener.BindAsync(cancellationToken);
 

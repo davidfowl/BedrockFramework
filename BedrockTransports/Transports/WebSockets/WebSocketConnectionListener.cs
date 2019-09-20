@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
@@ -25,7 +26,7 @@ namespace BedrockTransports
         });
         private readonly RequestDelegate _application;
 
-        public WebSocketConnectionListener(KestrelServer server, IServiceProvider serviceProvider, string path)
+        public WebSocketConnectionListener(KestrelServer server, Action<Microsoft.AspNetCore.Http.Connections.WebSocketOptions> configure, IServiceProvider serviceProvider, string path)
         {
             _server = server;
             var builder = new ApplicationBuilder(serviceProvider);
@@ -33,7 +34,9 @@ namespace BedrockTransports
             builder.UseRouting();
             builder.UseEndpoints(routes =>
             {
-                routes.MapConnections(path, cb => cb.Run(inner =>
+                var options = new HttpConnectionDispatcherOptions();
+                configure(options.WebSockets);
+                routes.MapConnections(path, options, cb => cb.Run(inner =>
                 {
                     var connection = new WebSocketConnectionContext(inner);
 
