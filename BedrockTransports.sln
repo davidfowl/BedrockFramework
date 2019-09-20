@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BedrockTransports", "Bedroc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientApplication", "ClientApplication\ClientApplication.csproj", "{44A257ED-D3A7-4170-BE67-4392F2A6FE18}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bedrock.Framework", "Bedrock.Framework\Bedrock.Framework.csproj", "{53CD2C10-7FA3-4816-A44B-66E11B656102}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{44A257ED-D3A7-4170-BE67-4392F2A6FE18}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{44A257ED-D3A7-4170-BE67-4392F2A6FE18}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{44A257ED-D3A7-4170-BE67-4392F2A6FE18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53CD2C10-7FA3-4816-A44B-66E11B656102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53CD2C10-7FA3-4816-A44B-66E11B656102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53CD2C10-7FA3-4816-A44B-66E11B656102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53CD2C10-7FA3-4816-A44B-66E11B656102}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

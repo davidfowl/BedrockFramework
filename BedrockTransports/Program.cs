@@ -15,15 +15,15 @@ namespace BedrockTransports
                            {
                                services.AddWebSocketListener(
                                    new Uri("https://localhost:5003"),
-                                   builder => builder.UseConnectionHandler<EchoServer>());
+                                   builder => builder.UseConnectionHandler<EchoServerApplication>());
 
                                services.AddHttp2Listener(
                                    new Uri("https://localhost:5004"),
-                                   builder => builder.UseConnectionHandler<EchoServer>());
+                                   builder => builder.UseConnectionHandler<EchoServerApplication>());
 
                                services.AddSocketListener(
                                    new IPEndPoint(IPAddress.Loopback, 5005),
-                                   builder => builder.UseConnectionHandler<EchoServer>());
+                                   builder => builder.UseConnectionHandler<EchoServerApplication>());
 
                                // This is a transport based on the AzureSignalR protocol, it gives you a full duplex mutliplexed connection over the 
                                // the internet
@@ -32,7 +32,6 @@ namespace BedrockTransports
                                //var connectionString = context.Configuration["AzureSignalR:ConnectionString"];
                                //services.AddAzureSignalRListener(connectionString, "myhub",
                                //    builder => builder.UseConnectionHandler<EchoServer>());
-
                            })
                            .Build();
 

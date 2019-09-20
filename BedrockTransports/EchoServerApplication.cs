@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace BedrockTransports
 {
-    public class EchoServer : ConnectionHandler
+    public class EchoServerApplication : ConnectionHandler
     {
-        private readonly ILogger<EchoServer> _logger;
+        private readonly ILogger<EchoServerApplication> _logger;
 
-        public EchoServer(ILogger<EchoServer> logger)
+        public EchoServerApplication(ILogger<EchoServerApplication> logger)
         {
             _logger = logger;
         }

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BedrockTransports\BedrockTransports.csproj" />
+    <ProjectReference Include="..\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
 </Project>
