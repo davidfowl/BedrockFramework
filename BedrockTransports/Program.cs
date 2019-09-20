@@ -1,6 +1,8 @@
 using System;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.Hosting;
 
 namespace BedrockTransports
@@ -18,6 +20,10 @@ namespace BedrockTransports
 
                                services.AddServerApplication<Http2ConnectionListenerFactory>(
                                    new UriEndPoint(new Uri("https://localhost:5004")),
+                                   builder => builder.UseConnectionHandler<EchoServer>());
+
+                               services.AddServerApplication<SocketTransportFactory>(
+                                   new IPEndPoint(IPAddress.Loopback, 5005),
                                    builder => builder.UseConnectionHandler<EchoServer>());
 
                                // This is a transport based on the AzureSignalR protocol, it gives you a full duplex mutliplexed connection over the 

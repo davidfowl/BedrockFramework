@@ -41,9 +41,21 @@ namespace BedrockTransports
 
         public static async Task RunServerAsync(IConnectionListener listener, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken = default)
         {
+            ValueTask unbindTask = default;
+
+            cancellationToken.Register(() =>
+            {
+                unbindTask = listener.UnbindAsync();
+            });
+
             while (true)
             {
                 var connection = await listener.AcceptAsync(cancellationToken);
+
+                if (connection == null)
+                {
+                    break;
+                }
 
                 _ = Task.Run(async () =>
                 {
@@ -57,6 +69,12 @@ namespace BedrockTransports
                     }
                 });
             }
+
+            await unbindTask;
+
+            // TODO: Wait for opened connections to close
+
+            await listener.DisposeAsync();
         }
     }
 }
