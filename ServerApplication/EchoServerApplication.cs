@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class EchoServerApplication : ConnectionHandler
     {

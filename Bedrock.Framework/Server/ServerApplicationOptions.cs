@@ -2,7 +2,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Connections;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class ServerApplicationOptions
     {

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Connections.Client;
 using Microsoft.Extensions.Logging;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class WebSocketConnectionFactory : IConnectionFactory
     {

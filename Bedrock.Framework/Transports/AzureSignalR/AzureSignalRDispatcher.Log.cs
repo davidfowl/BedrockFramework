@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     internal abstract partial class AzureSignalRDispatcher
     {

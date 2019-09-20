@@ -5,7 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class AzureSignalREndPoint : EndPoint
     {

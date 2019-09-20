@@ -1,4 +1,4 @@
-﻿namespace BedrockTransports
+﻿namespace Bedrock.Framework
 {
     public enum AzureSignalREndpointType
     {

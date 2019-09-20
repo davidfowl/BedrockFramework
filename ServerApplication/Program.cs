@@ -1,10 +1,12 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using Bedrock.Framework;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 
-namespace BedrockTransports
+namespace ServerApplication
 {
     public class Program
     {
@@ -32,6 +34,11 @@ namespace BedrockTransports
                                //var connectionString = context.Configuration["AzureSignalR:ConnectionString"];
                                //services.AddAzureSignalRListener(connectionString, "myhub",
                                //    builder => builder.UseConnectionHandler<EchoServer>());
+
+                               // Frameworks
+                               services.AddSocketListener(
+                                   new IPEndPoint(IPAddress.Loopback, 5006),
+                                   builder => builder.UseHub<Chat>());
                            })
                            .Build();
 

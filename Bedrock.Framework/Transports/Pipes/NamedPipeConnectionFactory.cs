@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class NamedPipeConnectionFactory : IConnectionFactory
     {

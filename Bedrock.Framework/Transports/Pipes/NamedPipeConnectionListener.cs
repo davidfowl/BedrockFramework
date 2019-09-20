@@ -7,7 +7,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class NamedPipeConnectionListener : IConnectionListener
     {

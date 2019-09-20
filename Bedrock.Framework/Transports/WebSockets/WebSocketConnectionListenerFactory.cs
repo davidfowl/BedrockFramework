@@ -15,7 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public partial class WebSocketConnectionListenerFactory : IConnectionListenerFactory, IHostApplicationLifetime
     {

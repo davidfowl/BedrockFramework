@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public partial class Http2ConnectionListenerFactory : IConnectionListenerFactory
     {

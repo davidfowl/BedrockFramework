@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class Http2ConnectionFactory : IConnectionFactory
     {

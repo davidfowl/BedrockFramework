@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Azure.SignalR.Protocol;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     internal class AzureSignalRConnectionContext : ConnectionContext,
                                               IConnectionUserFeature,

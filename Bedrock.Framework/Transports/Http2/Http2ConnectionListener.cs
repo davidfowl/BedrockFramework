@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class Http2ConnectionListener : IConnectionListener, IHttpApplication<HttpContext>
     {

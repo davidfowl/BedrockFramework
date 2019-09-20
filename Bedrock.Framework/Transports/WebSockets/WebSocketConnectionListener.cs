@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class WebSocketConnectionListener : IConnectionListener, IHttpApplication<HttpContext>
     {

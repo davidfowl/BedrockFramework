@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.Azure.SignalR.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     internal class AzureSignalRConnectionListener : AzureSignalRDispatcher, IConnectionListener
     {

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     internal class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
     {

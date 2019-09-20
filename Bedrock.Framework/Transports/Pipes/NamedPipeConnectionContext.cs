@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http.Features;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     internal class NamedPipeConnectionContext : ConnectionContext, IDuplexPipe
     {

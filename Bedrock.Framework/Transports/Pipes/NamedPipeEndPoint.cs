@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace BedrockTransports
+namespace Bedrock.Framework
 {
     public class NamedPipeEndPoint : EndPoint
     {
