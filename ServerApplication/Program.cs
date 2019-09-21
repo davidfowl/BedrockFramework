@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Bedrock.Framework;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace ServerApplication
@@ -36,6 +37,8 @@ namespace ServerApplication
                                //    builder => builder.UseConnectionHandler<EchoServer>());
 
                                // Frameworks
+                               services.AddSignalRCore();
+
                                services.AddSocketListener(
                                    new IPEndPoint(IPAddress.Loopback, 5006),
                                    builder => builder.UseHub<Chat>());

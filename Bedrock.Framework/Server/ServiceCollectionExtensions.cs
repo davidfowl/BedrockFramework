@@ -49,7 +49,7 @@ namespace Bedrock.Framework
                         options.Bindings.Add(binding);
                     });
 
-            services.AddHostedService<ServerApplication>();
+            services.AddHostedService<ConnectionListenerHostedService>();
 
             return services;
         }
