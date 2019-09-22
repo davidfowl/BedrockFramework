@@ -10,15 +10,21 @@ using Microsoft.Extensions.Options;
 
 namespace Bedrock.Framework
 {
-    public class ConnectionListenerHostedService : BackgroundService
+    public class Server : BackgroundService
     {
-        private readonly ServerApplicationOptions _serverOptions;
-        private readonly ILogger<ConnectionListenerHostedService> _logger;
+        private readonly ServerOptions _serverOptions;
+        private readonly ILogger<Server> _logger;
 
-        public ConnectionListenerHostedService(ILogger<ConnectionListenerHostedService> logger, IOptions<ServerApplicationOptions> options)
+        public Server(ILoggerFactory loggerFactory, ServerOptions options) : 
+            this(loggerFactory, Options.Create(options))
         {
-            _logger = logger;
-            _serverOptions = options.Value;
+
+        }
+
+        public Server(ILoggerFactory loggerFactory, IOptions<ServerOptions> options)
+        {
+            _logger = loggerFactory.CreateLogger<Server>();
+            _serverOptions = options.Value ?? new ServerOptions();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -35,7 +41,7 @@ namespace Bedrock.Framework
             await Task.WhenAll(tasks);
         }
 
-        public async Task RunListenerAsync(IConnectionListener listener, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken = default)
+        private async Task RunListenerAsync(IConnectionListener listener, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken = default)
         {
             var unbindTask = new TaskCompletionSource<object>();
             var connections = new ConcurrentDictionary<string, (ConnectionContext Connection, Task ExecutionTask)>();
