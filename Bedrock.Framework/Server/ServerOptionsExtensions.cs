@@ -8,51 +8,51 @@ namespace Bedrock.Framework
 {
     public static class ServerOptionsExtensions
     {
-        public static void Listen(this ServerOptions options, IPEndPoint endPoint, Action<IConnectionBuilder> configure)
+        public static ServerOptions Listen(this ServerOptions options, IPEndPoint endPoint, Action<IConnectionBuilder> configure)
         {
-            options.Listen<SocketTransportFactory>(endPoint, configure);
+            return options.Listen<SocketTransportFactory>(endPoint, configure);
         }
 
-        public static void Listen(this ServerOptions options, IPAddress address, int port, Action<IConnectionBuilder> configure)
+        public static ServerOptions Listen(this ServerOptions options, IPAddress address, int port, Action<IConnectionBuilder> configure)
         {
-            options.Listen<SocketTransportFactory>(new IPEndPoint(address, port), configure);
+            return options.Listen<SocketTransportFactory>(new IPEndPoint(address, port), configure);
         }
 
-        public static void ListenAnyIP(this ServerOptions options, int port, Action<IConnectionBuilder> configure)
+        public static ServerOptions ListenAnyIP(this ServerOptions options, int port, Action<IConnectionBuilder> configure)
         {
-            options.Listen<SocketTransportFactory>(new IPEndPoint(IPAddress.Any, port), configure);
+            return options.Listen<SocketTransportFactory>(new IPEndPoint(IPAddress.Any, port), configure);
         }
 
-        public static void ListenLocalhost(this ServerOptions options, int port, Action<IConnectionBuilder> configure)
+        public static ServerOptions ListenLocalhost(this ServerOptions options, int port, Action<IConnectionBuilder> configure)
         {
-            options.Listen<SocketTransportFactory>(new IPEndPoint(IPAddress.Loopback, port), configure);
+            return options.Listen<SocketTransportFactory>(new IPEndPoint(IPAddress.Loopback, port), configure);
         }
 
-        public static void ListenUnixSocket(this ServerOptions options, string socketPath, Action<IConnectionBuilder> configure)
+        public static ServerOptions ListenUnixSocket(this ServerOptions options, string socketPath, Action<IConnectionBuilder> configure)
         {
-            options.Listen<SocketTransportFactory>(new UnixDomainSocketEndPoint(socketPath), configure);
+            return options.Listen<SocketTransportFactory>(new UnixDomainSocketEndPoint(socketPath), configure);
         }
 
-        public static void ListenWebSocket(this ServerOptions options, Uri uri, Action<IConnectionBuilder> serverApplication)
+        public static ServerOptions ListenWebSocket(this ServerOptions options, Uri uri, Action<IConnectionBuilder> serverApplication)
         {
-            options.Listen<WebSocketConnectionListenerFactory>(new UriEndPoint(uri), serverApplication);
+            return options.Listen<WebSocketConnectionListenerFactory>(new UriEndPoint(uri), serverApplication);
         }
 
-        public static void ListenHttp2(this ServerOptions options, Uri uri, Action<IConnectionBuilder> serverApplication)
+        public static ServerOptions ListenHttp2(this ServerOptions options, Uri uri, Action<IConnectionBuilder> serverApplication)
         {
-            options.Listen<Http2ConnectionListenerFactory>(new UriEndPoint(uri), serverApplication);
+            return options.Listen<Http2ConnectionListenerFactory>(new UriEndPoint(uri), serverApplication);
         }
 
-        public static void ListenSocket(this ServerOptions options, EndPoint endpoint, Action<IConnectionBuilder> serverApplication)
+        public static ServerOptions ListenSocket(this ServerOptions options, EndPoint endpoint, Action<IConnectionBuilder> serverApplication)
         {
-            options.Listen<SocketTransportFactory>(endpoint, serverApplication);
+            return options.Listen<SocketTransportFactory>(endpoint, serverApplication);
         }
 
-        public static void ListenAzureSignalR(this ServerOptions options, string connectionString, string hub, Action<IConnectionBuilder> serverApplication)
+        public static ServerOptions ListenAzureSignalR(this ServerOptions options, string connectionString, string hub, Action<IConnectionBuilder> serverApplication)
         {
-            options.Listen<AzureSignalRConnectionListenerFactory>(
-                new AzureSignalREndPoint(connectionString, hub, AzureSignalREndpointType.Server),
-                serverApplication);
+            return options.Listen<AzureSignalRConnectionListenerFactory>(
+                    new AzureSignalREndPoint(connectionString, hub, AzureSignalREndpointType.Server),
+                    serverApplication);
         }
 
     }
