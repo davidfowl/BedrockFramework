@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Net;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Bedrock.Framework
 {
@@ -10,12 +9,16 @@ namespace Bedrock.Framework
     {
         internal List<ServerBinding> Bindings { get; } = new List<ServerBinding>();
 
-        public IServiceProvider ApplicationServices { get; set; }
-
-        public ServerOptions Listen<TTransport>(EndPoint endPoint, Action<IConnectionBuilder> configure) where TTransport : IConnectionListenerFactory
+        public ServerOptions()
         {
-            return Listen(endPoint, ActivatorUtilities.CreateInstance<TTransport>(this), configure);
         }
+
+        public ServerOptions(IServiceProvider serviceProvider)
+        {
+            ApplicationServices = serviceProvider;
+        }
+
+        public IServiceProvider ApplicationServices { get; set; }
 
         public ServerOptions Listen(EndPoint endPoint, IConnectionListenerFactory connectionListenerFactory, Action<IConnectionBuilder> configure)
         {

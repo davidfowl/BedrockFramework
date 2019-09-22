@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Bedrock.Framework
 {
@@ -55,5 +56,9 @@ namespace Bedrock.Framework
                     serverApplication);
         }
 
+        public static ServerOptions Listen<TTransport>(this ServerOptions options, EndPoint endPoint, Action<IConnectionBuilder> configure) where TTransport : IConnectionListenerFactory
+        {
+            return options.Listen(endPoint, ActivatorUtilities.CreateInstance<TTransport>(options), configure);
+        }
     }
 }
