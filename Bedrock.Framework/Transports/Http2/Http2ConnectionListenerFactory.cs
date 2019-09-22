@@ -51,16 +51,17 @@ namespace Bedrock.Framework
             services.AddLogging();
             var serverOptions = Options.Create(new KestrelServerOptions() { ApplicationServices = services.BuildServiceProvider() }); ;
             var socketOptions = Options.Create(new SocketTransportOptions());
-            var server = new KestrelServer(serverOptions, new SocketTransportFactory(socketOptions, _loggerFactory), _loggerFactory);
+            var socketTransportFactory = new SocketTransportFactory(socketOptions, _loggerFactory);
+            var server = new KestrelServer(serverOptions, socketTransportFactory, _loggerFactory);
             ListenOptions listenOptions = null;
 
             // Bind an HTTP/2 endpoint
-            server.Options.Listen(iPEndPoint, o =>
+            server.Options.Listen(iPEndPoint, options =>
             {
-                o.UseHttps();
-                o.Protocols = HttpProtocols.Http2;
+                options.UseHttps();
+                options.Protocols = HttpProtocols.Http2;
                 // Storing the options so we can get the resolved EndPoint later
-                listenOptions = o;
+                listenOptions = options;
             });
 
             var listener = new Http2ConnectionListener(server);
