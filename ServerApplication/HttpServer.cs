@@ -61,29 +61,36 @@ namespace ServerApplication
                     var result = await _connection.Transport.Input.ReadAsync();
                     var buffer = result.Buffer;
 
-                    ParseHttpRequest(ref buffer);
+                    ParseHttpRequest(ref buffer, out var examined);
+
+                    _connection.Transport.Input.AdvanceTo(buffer.Start, examined);
 
                     if (_state == State.Body)
                     {
-                        // We're done parsing the request, now parse the body
+                        // We're done parsing the request, now parse the body (if there is a body)
+
+                        // Write a the response
+                        var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
+                        await _connection.Transport.Output.WriteAsync(responseData);
+
+                        _state = State.StartLine;
                     }
 
                     if (result.IsCompleted)
                     {
-                        if (!buffer.IsEmpty)
+                        if (_state != State.Body)
                         {
-                            // Incomplete request
+                            // Incomplete request, close the connection with an error
                         }
                         break;
                     }
-
-                    _connection.Transport.Input.AdvanceTo(buffer.Start, buffer.End);
                 }
             }
 
-            private void ParseHttpRequest(ref ReadOnlySequence<byte> buffer)
+            private void ParseHttpRequest(ref ReadOnlySequence<byte> buffer, out SequencePosition examined)
             {
                 var sequenceReader = new SequenceReader<byte>(buffer);
+                examined = buffer.End;
 
                 if (_state == State.StartLine)
                 {
@@ -107,6 +114,7 @@ namespace ServerApplication
                     Version = Encoding.ASCII.GetString(version.IsSingleSegment ? version.FirstSpan : version.ToArray());
 
                     _state = State.Headers;
+                    examined = sequenceReader.Position;
                 }
 
                 if (_state == State.Headers)
@@ -115,6 +123,7 @@ namespace ServerApplication
                     {
                         if (headerLine.Length == 0)
                         {
+                            examined = sequenceReader.Position;
                             // End of headers
                             _state = State.Body;
                             break;
