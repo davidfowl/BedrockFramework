@@ -22,8 +22,8 @@ namespace ServerApplication
                            .ConfigureServer(options =>
                            {
                                options.ListenWebSocket(
-                                       new Uri("https://localhost:5003"),
-                                       builder => builder.UseConnectionHandler<EchoServerApplication>());
+                                   new Uri("https://localhost:5003"),
+                                   builder => builder.UseConnectionHandler<EchoServerApplication>());
 
                                options.ListenHttp2(
                                    new Uri("https://localhost:5004"),
