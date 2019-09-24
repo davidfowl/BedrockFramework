@@ -46,30 +46,30 @@ namespace ClientApplication
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var options = new MqttClientOptionsBuilder()
-                        .WithClientId("Client1")
-                        .WithTcpServer("127.0.0.1", 5008)
-                        .Build();
+            //var options = new MqttClientOptionsBuilder()
+            //            .WithClientId("Client1")
+            //            .WithTcpServer("127.0.0.1", 5008)
+            //            .Build();
 
-            var factory = new MqttFactory();
-            var client = factory.CreateMqttClient();
-            await client.ConnectAsync(options, stoppingToken);
-            var subs = new MqttClientSubscribeOptions();
-            subs.TopicFilters.Add(new TopicFilter { Topic = "A" });
-            await client.SubscribeAsync(subs, stoppingToken);
-            await client.PublishAsync(new MqttApplicationMessage() { Topic = "A", Payload = Encoding.UTF8.GetBytes("Hello World") }, stoppingToken);
-            client.ApplicationMessageReceivedHandler = this;
+            //var factory = new MqttFactory();
+            //var client = factory.CreateMqttClient();
+            //await client.ConnectAsync(options, stoppingToken);
+            //var subs = new MqttClientSubscribeOptions();
+            //subs.TopicFilters.Add(new TopicFilter { Topic = "A" });
+            //await client.SubscribeAsync(subs, stoppingToken);
+            //await client.PublishAsync(new MqttApplicationMessage() { Topic = "A", Payload = Encoding.UTF8.GetBytes("Hello World") }, stoppingToken);
+            //client.ApplicationMessageReceivedHandler = this;
 
-            //var clientFactory = new WebSocketConnectionFactory(_loggerFactory);
-            //var clientEndPoint = new UriEndPoint(new Uri("https://localhost:5003"));
+            var clientFactory = new WebSocketConnectionFactory(_loggerFactory);
+            var clientEndPoint = new UriEndPoint(new Uri("https://localhost:5003"));
 
-            //var connection = await clientFactory.ConnectAsync(clientEndPoint);
-            //Console.WriteLine($"Connected to {clientEndPoint}");
+            var connection = await clientFactory.ConnectAsync(clientEndPoint);
+            Console.WriteLine($"Connected to {clientEndPoint}");
 
-            //Console.WriteLine("Echo server running, type into the console");
+            Console.WriteLine("Echo server running, type into the console");
 
-            //_ = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, stoppingToken);
-            //await connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), stoppingToken);
+            _ = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output, stoppingToken);
+            await connection.Transport.Input.CopyToAsync(Console.OpenStandardOutput(), stoppingToken);
         }
 
     }
