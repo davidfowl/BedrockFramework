@@ -63,10 +63,18 @@ namespace ServerApplication
 
         public class HttpApplication : IHttpApplication
         {
-            public async Task ProcessRequest(IHttpContext context)
+            public async Task ProcessRequests(IAsyncEnumerable<IHttpContext> requests)
             {
-                var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
-                await context.Output.WriteAsync(responseData);
+                var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello ");
+
+                await foreach (var context in requests)
+                {
+                    await context.Output.WriteAsync(responseData);
+
+                    await Task.Yield();
+
+                    await context.Output.WriteAsync(Encoding.ASCII.GetBytes("World"));
+                }
             }
         }
 

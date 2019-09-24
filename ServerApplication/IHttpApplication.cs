@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ServerApplication
 {
     public interface IHttpApplication
     {
-        Task ProcessRequest(IHttpContext connection);
+        Task ProcessRequests(IAsyncEnumerable<IHttpContext> requests);
     }
 }
