@@ -8,7 +8,7 @@ namespace ServerApplication
         {
             return builder.Run(connection =>
             {
-                var asyncEnumerable = new HttpConnection(connection).RunAsync();
+                var asyncEnumerable = new HttpConnection(connection).ReadAllRequestsAsync();
                 return application.ProcessRequests(asyncEnumerable);
             });
         }

@@ -5,7 +5,6 @@ using System.IO.Pipelines;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using Microsoft.AspNetCore.Connections;
 
 namespace ServerApplication
@@ -14,8 +13,6 @@ namespace ServerApplication
     {
         private readonly ConnectionContext _connection;
         private State _state;
-        private short _version;
-        private ManualResetValueTaskSourceCore<object> _tcs = new ManualResetValueTaskSourceCore<object>();
 
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
@@ -40,13 +37,12 @@ namespace ServerApplication
             }
         }
 
-
         public HttpConnection(ConnectionContext connection)
         {
             _connection = connection;
         }
 
-        public async IAsyncEnumerable<IHttpContext> RunAsync()
+        public async IAsyncEnumerable<IHttpContext> ReadAllRequestsAsync()
         {
             while (true)
             {
