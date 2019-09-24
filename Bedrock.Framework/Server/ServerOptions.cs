@@ -38,7 +38,7 @@ namespace Bedrock.Framework
             return ApplicationServices?.GetService(serviceType);
         }
 
-        public class ServerBinding
+        internal class ServerBinding
         {
             public EndPoint EndPoint { get; set; }
             public IConnectionListenerFactory ConnectionListenerFactory { get; set; }

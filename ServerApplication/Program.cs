@@ -1,5 +1,6 @@
 using System;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Microsoft.AspNetCore.Connections;
@@ -43,10 +44,22 @@ namespace ServerApplication
 
                                // SignalR on TCP
                                options.Listen(IPAddress.Loopback, 5006, builder => builder.UseHub<Chat>());
+
+                               // HTTP/1.1 server
+                               options.Listen(IPAddress.Loopback, 5007, builder => builder.UseHttpServer(new HttpApplication()));
                            })
                            .Build();
 
             await host.RunAsync();
+        }
+
+        public class HttpApplication : IHttpApplication
+        {
+            public async Task ProcessRequest(IHttpContext context)
+            {
+                var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
+                await context.Output.WriteAsync(responseData);
+            }
         }
     }
 }

@@ -1,57 +1,55 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Net;
+using System.IO.Pipelines;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Bedrock.Framework;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace ServerApplication
 {
-    public class HttpServer
+    public static class ConnectionBuilderExtensions
     {
-        private readonly Server _server;
-
-        public HttpServer(IPAddress address, int port)
+        public static IConnectionBuilder UseHttpServer(this IConnectionBuilder builder, IHttpApplication application)
         {
-            var socketOptions = Options.Create(new SocketTransportOptions());
-            var sockets = new SocketTransportFactory(socketOptions, NullLoggerFactory.Instance);
-            var options = new ServerOptions()
-                   .Listen(new IPEndPoint(address, port), sockets, builder => builder.Run(connection => new HttpConnection(connection).RunAsync()));
-
-            _server = new Server(NullLoggerFactory.Instance, options);
+            return builder.Run(connection => new HttpConnection(connection, application).RunAsync());
         }
 
-        public Task StartAsync()
-        {
-            return _server.StartAsync(default);
-        }
-
-        public Task StopAsync()
-        {
-            return _server.StopAsync(default);
-        }
-
-        private class HttpConnection
+        private class HttpConnection : IHttpContext
         {
             private readonly ConnectionContext _connection;
+            private readonly IHttpApplication _application;
             private State _state;
 
-            private ReadOnlySpan<byte> NewLine => new byte[] { 13, 10 };
+            private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
+            private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
 
             public string Method { get; set; }
             public string Path { get; set; }
             public string Version { get; set; }
+            public IDictionary<string, object> RequestHeaders { get; } = new Dictionary<string, object>();
+            public PipeReader Input => _connection.Transport.Input;
+            public PipeWriter Output => _connection.Transport.Output;
 
-            private Dictionary<string, string[]> Headers { get; } = new Dictionary<string, string[]>();
+            public async ValueTask ReadHeadersAsync()
+            {
+                while (_state == State.Headers)
+                {
+                    var result = await _connection.Transport.Input.ReadAsync();
+                    var buffer = result.Buffer;
 
-            public HttpConnection(ConnectionContext connection)
+                    ParseHttpRequest(ref buffer, out var examined);
+
+                    _connection.Transport.Input.AdvanceTo(buffer.Start, examined);
+                }
+            }
+
+
+            public HttpConnection(ConnectionContext connection, IHttpApplication application)
             {
                 _connection = connection;
+                _application = application;
             }
 
             internal async Task RunAsync()
@@ -65,13 +63,14 @@ namespace ServerApplication
 
                     _connection.Transport.Input.AdvanceTo(buffer.Start, examined);
 
-                    if (_state == State.Body)
+                    if (_state != State.StartLine)
                     {
-                        // We're done parsing the request, now parse the body (if there is a body)
+                        await _application.ProcessRequest(this);
 
-                        // Write a the response
-                        var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
-                        await _connection.Transport.Output.WriteAsync(responseData);
+                        // Consume the headers (TODO Don't materialize them)
+                        await ReadHeadersAsync();
+
+                        // Consume the body here (This is more complicated as we need to read the correct body)
 
                         _state = State.StartLine;
                     }
@@ -116,8 +115,7 @@ namespace ServerApplication
                     _state = State.Headers;
                     examined = sequenceReader.Position;
                 }
-
-                if (_state == State.Headers)
+                else if (_state == State.Headers)
                 {
                     while (sequenceReader.TryReadTo(out var headerLine, NewLine))
                     {
@@ -132,17 +130,24 @@ namespace ServerApplication
                         // Parse the header
                         ParseHeader(headerLine, out var headerName, out var headerValue);
 
-                        var key = Encoding.ASCII.GetString(headerName);
-                        var value = Encoding.ASCII.GetString(headerValue);
+                        var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
+                        var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
 
-                        if (Headers.TryGetValue(key, out var values))
+                        if (RequestHeaders.TryGetValue(key, out var values))
                         {
-                            Array.Resize(ref values, values.Length + 1);
-                            values[^1] = value;
+                            if (values is string[] array)
+                            {
+                                Array.Resize(ref array, array.Length + 1);
+                                array[^1] = value;
+                            }
+                            else
+                            {
+                                RequestHeaders[key] = new[] { (string)values, value };
+                            }
                         }
                         else
                         {
-                            Headers[key] = new string[] { value };
+                            RequestHeaders[key] = value;
                         }
                     }
                 }
