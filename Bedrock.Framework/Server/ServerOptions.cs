@@ -22,14 +22,12 @@ namespace Bedrock.Framework
 
         public IServiceProvider ApplicationServices { get; set; }
 
-        public ServerOptions Listen(EndPoint endPoint, IConnectionListenerFactory connectionListenerFactory, Action<IConnectionBuilder> configure)
+        public ServerOptions Listen(EndPoint endPoint, IConnectionListenerFactory connectionListenerFactory, ConnectionDelegate application)
         {
-            var connectionBuilder = new ConnectionBuilder(this);
-            configure(connectionBuilder);
             Bindings.Add(new ServerBinding
             {
                 EndPoint = endPoint,
-                ServerApplication = connectionBuilder.Build(),
+                ServerApplication = application,
                 ConnectionListenerFactory = connectionListenerFactory
             });
             return this;

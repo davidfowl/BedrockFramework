@@ -60,5 +60,12 @@ namespace Bedrock.Framework
         {
             return options.Listen(endPoint, ActivatorUtilities.CreateInstance<TTransport>(options), configure);
         }
+        
+        public static ServerOptions Listen(this ServerOptions options, EndPoint endPoint, IConnectionListenerFactory connectionListenerFactory, Action<IConnectionBuilder> configure)
+        {
+            var connectionBuilder = new ConnectionBuilder(options);
+            configure(connectionBuilder);
+            return options.Listen(endPoint, connectionListenerFactory, connectionBuilder.Build());
+        }
     }
 }
