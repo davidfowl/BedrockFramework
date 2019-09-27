@@ -13,13 +13,16 @@ namespace Bedrock.Framework
     {
         private readonly ServerOptions _serverOptions;
         private readonly ILogger<Server> _logger;
-        private readonly List<(IConnectionListener Listener, Task ExecutionTask)> _listeners = new List<(IConnectionListener Listener, Task ExecutionTask)>();
+        private readonly List<RunningListener> _listeners = new List<RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TimerAwaitable _timerAwaitable;
+        private Task _timerTask = Task.CompletedTask;
 
         public Server(ILoggerFactory loggerFactory, ServerOptions options)
         {
             _logger = loggerFactory.CreateLogger<Server>();
             _serverOptions = options ?? new ServerOptions();
+            _timerAwaitable = new TimerAwaitable(_serverOptions.HeartBeatInterval, _serverOptions.HeartBeatInterval);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -30,7 +33,25 @@ namespace Bedrock.Framework
                 _logger.LogInformation("Listening on {address}", binding.EndPoint);
                 binding.EndPoint = listener.EndPoint;
 
-                _listeners.Add((listener, RunListenerAsync(binding.EndPoint, listener, binding.Application)));
+                var runningListener = new RunningListener(this, binding.EndPoint, listener, binding.Application);
+                _listeners.Add(runningListener);
+            }
+
+            _timerAwaitable.Start();
+            _timerTask = StartTimerAsync();
+        }
+
+        private async Task StartTimerAsync()
+        {
+            using (_timerAwaitable)
+            {
+                while (await _timerAwaitable)
+                {
+                    foreach (var listener in _listeners)
+                    {
+                        listener.TickHeartbeat();
+                    }
+                }
             }
         }
 
@@ -64,97 +85,123 @@ namespace Bedrock.Framework
             {
                 await shutdownTask;
             }
+
+            _timerAwaitable.Stop();
+
+            await _timerTask;
         }
 
-        private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
+        private class RunningListener
         {
-            var connections = new ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)>();
+            private readonly Server _server;
+            private readonly ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)> _connections = new ConcurrentDictionary<long, (ServerConnection, Task)>();
 
-            async Task ExecuteConnectionAsync(ServerConnection serverConnection)
+            public RunningListener(Server server, EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
             {
-                await Task.Yield();
+                _server = server;
+                Listener = listener;
+                ExecutionTask = RunListenerAsync(endpoint, listener, connectionDelegate);
+            }
 
-                var connection = serverConnection.TransportConnection;
+            public IConnectionListener Listener { get; }
+            public Task ExecutionTask { get; }
 
-                try
+            public void TickHeartbeat()
+            {
+                foreach (var pair in _connections)
                 {
-                    await connectionDelegate(connection);
-                }
-                catch (ConnectionAbortedException)
-                {
-                    // Don't let connection aborted exceptions out
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Unexpected exception from connection {ConnectionId}", connection.ConnectionId);
-                }
-                finally
-                {
-                    // Fire the OnCompleted callbacks
-                    await serverConnection.FireOnCompletedAsync();
-
-                    await connection.DisposeAsync();
-
-                    // Remove the connection from tracking
-                    connections.TryRemove(serverConnection.Id, out _);
+                    pair.Value.Connection.TickHeartbeat();
                 }
             }
 
-            long id = 0;
-
-            while (true)
+            private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
             {
-                try
+                async Task ExecuteConnectionAsync(ServerConnection serverConnection)
                 {
-                    var connection = await listener.AcceptAsync();
+                    await Task.Yield();
 
-                    if (connection == null)
+                    var connection = serverConnection.TransportConnection;
+
+                    try
                     {
-                        // Null means we don't have anymore connections
+                        await connectionDelegate(connection);
+                    }
+                    catch (ConnectionAbortedException)
+                    {
+                        // Don't let connection aborted exceptions out
+                    }
+                    catch (Exception ex)
+                    {
+                        _server._logger.LogError(ex, "Unexpected exception from connection {ConnectionId}", connection.ConnectionId);
+                    }
+                    finally
+                    {
+                        // Fire the OnCompleted callbacks
+                        await serverConnection.FireOnCompletedAsync();
+
+                        await connection.DisposeAsync();
+
+                        // Remove the connection from tracking
+                        _connections.TryRemove(serverConnection.Id, out _);
+                    }
+                }
+
+                long id = 0;
+
+                while (true)
+                {
+                    try
+                    {
+                        var connection = await listener.AcceptAsync();
+
+                        if (connection == null)
+                        {
+                            // Null means we don't have anymore connections
+                            break;
+                        }
+
+                        var serverConnection = new ServerConnection(id, connection, _server._logger);
+
+                        _connections[id] = (serverConnection, ExecuteConnectionAsync(serverConnection));
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _server._logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", endpoint);
                         break;
                     }
 
-                    var serverConnection = new ServerConnection(id, connection, _logger);
-
-                    connections[id] = (serverConnection, ExecuteConnectionAsync(serverConnection));
+                    id++;
                 }
-                catch (OperationCanceledException)
+
+                // Don't shut down connections until entire server is shutting down
+                await _server._shutdownTcs.Task;
+
+                // Give connections a chance to close gracefully
+                var tasks = new List<Task>(_connections.Count);
+
+                foreach (var pair in _connections)
                 {
-                    break;
+                    pair.Value.Connection.RequestClose();
+                    tasks.Add(pair.Value.ExecutionTask);
                 }
-                catch (Exception ex)
+
+                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._serverOptions.GracefulShutdownTimeout))
                 {
-                    _logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", endpoint);
-                    break;
+                    // Abort all connections still in flight
+                    foreach (var pair in _connections)
+                    {
+                        pair.Value.Connection.TransportConnection.Abort();
+                    }
+
+                    await Task.WhenAll(tasks);
                 }
 
-                id++;
+                await listener.DisposeAsync();
             }
-
-            // Don't shut down connections until entire server is shutting down
-            await _shutdownTcs.Task;
-
-            // Give connections a chance to close gracefully
-            var tasks = new List<Task>(connections.Count);
-
-            foreach (var pair in connections)
-            {
-                pair.Value.Connection.RequestClose();
-                tasks.Add(pair.Value.ExecutionTask);
-            }
-
-            if (!await Task.WhenAll(tasks).TimeoutAfter(_serverOptions.GracefulShutdownTimeout))
-            {
-                // Abort all connections still in flight
-                foreach (var pair in connections)
-                {
-                    pair.Value.Connection.TransportConnection.Abort();
-                }
-
-                await Task.WhenAll(tasks);
-            }
-
-            await listener.DisposeAsync();
         }
     }
 }

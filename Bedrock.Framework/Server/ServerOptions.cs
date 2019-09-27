@@ -18,6 +18,8 @@ namespace Bedrock.Framework
 
         public TimeSpan GracefulShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
+        public TimeSpan HeartBeatInterval { get; set; } = TimeSpan.FromSeconds(1);
+
         public IServiceProvider ApplicationServices { get; set; }
 
         object IServiceProvider.GetService(Type serviceType)
