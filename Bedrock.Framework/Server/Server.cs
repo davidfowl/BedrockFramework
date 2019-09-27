@@ -58,9 +58,9 @@ namespace Bedrock.Framework
 
         private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
         {
-            var connections = new ConcurrentDictionary<string, (ConnectionContext Connection, Task ExecutionTask)>();
+            var connections = new ConcurrentDictionary<long, (ConnectionContext Connection, Task ExecutionTask)>();
 
-            async Task ExecuteConnectionAsync(ConnectionContext connection)
+            async Task ExecuteConnectionAsync(long id, ConnectionContext connection)
             {
                 await Task.Yield();
 
@@ -81,9 +81,11 @@ namespace Bedrock.Framework
                     await connection.DisposeAsync();
 
                     // Remove the connection from tracking
-                    connections.TryRemove(connection.ConnectionId, out _);
+                    connections.TryRemove(id, out _);
                 }
             }
+
+            long id = 0;
 
             while (true)
             {
@@ -97,7 +99,7 @@ namespace Bedrock.Framework
                         break;
                     }
 
-                    connections[connection.ConnectionId] = (connection, ExecuteConnectionAsync(connection));
+                    connections[id] = (connection, ExecuteConnectionAsync(id, connection));
                 }
                 catch (OperationCanceledException)
                 {
@@ -108,6 +110,8 @@ namespace Bedrock.Framework
                     _logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", endpoint);
                     break;
                 }
+
+                id++;
             }
 
             // Don't shut down connections until entire server is shutting down
