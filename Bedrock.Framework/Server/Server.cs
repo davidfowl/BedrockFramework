@@ -54,7 +54,16 @@ namespace Bedrock.Framework
                 tasks[i] = _listeners[i].ExecutionTask;
             }
 
-            await Task.WhenAll(tasks);
+            var shutdownTask = Task.WhenAll(tasks);
+
+            if (cancellationToken.CanBeCanceled)
+            {
+                await shutdownTask.WithCancellation(cancellationToken);
+            }
+            else
+            {
+                await shutdownTask;
+            }
         }
 
         private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
