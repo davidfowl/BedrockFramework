@@ -14,6 +14,7 @@ namespace Bedrock.Framework
         private readonly ServerOptions _serverOptions;
         private readonly ILogger<Server> _logger;
         private readonly List<(IConnectionListener Listener, Task ExecutionTask)> _listeners = new List<(IConnectionListener Listener, Task ExecutionTask)>();
+        private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public Server(ILoggerFactory loggerFactory, ServerOptions options)
         {
@@ -42,6 +43,10 @@ namespace Bedrock.Framework
             }
 
             await Task.WhenAll(tasks);
+
+            // Signal to all of the listeners that it's time to start the shutdown process
+            // We call this after unbind so that we're not touching the listener anymore (each loop will dispose the listener)
+            _shutdownTcs.TrySetResult(null);
 
             for (int i = 0; i < _listeners.Count; i++)
             {
@@ -104,6 +109,9 @@ namespace Bedrock.Framework
                     break;
                 }
             }
+
+            // Don't shut down connections until entire server is shutting down
+            await _shutdownTcs.Task;
 
             // TODO: Give connections a chance to close gracefully
 
