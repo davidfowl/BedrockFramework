@@ -81,6 +81,8 @@ namespace Bedrock.Framework
 
         public async ValueTask UnbindAsync(CancellationToken cancellationToken = default)
         {
+            _acceptQueue.Writer.TryComplete();
+
             await _server.StopAsync(cancellationToken);
         }
 

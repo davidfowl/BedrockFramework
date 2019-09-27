@@ -1,62 +1,59 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Bedrock.Framework
 {
-    public class Server : BackgroundService
+    public class Server
     {
         private readonly ServerOptions _serverOptions;
         private readonly ILogger<Server> _logger;
+        private readonly List<(IConnectionListener Listener, Task ExecutionTask)> _listeners = new List<(IConnectionListener Listener, Task ExecutionTask)>();
 
-        public Server(ILoggerFactory loggerFactory, ServerOptions options) : 
-            this(loggerFactory, Options.Create(options))
-        {
-
-        }
-
-        public Server(ILoggerFactory loggerFactory, IOptions<ServerOptions> options)
+        public Server(ILoggerFactory loggerFactory, ServerOptions options)
         {
             _logger = loggerFactory.CreateLogger<Server>();
-            _serverOptions = options.Value ?? new ServerOptions();
+            _serverOptions = options ?? new ServerOptions();
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            var tasks = new List<Task>(_serverOptions.Bindings.Count);
             foreach (var binding in _serverOptions.Bindings)
             {
-                var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint);
+                var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint, cancellationToken);
                 _logger.LogInformation("Listening on {address}", binding.EndPoint);
 
-                tasks.Add(RunListenerAsync(listener, binding.ServerApplication, stoppingToken));
+                _listeners.Add((listener, RunListenerAsync(binding.EndPoint, listener, binding.ServerApplication)));
+            }
+        }
+
+        public async Task StopAsync(CancellationToken cancellationToken = default)
+        {
+            var tasks = new Task[_listeners.Count];
+
+            for (int i = 0; i < _listeners.Count; i++)
+            {
+                tasks[i] = _listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < _listeners.Count; i++)
+            {
+                tasks[i] = _listeners[i].ExecutionTask;
             }
 
             await Task.WhenAll(tasks);
         }
 
-        private async Task RunListenerAsync(IConnectionListener listener, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken = default)
+        private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
         {
-            var unbindTask = new TaskCompletionSource<object>();
             var connections = new ConcurrentDictionary<string, (ConnectionContext Connection, Task ExecutionTask)>();
-
-            cancellationToken.Register(async () =>
-            {
-                try
-                {
-                    await listener.UnbindAsync();
-                }
-                finally
-                {
-                    unbindTask.TrySetResult(null);
-                }
-            });
 
             async Task ExecuteConnectionAsync(ConnectionContext connection)
             {
@@ -87,7 +84,7 @@ namespace Bedrock.Framework
             {
                 try
                 {
-                    var connection = await listener.AcceptAsync(cancellationToken);
+                    var connection = await listener.AcceptAsync();
 
                     if (connection == null)
                     {
@@ -99,13 +96,14 @@ namespace Bedrock.Framework
                 }
                 catch (OperationCanceledException)
                 {
-                    // The accept loop was cancelled
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", endpoint);
                     break;
                 }
             }
-
-            // Wait for the listener to close, no new connections will be established
-            await unbindTask.Task;
 
             // TODO: Give connections a chance to close gracefully
 

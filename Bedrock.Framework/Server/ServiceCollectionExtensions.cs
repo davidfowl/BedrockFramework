@@ -10,7 +10,8 @@ namespace Bedrock.Framework
         {
             return builder.ConfigureServices(services =>
             {
-                services.AddHostedService<Server>();
+                services.AddHostedService<ServerHostedService>();
+
                 services.AddOptions<ServerOptions>()
                         .Configure<IServiceProvider>((options, sp) =>
                         {
