@@ -9,6 +9,8 @@ namespace Bedrock.Framework
     {
         internal List<ServerBinding> Bindings { get; } = new List<ServerBinding>();
 
+        public TimeSpan GracefulShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
         public ServerOptions()
         {
         }

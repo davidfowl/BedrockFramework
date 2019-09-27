@@ -58,11 +58,13 @@ namespace Bedrock.Framework
 
         private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
         {
-            var connections = new ConcurrentDictionary<long, (ConnectionContext Connection, Task ExecutionTask)>();
+            var connections = new ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)>();
 
-            async Task ExecuteConnectionAsync(long id, ConnectionContext connection)
+            async Task ExecuteConnectionAsync(ServerConnection serverConnection)
             {
                 await Task.Yield();
+
+                var connection = serverConnection.TransportConnection;
 
                 try
                 {
@@ -78,10 +80,13 @@ namespace Bedrock.Framework
                 }
                 finally
                 {
+                    // Fire the OnCompleted callbacks
+                    await serverConnection.FireOnCompletedAsync();
+
                     await connection.DisposeAsync();
 
                     // Remove the connection from tracking
-                    connections.TryRemove(id, out _);
+                    connections.TryRemove(serverConnection.Id, out _);
                 }
             }
 
@@ -99,7 +104,9 @@ namespace Bedrock.Framework
                         break;
                     }
 
-                    connections[id] = (connection, ExecuteConnectionAsync(id, connection));
+                    var serverConnection = new ServerConnection(id, connection, _logger);
+
+                    connections[id] = (serverConnection, ExecuteConnectionAsync(serverConnection));
                 }
                 catch (OperationCanceledException)
                 {
@@ -117,18 +124,25 @@ namespace Bedrock.Framework
             // Don't shut down connections until entire server is shutting down
             await _shutdownTcs.Task;
 
-            // TODO: Give connections a chance to close gracefully
-
+            // Give connections a chance to close gracefully
             var tasks = new List<Task>(connections.Count);
 
-            // Abort all connections still in flight
             foreach (var pair in connections)
             {
-                pair.Value.Connection.Abort();
+                pair.Value.Connection.RequestClose();
                 tasks.Add(pair.Value.ExecutionTask);
             }
 
-            await Task.WhenAll(tasks);
+            if (!await Task.WhenAll(tasks).TimeoutAfter(_serverOptions.GracefulShutdownTimeout))
+            {
+                // Abort all connections still in flight
+                foreach (var pair in connections)
+                {
+                    pair.Value.Connection.TransportConnection.Abort();
+                }
+
+                await Task.WhenAll(tasks);
+            }
 
             await listener.DisposeAsync();
         }
