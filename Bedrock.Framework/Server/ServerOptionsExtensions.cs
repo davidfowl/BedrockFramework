@@ -65,7 +65,8 @@ namespace Bedrock.Framework
         {
             var connectionBuilder = new ConnectionBuilder(options);
             configure(connectionBuilder);
-            return options.Listen(endPoint, connectionListenerFactory, connectionBuilder.Build());
+            options.Bindings.Add(new ServerBinding(endPoint, connectionBuilder.Build(), connectionListenerFactory));
+            return options;
         }
     }
 }

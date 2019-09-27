@@ -28,8 +28,9 @@ namespace Bedrock.Framework
             {
                 var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint, cancellationToken);
                 _logger.LogInformation("Listening on {address}", binding.EndPoint);
+                binding.EndPoint = listener.EndPoint;
 
-                _listeners.Add((listener, RunListenerAsync(binding.EndPoint, listener, binding.ServerApplication)));
+                _listeners.Add((listener, RunListenerAsync(binding.EndPoint, listener, binding.Application)));
             }
         }
 

@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
-    public class ServerOptions : IServiceProvider
+    public partial class ServerOptions : IServiceProvider
     {
-        internal List<ServerBinding> Bindings { get; } = new List<ServerBinding>();
-
-        public TimeSpan GracefulShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
-
         public ServerOptions()
         {
         }
@@ -20,29 +14,15 @@ namespace Bedrock.Framework
             ApplicationServices = serviceProvider;
         }
 
-        public IServiceProvider ApplicationServices { get; set; }
+        public IList<ServerBinding> Bindings { get; } = new List<ServerBinding>();
 
-        public ServerOptions Listen(EndPoint endPoint, IConnectionListenerFactory connectionListenerFactory, ConnectionDelegate application)
-        {
-            Bindings.Add(new ServerBinding
-            {
-                EndPoint = endPoint,
-                ServerApplication = application,
-                ConnectionListenerFactory = connectionListenerFactory
-            });
-            return this;
-        }
+        public TimeSpan GracefulShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+        public IServiceProvider ApplicationServices { get; set; }
 
         object IServiceProvider.GetService(Type serviceType)
         {
             return ApplicationServices?.GetService(serviceType);
-        }
-
-        internal class ServerBinding
-        {
-            public EndPoint EndPoint { get; set; }
-            public IConnectionListenerFactory ConnectionListenerFactory { get; set; }
-            public ConnectionDelegate ServerApplication { get; set; }
         }
     }
 }
