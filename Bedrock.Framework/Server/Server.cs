@@ -30,7 +30,6 @@ namespace Bedrock.Framework
             foreach (var binding in _serverOptions.Bindings)
             {
                 var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint, cancellationToken);
-                _logger.LogInformation("Listening on {address}", binding.EndPoint);
                 binding.EndPoint = listener.EndPoint;
 
                 var runningListener = new RunningListener(this, binding.EndPoint, listener, binding.Application);
