@@ -123,6 +123,8 @@ namespace Bedrock.Framework
 
                     try
                     {
+                        using var scope = BeginConnectionScope(serverConnection);
+
                         await connectionDelegate(connection);
                     }
                     catch (ConnectionAbortedException)
@@ -200,6 +202,17 @@ namespace Bedrock.Framework
                 }
 
                 await listener.DisposeAsync();
+            }
+
+
+            private IDisposable BeginConnectionScope(ServerConnection connection)
+            {
+                if (_server._logger.IsEnabled(LogLevel.Critical))
+                {
+                    return _server._logger.BeginScope(connection);
+                }
+
+                return null;
             }
         }
     }
