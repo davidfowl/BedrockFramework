@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Bedrock.Framework
 {
@@ -11,8 +9,6 @@ namespace Bedrock.Framework
         {
             ApplicationServices = serviceProvider;
         }
-
-        internal ILoggerFactory LoggerFactory => (ILoggerFactory)ApplicationServices?.GetService(typeof(ILoggerFactory)) ?? NullLoggerFactory.Instance;
 
         public IList<ServerBinding> Bindings { get; } = new List<ServerBinding>();
 

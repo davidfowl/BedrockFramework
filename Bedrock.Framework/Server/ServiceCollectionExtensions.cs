@@ -15,8 +15,8 @@ namespace Bedrock.Framework
                 services.AddOptions<ServerHostedServiceOptions>()
                         .Configure<IServiceProvider>((options, sp) =>
                         {
-                            options.ServerOptions = new ServerBuilder(sp);
-                            configure(options.ServerOptions);
+                            options.ServerBuilder = new ServerBuilder(sp);
+                            configure(options.ServerBuilder);
                         });
             });
         }

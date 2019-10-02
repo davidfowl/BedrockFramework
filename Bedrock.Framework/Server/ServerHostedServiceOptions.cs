@@ -6,6 +6,6 @@ namespace Bedrock.Framework
 {
     public class ServerHostedServiceOptions
     {
-        public ServerBuilder ServerOptions { get; set; }
+        public ServerBuilder ServerBuilder { get; set; }
     }
 }

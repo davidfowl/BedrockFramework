@@ -25,7 +25,7 @@ namespace Bedrock.Framework
                 throw new ArgumentNullException(nameof(options));
             }
 
-            _logger = options.LoggerFactory.CreateLogger<Server>();
+            _logger = options.ApplicationServices.GetLoggerFactory().CreateLogger<Server>();
             _serverOptions = options;
             _timerAwaitable = new TimerAwaitable(_serverOptions.HeartBeatInterval, _serverOptions.HeartBeatInterval);
         }
