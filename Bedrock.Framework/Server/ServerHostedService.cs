@@ -13,9 +13,9 @@ namespace Bedrock.Framework
     {
         private readonly Server _server;
 
-        public ServerHostedService(ILoggerFactory loggerFactory, IOptions<ServerOptions> options)
+        public ServerHostedService(IOptions<ServerHostedServiceOptions> options)
         {
-            _server = new Server(loggerFactory, options.Value);
+            _server = new Server(options.Value.ServerOptions);
         }
 
         public Task StartAsync(CancellationToken cancellationToken)

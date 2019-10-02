@@ -22,18 +22,19 @@ namespace ServerApplication
         public static async Task Main(string[] args)
         {
             // Manual wire up of the server
-            var loggerFactory = LoggerFactory.Create(builder =>
+            var serviceProvider = new ServiceCollection().AddLogging(builder =>
             {
                 builder.AddConsole();
-            });
+            })
+            .BuildServiceProvider();
 
-            var serverOptions = new ServerOptions()
+            var server = new ServerBuilder(serviceProvider)
                         .Listen(
                             IPAddress.Loopback,
                             5010,
-                            builder => builder.Run(context => context.Transport.Input.CopyToAsync(context.Transport.Output)));
+                            builder => builder.Run(context => context.Transport.Input.CopyToAsync(context.Transport.Output)))
+                        .Build();
 
-            var server = new Server(loggerFactory, serverOptions);
             await server.StartAsync();
 
             var host = Host.CreateDefaultBuilder()

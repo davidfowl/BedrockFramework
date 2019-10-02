@@ -11,17 +11,22 @@ namespace Bedrock.Framework
 {
     public class Server
     {
-        private readonly ServerOptions _serverOptions;
+        private readonly ServerBuilder _serverOptions;
         private readonly ILogger<Server> _logger;
         private readonly List<RunningListener> _listeners = new List<RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TimerAwaitable _timerAwaitable;
         private Task _timerTask = Task.CompletedTask;
 
-        public Server(ILoggerFactory loggerFactory, ServerOptions options)
+        internal Server(ServerBuilder options)
         {
-            _logger = loggerFactory.CreateLogger<Server>();
-            _serverOptions = options ?? new ServerOptions();
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            _logger = options.LoggerFactory.CreateLogger<Server>();
+            _serverOptions = options;
             _timerAwaitable = new TimerAwaitable(_serverOptions.HeartBeatInterval, _serverOptions.HeartBeatInterval);
         }
 

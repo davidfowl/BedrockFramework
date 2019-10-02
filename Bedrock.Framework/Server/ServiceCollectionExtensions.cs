@@ -6,17 +6,17 @@ namespace Bedrock.Framework
 {
     public static class ServiceCollectionExtensions
     {
-        public static IHostBuilder ConfigureServer(this IHostBuilder builder, Action<ServerOptions> configure)
+        public static IHostBuilder ConfigureServer(this IHostBuilder builder, Action<ServerBuilder> configure)
         {
             return builder.ConfigureServices(services =>
             {
                 services.AddHostedService<ServerHostedService>();
 
-                services.AddOptions<ServerOptions>()
+                services.AddOptions<ServerHostedServiceOptions>()
                         .Configure<IServiceProvider>((options, sp) =>
                         {
-                            options.ApplicationServices = sp;
-                            configure(options);
+                            options.ServerOptions = new ServerBuilder(sp);
+                            configure(options.ServerOptions);
                         });
             });
         }
