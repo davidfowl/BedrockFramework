@@ -13,7 +13,7 @@ namespace Bedrock.Framework
         }
 
         // Mutable because it can change after binding
-        public EndPoint EndPoint { get; set; }
+        public EndPoint EndPoint { get; internal set; }
         public IConnectionListenerFactory ConnectionListenerFactory { get; }
         public ConnectionDelegate Application { get; }
     }

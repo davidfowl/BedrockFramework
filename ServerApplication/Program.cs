@@ -29,10 +29,12 @@ namespace ServerApplication
             .BuildServiceProvider();
 
             var server = new ServerBuilder(serviceProvider)
-                        .Listen(
-                            IPAddress.Loopback,
-                            5010,
-                            builder => builder.Run(context => context.Transport.Input.CopyToAsync(context.Transport.Output)))
+                        .UseSockets(sockets =>
+                        {
+                            sockets.Options.IOQueueCount = Environment.ProcessorCount;
+
+                            sockets.Listen(IPAddress.Loopback, 5010, builder => builder.UseConnectionHandler<EchoServerApplication>());
+                        })
                         .Build();
 
             await server.StartAsync();
@@ -53,10 +55,6 @@ namespace ServerApplication
                                    new Uri("https://localhost:5004"),
                                    builder => builder.UseConnectionHandler<EchoServerApplication>());
 
-                               options.ListenSocket(
-                                   new IPEndPoint(IPAddress.Loopback, 5005),
-                                   builder => builder.UseConnectionHandler<EchoServerApplication>());
-
                                // This is a transport based on the AzureSignalR protocol, it gives you a full duplex mutliplexed connection over the 
                                // the internet
                                // Put your azure SignalR connection string in configuration
@@ -65,13 +63,16 @@ namespace ServerApplication
                                //options.ListenAzureSignalR(connectionString, "myhub",
                                //    builder => builder.UseConnectionHandler<EchoServerApplication>());
                                // SignalR on TCP
-                               options.Listen(IPAddress.Loopback, 5006, builder => builder.UseHub<Chat>());
+                               options.UseSockets(sockets =>
+                               {
+                                   sockets.Listen(IPAddress.Loopback, 5006, builder => builder.UseHub<Chat>());
 
-                               // HTTP/1.1 server
-                               options.Listen(IPAddress.Loopback, 5007, builder => builder.UseHttpServer(new HttpApplication()));
+                                   // HTTP/1.1 server
+                                   sockets.Listen(IPAddress.Loopback, 5007, builder => builder.UseHttpServer(new HttpApplication()));
 
-                               // MQTT application
-                               options.Listen(IPAddress.Loopback, 5008, builder => builder.UseConnectionHandler<MqttApplication>());
+                                   // MQTT application
+                                   sockets.Listen(IPAddress.Loopback, 5008, builder => builder.UseConnectionHandler<MqttApplication>());
+                               });
                            })
                            .Build();
 
