@@ -11,28 +11,23 @@ namespace Bedrock.Framework
 {
     public class Server
     {
-        private readonly ServerBuilder _serverOptions;
+        private readonly ServerBuilder _builder;
         private readonly ILogger<Server> _logger;
         private readonly List<RunningListener> _listeners = new List<RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TimerAwaitable _timerAwaitable;
         private Task _timerTask = Task.CompletedTask;
 
-        internal Server(ServerBuilder options)
+        internal Server(ServerBuilder builder)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            _logger = options.ApplicationServices.GetLoggerFactory().CreateLogger<Server>();
-            _serverOptions = options;
-            _timerAwaitable = new TimerAwaitable(_serverOptions.HeartBeatInterval, _serverOptions.HeartBeatInterval);
+            _logger = builder.ApplicationServices.GetLoggerFactory().CreateLogger<Server>();
+            _builder = builder;
+            _timerAwaitable = new TimerAwaitable(_builder.HeartBeatInterval, _builder.HeartBeatInterval);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            foreach (var binding in _serverOptions.Bindings)
+            foreach (var binding in _builder.Bindings)
             {
                 var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint, cancellationToken);
                 binding.EndPoint = listener.EndPoint;
@@ -195,7 +190,7 @@ namespace Bedrock.Framework
                     tasks.Add(pair.Value.ExecutionTask);
                 }
 
-                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._serverOptions.GracefulShutdownTimeout))
+                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._builder.GracefulShutdownTimeout))
                 {
                     // Abort all connections still in flight
                     foreach (var pair in _connections)
