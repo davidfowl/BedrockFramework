@@ -12,7 +12,7 @@ namespace Bedrock.Framework
 
         public IList<ServerBinding> Bindings { get; } = new List<ServerBinding>();
 
-        public TimeSpan GracefulShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
         public TimeSpan HeartBeatInterval { get; set; } = TimeSpan.FromSeconds(1);
 

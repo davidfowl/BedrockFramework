@@ -190,7 +190,7 @@ namespace Bedrock.Framework
                     tasks.Add(pair.Value.ExecutionTask);
                 }
 
-                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._builder.GracefulShutdownTimeout))
+                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._builder.ShutdownTimeout))
                 {
                     // Abort all connections still in flight
                     foreach (var pair in _connections)
