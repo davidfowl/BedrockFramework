@@ -29,10 +29,9 @@ namespace Bedrock.Framework
         {
             foreach (var binding in _builder.Bindings)
             {
-                var listener = await binding.ConnectionListenerFactory.BindAsync(binding.EndPoint, cancellationToken);
-                binding.EndPoint = listener.EndPoint;
+                var listener = await binding.BindAsync(cancellationToken);
 
-                var runningListener = new RunningListener(this, binding.EndPoint, listener, binding.Application);
+                var runningListener = new RunningListener(this, binding, listener);
                 _listeners.Add(runningListener);
             }
 
@@ -95,11 +94,11 @@ namespace Bedrock.Framework
             private readonly Server _server;
             private readonly ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)> _connections = new ConcurrentDictionary<long, (ServerConnection, Task)>();
 
-            public RunningListener(Server server, EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
+            public RunningListener(Server server, ServerBinding binding, IConnectionListener listener)
             {
                 _server = server;
                 Listener = listener;
-                ExecutionTask = RunListenerAsync(endpoint, listener, connectionDelegate);
+                ExecutionTask = RunListenerAsync(binding, listener);
             }
 
             public IConnectionListener Listener { get; }
@@ -113,8 +112,10 @@ namespace Bedrock.Framework
                 }
             }
 
-            private async Task RunListenerAsync(EndPoint endpoint, IConnectionListener listener, ConnectionDelegate connectionDelegate)
+            private async Task RunListenerAsync(ServerBinding binding, IConnectionListener listener)
             {
+                ConnectionDelegate connectionDelegate = binding.Application;
+
                 async Task ExecuteConnectionAsync(ServerConnection serverConnection)
                 {
                     await Task.Yield();
@@ -171,7 +172,7 @@ namespace Bedrock.Framework
                     }
                     catch (Exception ex)
                     {
-                        _server._logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", endpoint);
+                        _server._logger.LogCritical(ex, "Stopped accepting connections on {binding}", binding);
                         break;
                     }
 

@@ -33,7 +33,7 @@ namespace Bedrock.Framework
         {
             var connectionBuilder = new ConnectionBuilder(builder.ApplicationServices);
             configure(connectionBuilder);
-            builder.Bindings.Add(new ServerBinding(endPoint, connectionBuilder.Build(), connectionListenerFactory));
+            builder.Bindings.Add(new EndPointBinding(endPoint, connectionBuilder.Build(), connectionListenerFactory));
             return builder;
         }
     }
