@@ -8,15 +8,17 @@ namespace Bedrock.Framework
 {
     public class EndPointBinding : ServerBinding
     {
+        private readonly ConnectionDelegate _application;
         public EndPointBinding(EndPoint endPoint, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory)
         {
             EndPoint = endPoint;
-            Application = application;
+            _application = application;
             ConnectionListenerFactory = connectionListenerFactory;
         }
 
         public EndPoint EndPoint { get; }
         public IConnectionListenerFactory ConnectionListenerFactory { get; }
+        public override ConnectionDelegate Application => _application;
 
         public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken)
         {

@@ -7,7 +7,7 @@ namespace Bedrock.Framework
 {
     public abstract class ServerBinding
     {
-        public virtual ConnectionDelegate Application { get; protected set; }
+        public virtual ConnectionDelegate Application { get; }
 
         public abstract IAsyncEnumerable<IConnectionListener> BindAsync(CancellationToken cancellationToken = default);
     }
