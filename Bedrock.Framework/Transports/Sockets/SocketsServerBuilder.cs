@@ -9,13 +9,13 @@ namespace Bedrock.Framework
 {
     public class SocketsServerBuilder
     {
-        private List<(EndPoint EndPoint, Action<IConnectionBuilder> Application)> _bindings = new List<(EndPoint, Action<IConnectionBuilder>)>();
+        private List<(EndPoint EndPoint, int Port, Action<IConnectionBuilder> Application)> _bindings = new List<(EndPoint, int, Action<IConnectionBuilder>)>();
 
         public SocketTransportOptions Options { get; } = new SocketTransportOptions();
 
         public SocketsServerBuilder Listen(EndPoint endPoint, Action<IConnectionBuilder> configure)
         {
-            _bindings.Add((endPoint, configure));
+            _bindings.Add((endPoint, 0, configure));
             return this;
         }
 
@@ -31,7 +31,8 @@ namespace Bedrock.Framework
 
         public SocketsServerBuilder ListenLocalhost(int port, Action<IConnectionBuilder> configure)
         {
-            return Listen(IPAddress.Loopback, port, configure);
+            _bindings.Add((null, port, configure));
+            return this;
         }
 
         public SocketsServerBuilder ListenUnixSocket(string socketPath, Action<IConnectionBuilder> configure)
@@ -45,7 +46,17 @@ namespace Bedrock.Framework
 
             foreach (var binding in _bindings)
             {
-                builder.Listen(binding.EndPoint, socketTransportFactory, binding.Application);
+                if (binding.EndPoint == null)
+                {
+                    var connectionBuilder = new ConnectionBuilder(builder.ApplicationServices);
+                    binding.Application(connectionBuilder);
+                    builder.Bindings.Add(new LocalHostBinding(binding.Port, connectionBuilder.Build(), socketTransportFactory));
+                }
+                else
+                {
+
+                    builder.Listen(binding.EndPoint, socketTransportFactory, binding.Application);
+                }
             }
         }
     }

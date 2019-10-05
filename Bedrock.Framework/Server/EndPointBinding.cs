@@ -1,6 +1,7 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
@@ -17,9 +18,9 @@ namespace Bedrock.Framework
         public EndPoint EndPoint { get; }
         public IConnectionListenerFactory ConnectionListenerFactory { get; }
 
-        public override ValueTask<IConnectionListener> BindAsync(CancellationToken cancellationToken = default)
+        public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken)
         {
-            return ConnectionListenerFactory.BindAsync(EndPoint, cancellationToken);
+            yield return await ConnectionListenerFactory.BindAsync(EndPoint, cancellationToken);
         }
 
         public override string ToString()

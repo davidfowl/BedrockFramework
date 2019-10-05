@@ -33,7 +33,7 @@ namespace ServerApplication
                         {
                             sockets.Options.IOQueueCount = Environment.ProcessorCount;
 
-                            sockets.Listen(IPAddress.Loopback, 5010, builder => builder.UseConnectionHandler<EchoServerApplication>());
+                            sockets.ListenLocalhost(5010, builder => builder.UseConnectionHandler<EchoServerApplication>());
                         })
                         .Build();
 

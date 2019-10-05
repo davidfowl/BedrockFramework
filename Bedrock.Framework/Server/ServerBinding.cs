@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
@@ -8,6 +9,6 @@ namespace Bedrock.Framework
     {
         public virtual ConnectionDelegate Application { get; protected set; }
 
-        public abstract ValueTask<IConnectionListener> BindAsync(CancellationToken cancellationToken = default);
+        public abstract IAsyncEnumerable<IConnectionListener> BindAsync(CancellationToken cancellationToken = default);
     }
 }

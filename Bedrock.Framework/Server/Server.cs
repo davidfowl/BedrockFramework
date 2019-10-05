@@ -29,10 +29,11 @@ namespace Bedrock.Framework
         {
             foreach (var binding in _builder.Bindings)
             {
-                var listener = await binding.BindAsync(cancellationToken);
-
-                var runningListener = new RunningListener(this, binding, listener);
-                _listeners.Add(runningListener);
+                await foreach (var listener in binding.BindAsync(cancellationToken))
+                {
+                    var runningListener = new RunningListener(this, binding, listener);
+                    _listeners.Add(runningListener);
+                }
             }
 
             _timerAwaitable.Start();
@@ -98,7 +99,7 @@ namespace Bedrock.Framework
             {
                 _server = server;
                 Listener = listener;
-                ExecutionTask = RunListenerAsync(binding, listener);
+                ExecutionTask = RunListenerAsync(binding.Application, listener);
             }
 
             public IConnectionListener Listener { get; }
@@ -112,10 +113,8 @@ namespace Bedrock.Framework
                 }
             }
 
-            private async Task RunListenerAsync(ServerBinding binding, IConnectionListener listener)
+            private async Task RunListenerAsync(ConnectionDelegate connectionDelegate, IConnectionListener listener)
             {
-                ConnectionDelegate connectionDelegate = binding.Application;
-
                 async Task ExecuteConnectionAsync(ServerConnection serverConnection)
                 {
                     await Task.Yield();
@@ -172,7 +171,7 @@ namespace Bedrock.Framework
                     }
                     catch (Exception ex)
                     {
-                        _server._logger.LogCritical(ex, "Stopped accepting connections on {binding}", binding);
+                        _server._logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", listener.EndPoint);
                         break;
                     }
 
