@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -27,13 +26,23 @@ namespace Bedrock.Framework
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
-            foreach (var binding in _builder.Bindings)
+            try
             {
-                await foreach (var listener in binding.BindAsync(cancellationToken))
+                foreach (var binding in _builder.Bindings)
                 {
-                    var runningListener = new RunningListener(this, binding, listener);
-                    _listeners.Add(runningListener);
+                    await foreach (var listener in binding.BindAsync(cancellationToken))
+                    {
+                        var runningListener = new RunningListener(this, binding, listener);
+                        _listeners.Add(runningListener);
+                        runningListener.Start();
+                    }
                 }
+            }
+            catch
+            {
+                await StopAsync();
+
+                throw;
             }
 
             _timerAwaitable.Start();
@@ -85,25 +94,34 @@ namespace Bedrock.Framework
                 await shutdownTask;
             }
 
-            _timerAwaitable.Stop();
+            if (_timerAwaitable != null)
+            {
+                _timerAwaitable.Stop();
 
-            await _timerTask;
+                await _timerTask;
+            }
         }
 
         private class RunningListener
         {
             private readonly Server _server;
+            private readonly ServerBinding _binding;
             private readonly ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)> _connections = new ConcurrentDictionary<long, (ServerConnection, Task)>();
 
             public RunningListener(Server server, ServerBinding binding, IConnectionListener listener)
             {
                 _server = server;
+                _binding = binding;
                 Listener = listener;
-                ExecutionTask = RunListenerAsync(binding.Application, listener);
+            }
+
+            public void Start()
+            {
+                ExecutionTask = RunListenerAsync();
             }
 
             public IConnectionListener Listener { get; }
-            public Task ExecutionTask { get; }
+            public Task ExecutionTask { get; private set; }
 
             public void TickHeartbeat()
             {
@@ -113,8 +131,11 @@ namespace Bedrock.Framework
                 }
             }
 
-            private async Task RunListenerAsync(ConnectionDelegate connectionDelegate, IConnectionListener listener)
+            private async Task RunListenerAsync()
             {
+                var connectionDelegate = _binding.Application;
+                var listener = Listener;
+
                 async Task ExecuteConnectionAsync(ServerConnection serverConnection)
                 {
                     await Task.Yield();
