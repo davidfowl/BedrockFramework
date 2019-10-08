@@ -19,8 +19,9 @@ namespace Bedrock.Framework
             ConnectionListenerFactory = connectionListenerFactory;
         }
 
-        public int Port { get; }
-        public IConnectionListenerFactory ConnectionListenerFactory { get; }
+        private int Port { get; }
+        private IConnectionListenerFactory ConnectionListenerFactory { get; }
+
         public override ConnectionDelegate Application => _application;
 
         public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken = default)
