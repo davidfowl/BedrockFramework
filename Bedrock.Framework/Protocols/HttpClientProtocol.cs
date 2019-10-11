@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
@@ -16,7 +18,11 @@ namespace Bedrock.Framework.Protocols
         private readonly ConnectionContext _connection;
         private State _state;
 
+        private ReadOnlySpan<byte> Http11 => new byte[] { (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1' };
+        private ReadOnlySpan<byte> HttpGet => new byte[] { (byte)'G', (byte)'E', (byte)'T' };
+        private ReadOnlySpan<byte> HttpPost => new byte[] { (byte)'P', (byte)'O', (byte)'S', (byte)'T' };
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
+        private ReadOnlySpan<byte> Space => new byte[] { (byte)' ' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
 
         private HttpClientProtocol(ConnectionContext connection)
@@ -24,12 +30,77 @@ namespace Bedrock.Framework.Protocols
             _connection = connection;
         }
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead)
+        {
+            WriteHttpRequestMessage(requestMessage);
+
+            await _connection.Transport.Output.FlushAsync();
+
+            var response = new HttpResponseMessage();
+
+            while (true)
+            {
+                var result = await _connection.Transport.Input.ReadAsync();
+                var buffer = result.Buffer;
+
+                ParseHttpResponse(ref buffer, response, out var examined);
+
+                _connection.Transport.Input.AdvanceTo(buffer.Start, examined);
+
+                if (_state == State.Body)
+                {
+                    return response;
+                }
+
+                if (result.IsCompleted)
+                {
+                    if (_state != State.Body)
+                    {
+                        // Incomplete request, close the connection with an error
+                    }
+                    break;
+                }
+            }
+
+            return default;
+        }
+
+        private void WriteHttpRequestMessage(HttpRequestMessage requestMessage)
         {
             // METHOD PATH HTTP/VERSION\r\n
             // Header: Value\r\n
             // \r\n
-            return default;
+            var writer = new BufferWriter<PipeWriter>(_connection.Transport.Output);
+            if (requestMessage.Method == HttpMethod.Get)
+            {
+                writer.Write(HttpGet);
+            }
+            else if (requestMessage.Method == HttpMethod.Post)
+            {
+                writer.Write(HttpPost);
+            }
+            writer.Write(Space);
+            writer.WriteAsciiNoValidation(requestMessage.RequestUri.ToString());
+            writer.Write(Space);
+            writer.Write(Http11);
+            writer.Write(NewLine);
+
+            byte b = (byte)':';
+
+            foreach (var header in requestMessage.Headers)
+            {
+                foreach (var value in header.Value)
+                {
+                    writer.WriteAsciiNoValidation(header.Key);
+                    writer.Write(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                    writer.Write(Space);
+                    writer.WriteAsciiNoValidation(value);
+                    writer.Write(NewLine);
+                }
+            }
+
+            writer.Write(NewLine);
+            writer.Commit();
         }
 
         public static HttpClientProtocol CreateFromConnection(ConnectionContext connection)
