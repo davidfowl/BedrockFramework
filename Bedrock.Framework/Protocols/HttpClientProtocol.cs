@@ -34,13 +34,18 @@ namespace Bedrock.Framework.Protocols
         {
             WriteHttpRequestMessage(requestMessage);
 
+            if (requestMessage.Content != null)
+            {
+                await requestMessage.Content.CopyToAsync(_connection.Transport.Output.AsStream()).ConfigureAwait(false);
+            }
+
             await _connection.Transport.Output.FlushAsync();
 
             var response = new HttpResponseMessage();
 
             while (true)
             {
-                var result = await _connection.Transport.Input.ReadAsync();
+                var result = await _connection.Transport.Input.ReadAsync().ConfigureAwait(false);
                 var buffer = result.Buffer;
 
                 ParseHttpResponse(ref buffer, response, out var examined);
@@ -49,7 +54,7 @@ namespace Bedrock.Framework.Protocols
 
                 if (_state == State.Body)
                 {
-                    return response;
+                    break;
                 }
 
                 if (result.IsCompleted)
@@ -62,7 +67,7 @@ namespace Bedrock.Framework.Protocols
                 }
             }
 
-            return default;
+            return response;
         }
 
         private void WriteHttpRequestMessage(HttpRequestMessage requestMessage)
@@ -71,14 +76,7 @@ namespace Bedrock.Framework.Protocols
             // Header: Value\r\n
             // \r\n
             var writer = new BufferWriter<PipeWriter>(_connection.Transport.Output);
-            if (requestMessage.Method == HttpMethod.Get)
-            {
-                writer.Write(HttpGet);
-            }
-            else if (requestMessage.Method == HttpMethod.Post)
-            {
-                writer.Write(HttpPost);
-            }
+            writer.WriteAsciiNoValidation(requestMessage.Method.Method);
             writer.Write(Space);
             writer.WriteAsciiNoValidation(requestMessage.RequestUri.ToString());
             writer.Write(Space);
