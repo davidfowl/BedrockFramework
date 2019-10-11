@@ -9,10 +9,9 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Protocol<TReader, TWriter, TMessage> where TReader : IProtocolReader<TMessage>
-                                                      where TWriter : IProtocolWriter<TMessage>
+    public class Protocol<TReader, TWriter, TReadMessage, TWriteMessage> where TReader : IProtocolReader<TReadMessage>
+                                                                         where TWriter : IProtocolWriter<TWriteMessage>
     {
-        private readonly ConnectionContext _connection;
         private readonly TReader _reader;
         private readonly TWriter _writer;
         private readonly int? _maximumMessageSize;
@@ -20,18 +19,20 @@ namespace Bedrock.Framework.Protocols
 
         public Protocol(ConnectionContext connection, TReader reader, TWriter writer, int? maximumMessageSize)
         {
-            _connection = connection;
+            Connection = connection;
             _reader = reader;
             _writer = writer;
             _maximumMessageSize = maximumMessageSize;
         }
 
-        public async ValueTask<TMessage> ReadAsync(CancellationToken cancellationToken = default)
+        public ConnectionContext Connection { get; }
+
+        public async ValueTask<TReadMessage> ReadAsync(CancellationToken cancellationToken = default)
         {
-            var input = _connection.Transport.Input;
+            var input = Connection.Transport.Input;
             var reader = _reader;
 
-            TMessage protocolMessage = default;
+            TReadMessage protocolMessage = default;
 
             while (true)
             {
@@ -52,10 +53,8 @@ namespace Bedrock.Framework.Protocols
                         // No message limit, just parse and dispatch
                         if (_maximumMessageSize == null)
                         {
-                            if (reader.TryParseMessage(ref buffer, out protocolMessage))
+                            if (reader.TryParseMessage(buffer, out consumed, out examined, out protocolMessage))
                             {
-                                consumed = buffer.Start;
-                                examined = consumed;
                                 break;
                             }
                         }
@@ -75,10 +74,8 @@ namespace Bedrock.Framework.Protocols
                                     overLength = true;
                                 }
 
-                                if (reader.TryParseMessage(ref segment, out protocolMessage))
+                                if (reader.TryParseMessage(segment, out consumed, out examined, out protocolMessage))
                                 {
-                                    consumed = buffer.Start;
-                                    examined = consumed;
                                     break;
                                 }
                                 else if (overLength)
@@ -115,14 +112,14 @@ namespace Bedrock.Framework.Protocols
             return protocolMessage;
         }
 
-        public async ValueTask WriteAsync(TMessage protocolMessage, CancellationToken cancellationToken = default)
+        public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken);
 
             try
             {
-                _writer.WriteMessage(protocolMessage, _connection.Transport.Output);
-                await _connection.Transport.Output.FlushAsync(cancellationToken);
+                _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                await Connection.Transport.Output.FlushAsync(cancellationToken);
             }
             finally
             {
@@ -130,15 +127,15 @@ namespace Bedrock.Framework.Protocols
             }
         }
 
-        public static Protocol<TReader, TWriter, TMessage> Create(ConnectionContext connection, TReader reader, TWriter writer, int? maxMessageSize = null)
+        public static Protocol<TReader, TWriter, TReadMessage, TWriteMessage> Create(ConnectionContext connection, TReader reader, TWriter writer, int? maxMessageSize = null)
         {
-            return new Protocol<TReader, TWriter, TMessage>(connection, reader, writer, maxMessageSize);
+            return new Protocol<TReader, TWriter, TReadMessage, TWriteMessage>(connection, reader, writer, maxMessageSize);
         }
     }
 
     public interface IProtocolReader<TMessage>
     {
-        bool TryParseMessage(ref ReadOnlySequence<byte> input, out TMessage message);
+        bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out TMessage message);
     }
 
     public interface IProtocolWriter<TMessage>
