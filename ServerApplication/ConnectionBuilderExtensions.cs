@@ -9,7 +9,7 @@ namespace ServerApplication
         {
             return builder.Run(connection =>
             {
-                var httpConnection = HttpProtocol.CreateFromConnection(connection);
+                var httpConnection = HttpServerProtocol.CreateFromConnection(connection);
                 return application.ProcessRequests(httpConnection.ReadAllRequestsAsync());
             });
         }
