@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Bedrock.Framework;
+using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,15 +86,11 @@ namespace ServerApplication
         {
             public async Task ProcessRequests(IAsyncEnumerable<IHttpContext> requests)
             {
-                var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello ");
+                var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
 
                 await foreach (var context in requests)
                 {
                     await context.Output.WriteAsync(responseData);
-
-                    await Task.Yield();
-
-                    await context.Output.WriteAsync(Encoding.ASCII.GetBytes("World"));
                 }
             }
         }

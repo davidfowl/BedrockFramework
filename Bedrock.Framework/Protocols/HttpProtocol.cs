@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
-namespace ServerApplication
+namespace Bedrock.Framework.Protocols
 {
-    internal class HttpConnection : IHttpContext
+    public class HttpProtocol : IHttpContext
     {
         private readonly ConnectionContext _connection;
         private State _state;
@@ -37,9 +37,14 @@ namespace ServerApplication
             }
         }
 
-        public HttpConnection(ConnectionContext connection)
+        internal HttpProtocol(ConnectionContext connection)
         {
             _connection = connection;
+        }
+
+        public static HttpProtocol CreateFromConnection(ConnectionContext connection)
+        {
+            return new HttpProtocol(connection);
         }
 
         public async IAsyncEnumerable<IHttpContext> ReadAllRequestsAsync()

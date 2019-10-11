@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿using Bedrock.Framework.Protocols;
+using Microsoft.AspNetCore.Connections;
 
 namespace ServerApplication
 {
@@ -8,8 +9,8 @@ namespace ServerApplication
         {
             return builder.Run(connection =>
             {
-                var asyncEnumerable = new HttpConnection(connection).ReadAllRequestsAsync();
-                return application.ProcessRequests(asyncEnumerable);
+                var httpConnection = HttpProtocol.CreateFromConnection(connection);
+                return application.ProcessRequests(httpConnection.ReadAllRequestsAsync());
             });
         }
     }

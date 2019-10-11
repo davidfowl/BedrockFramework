@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Threading.Tasks;
 
-namespace ServerApplication
+namespace Bedrock.Framework.Protocols
 {
     public interface IHttpContext
     {
