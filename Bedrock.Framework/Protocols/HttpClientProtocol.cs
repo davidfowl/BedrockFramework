@@ -19,8 +19,6 @@ namespace Bedrock.Framework.Protocols
         private State _state;
 
         private ReadOnlySpan<byte> Http11 => new byte[] { (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1' };
-        private ReadOnlySpan<byte> HttpGet => new byte[] { (byte)'G', (byte)'E', (byte)'T' };
-        private ReadOnlySpan<byte> HttpPost => new byte[] { (byte)'P', (byte)'O', (byte)'S', (byte)'T' };
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> Space => new byte[] { (byte)' ' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
@@ -72,25 +70,22 @@ namespace Bedrock.Framework.Protocols
 
         private void WriteHttpRequestMessage(HttpRequestMessage requestMessage)
         {
-            // METHOD PATH HTTP/VERSION\r\n
-            // Header: Value\r\n
-            // \r\n
             var writer = new BufferWriter<PipeWriter>(_connection.Transport.Output);
             writer.WriteAsciiNoValidation(requestMessage.Method.Method);
             writer.Write(Space);
-            writer.WriteAsciiNoValidation(requestMessage.RequestUri.ToString());
+            writer.WriteAsciiNoValidation(requestMessage.RequestUri.PathAndQuery);
             writer.Write(Space);
             writer.Write(Http11);
             writer.Write(NewLine);
 
-            byte b = (byte)':';
+            var colon = (byte)':';
 
             foreach (var header in requestMessage.Headers)
             {
                 foreach (var value in header.Value)
                 {
                     writer.WriteAsciiNoValidation(header.Key);
-                    writer.Write(MemoryMarshal.CreateReadOnlySpan(ref b, 1));
+                    writer.Write(MemoryMarshal.CreateReadOnlySpan(ref colon, 1));
                     writer.Write(Space);
                     writer.WriteAsciiNoValidation(value);
                     writer.Write(NewLine);
