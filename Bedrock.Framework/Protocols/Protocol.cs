@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Protocol<TReader, TWriter> where TReader : IProtocolReader
-                                            where TWriter : IProtocolWriter
+    public class Protocol<TReader, TWriter, TMessage> where TReader : IProtocolReader<TMessage>
+                                                      where TWriter : IProtocolWriter<TMessage>
     {
         private readonly ConnectionContext _connection;
         private readonly TReader _reader;
@@ -26,12 +26,12 @@ namespace Bedrock.Framework.Protocols
             _maximumMessageSize = maximumMessageSize;
         }
 
-        public async ValueTask<ProtocolMessage> ReadAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<TMessage> ReadAsync(CancellationToken cancellationToken = default)
         {
             var input = _connection.Transport.Input;
             var reader = _reader;
 
-            ProtocolMessage protocolMessage = null;
+            TMessage protocolMessage = default;
 
             while (true)
             {
@@ -115,7 +115,7 @@ namespace Bedrock.Framework.Protocols
             return protocolMessage;
         }
 
-        public async ValueTask WriteAsync(ProtocolMessage protocolMessage, CancellationToken cancellationToken = default)
+        public async ValueTask WriteAsync(TMessage protocolMessage, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken);
 
@@ -130,24 +130,19 @@ namespace Bedrock.Framework.Protocols
             }
         }
 
-        public static Protocol<TReader, TWriter> Create(ConnectionContext connection, TReader reader, TWriter writer, int? maxMessageSize = null)
+        public static Protocol<TReader, TWriter, TMessage> Create(ConnectionContext connection, TReader reader, TWriter writer, int? maxMessageSize = null)
         {
-            return new Protocol<TReader, TWriter>(connection, reader, writer, maxMessageSize);
+            return new Protocol<TReader, TWriter, TMessage>(connection, reader, writer, maxMessageSize);
         }
     }
 
-    public class ProtocolMessage
+    public interface IProtocolReader<TMessage>
     {
-
+        bool TryParseMessage(ref ReadOnlySequence<byte> input, out TMessage message);
     }
 
-    public interface IProtocolReader
+    public interface IProtocolWriter<TMessage>
     {
-        bool TryParseMessage(ref ReadOnlySequence<byte> input, out ProtocolMessage message);
-    }
-
-    public interface IProtocolWriter
-    {
-        void WriteMessage(ProtocolMessage message, IBufferWriter<byte> output);
+        void WriteMessage(TMessage message, IBufferWriter<byte> output);
     }
 }
