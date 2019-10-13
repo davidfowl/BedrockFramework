@@ -36,7 +36,7 @@ namespace Bedrock.Framework.Protocols
 
             while (true)
             {
-                var result = await input.ReadAsync();
+                var result = await input.ReadAsync(cancellationToken);
                 var buffer = result.Buffer;
                 var consumed = buffer.Start;
                 var examined = buffer.End;
@@ -55,7 +55,7 @@ namespace Bedrock.Framework.Protocols
                         {
                             if (reader.TryParseMessage(buffer, out consumed, out examined, out protocolMessage))
                             {
-                                break;
+                                return protocolMessage;
                             }
                         }
                         else
@@ -76,7 +76,7 @@ namespace Bedrock.Framework.Protocols
 
                                 if (reader.TryParseMessage(segment, out consumed, out examined, out protocolMessage))
                                 {
-                                    break;
+                                    return protocolMessage;
                                 }
                                 else if (overLength)
                                 {
@@ -85,7 +85,7 @@ namespace Bedrock.Framework.Protocols
                                 else
                                 {
                                     // No need to update the buffer since we didn't parse anything
-                                    break;
+                                    continue;
                                 }
                             }
                         }
