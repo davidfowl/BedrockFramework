@@ -95,7 +95,7 @@ namespace Bedrock.Framework.Protocols.Http2
             }
         }
 
-        public ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
+        public ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         {
             lock (_writeLock)
             {

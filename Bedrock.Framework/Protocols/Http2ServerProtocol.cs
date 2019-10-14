@@ -23,18 +23,17 @@ namespace Bedrock.Framework.Protocols
             return new Http2Protocol(connection);
         }
 
-        public override async ValueTask ProcessFramesAsync()
+        protected override async ValueTask ProcessFramesAsync()
         {
             if (!await TryReadPrefaceAsync())
             {
                 return;
             }
 
-            await FrameWriter.WriteSettingsAsync(_serverSettings.GetNonProtocolDefaults());
 
             //if (_isClosed == 0)
             //{
-            //    await _frameWriter.WriteSettingsAsync(_serverSettings.GetNonProtocolDefaults());
+            //    await FrameWriter.WriteSettingsAsync(_serverSettings.GetNonProtocolDefaults());
             //    Inform the client that the connection window is larger than the default.It can't be lowered here,
             //     It can only be lowered by not issuing window updates after data is received.
             //    var connectionWindow = _context.ServiceContext.ServerOptions.Limits.Http2.InitialConnectionWindowSize;
@@ -76,8 +75,6 @@ namespace Bedrock.Framework.Protocols
                 finally
                 {
                     input.AdvanceTo(consumed, examined);
-
-                    // UpdateConnectionState();
                 }
             }
         }

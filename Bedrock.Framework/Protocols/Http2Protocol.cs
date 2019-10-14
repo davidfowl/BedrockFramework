@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework.Protocols.Http2;
 using Bedrock.Framework.Protocols.Http2.FlowControl;
+using Bedrock.Framework.Protocols.Http2.HPack;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -26,18 +27,26 @@ namespace Bedrock.Framework.Protocols
         private protected readonly Http2Frame _incomingFrame = new Http2Frame();
         private protected readonly Http2FrameWriter _httpFrameWriter;
         private readonly OutputFlowControl _outputFlowControl = new OutputFlowControl(Http2PeerSettings.DefaultInitialWindowSize);
+        private readonly HPackDecoder _hpackDecoder;
 
+        private int _maxStreamsPerConnection = 100;
+        private int _headerTableSize = (int)Http2PeerSettings.DefaultHeaderTableSize;
+        private int _maxFrameSize = (int)Http2PeerSettings.DefaultMaxFrameSize;
+        private int _maxRequestHeaderFieldSize = (int)Http2PeerSettings.DefaultMaxFrameSize;
+        private int _initialConnectionWindowSize = 1024 * 128; // Larger than the default 64kb, and larger than any one single stream.
+        private int _initialStreamWindowSize = 1024 * 96; // Larger than the default 64kb
 
         public Http2Protocol(ConnectionContext connection)
         {
             _connection = connection;
             _httpFrameWriter = new Http2FrameWriter(connection, _outputFlowControl, NullLogger.Instance);
+            _hpackDecoder = new HPackDecoder(_headerTableSize, _maxRequestHeaderFieldSize);
         }
 
         private protected Http2FrameWriter FrameWriter => _httpFrameWriter;
-        private protected Http2Frame Http2Frame => _incomingFrame;
+        private protected Http2Frame FrameHeader => _incomingFrame;
 
-        public virtual async ValueTask ProcessFramesAsync()
+        protected virtual async ValueTask ProcessFramesAsync()
         {
             try
             {
