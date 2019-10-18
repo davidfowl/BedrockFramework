@@ -73,7 +73,7 @@ namespace Bedrock.Framework.Protocols
             var writer = new BufferWriter<PipeWriter>(_connection.Transport.Output);
             writer.WriteAsciiNoValidation(requestMessage.Method.Method);
             writer.Write(Space);
-            writer.WriteAsciiNoValidation(requestMessage.RequestUri.PathAndQuery);
+            writer.WriteAsciiNoValidation(requestMessage.RequestUri.ToString());
             writer.Write(Space);
             writer.Write(Http11);
             writer.Write(NewLine);
