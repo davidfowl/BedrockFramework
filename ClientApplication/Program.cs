@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -22,8 +24,9 @@ namespace ClientApplication
             })
             .BuildServiceProvider();
 
-            await EchoServer(serviceProvider);
+            // await EchoServer(serviceProvider);
             // await HttpClient(serviceProvider);
+            await SignalR(serviceProvider);
         }
 
         private static async Task EchoServer(ServiceProvider serviceProvider)
@@ -33,7 +36,7 @@ namespace ClientApplication
                                     .UseConnectionLogging()
                                     .Build();
 
-            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5010));
+            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5000));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
@@ -52,7 +55,7 @@ namespace ClientApplication
                         .UseConnectionLogging()
                         .Build();
 
-            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5007));
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5001));
 
             // Use the HTTP/1.1 protocol
             var httpProtocol = HttpClientProtocol.CreateFromConnection(connection);
@@ -61,6 +64,34 @@ namespace ClientApplication
             var response = await httpProtocol.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/"));
 
             // await response.Content.CopyToAsync(Console.OpenStandardOutput());
+        }
+
+        private static async Task SignalR(ServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                        .UseSockets()
+                        .UseConnectionLogging()
+                        .Build();
+
+            var json = new JsonHubProtocol();
+            var hubConnection = new HubConnection(client, 
+                json, 
+                new IPEndPoint(IPAddress.Loopback, 5002), 
+                serviceProvider, 
+                serviceProvider.GetRequiredService<ILoggerFactory>());
+
+            hubConnection.On<string>("Send", data =>
+            {
+                // The connection logging will dump the raw payload on the wire
+            });
+
+            await hubConnection.StartAsync();
+
+            while (true)
+            {
+                var line = Console.ReadLine();
+                await hubConnection.InvokeAsync("Send", line);
+            }
         }
     }
 }
