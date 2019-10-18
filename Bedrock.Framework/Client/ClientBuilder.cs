@@ -7,7 +7,7 @@ namespace Bedrock.Framework
     public partial class ClientBuilder : IConnectionBuilder
     {
         private readonly ConnectionBuilder _connectionBuilder;
-        
+
 
         public ClientBuilder(IServiceProvider serviceProvider)
         {
@@ -40,13 +40,19 @@ namespace Bedrock.Framework
 
                 _connectionBuilder.Run(connection =>
                 {
-                    var tcs = (TaskCompletionSource<ConnectionContext>)connection.Items[Key];
-                    var clientConnection = new ClientConnectionContext(connection);
-                    tcs.TrySetResult(clientConnection);
+                    if (connection is ClientConnectionContext clientConnection)
+                    {
+                        clientConnection.Initialized.TrySetResult(clientConnection);
 
-                    // This task needs to stay around until the connection is disposed
-                    // only then can we unwind the middleware chain
-                    return clientConnection.ExecutionTask;
+
+                        // This task needs to stay around until the connection is disposed
+                        // only then can we unwind the middleware chain
+                        return clientConnection.ExecutionTask;
+                    }
+
+                    // REVIEW: Do we throw in this case? It's edgy but possible to call next with a differnt
+                    // connection delegate that originally given
+                    return Task.CompletedTask;
                 });
 
                 Application = _connectionBuilder.Build();

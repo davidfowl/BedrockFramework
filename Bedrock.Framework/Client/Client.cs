@@ -24,12 +24,10 @@ namespace Bedrock.Framework
             // Since nothing is being returned from this middleware, we need to wait for the last middleware to run
             // until we yield this call. Stash a tcs in the items bag that allows this code to get notified
             // when the middleware ran
-            var tcs = new TaskCompletionSource<ConnectionContext>();
-            connection.Items[ClientBuilder.Key] = tcs;
-            _ = _clientBuilder.Application(connection);
+            var clientConnectionContext = new ClientConnectionContext(connection, _clientBuilder.Application);
 
 
-            return await tcs.Task;
+            return await clientConnectionContext.Initialized.Task;
         }
     }
 }

@@ -25,7 +25,7 @@ namespace ClientApplication
                         .UseConnectionLogging()
                         .Build();
 
-            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5010));
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5010));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
