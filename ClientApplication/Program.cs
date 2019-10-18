@@ -24,9 +24,9 @@ namespace ClientApplication
             })
             .BuildServiceProvider();
 
-            // await EchoServer(serviceProvider);
+            await EchoServer(serviceProvider);
             // await HttpClient(serviceProvider);
-            await SignalR(serviceProvider);
+            // await SignalR(serviceProvider);
         }
 
         private static async Task EchoServer(ServiceProvider serviceProvider)
@@ -60,9 +60,14 @@ namespace ClientApplication
             // Use the HTTP/1.1 protocol
             var httpProtocol = HttpClientProtocol.CreateFromConnection(connection);
 
-            // Send a request
-            var response = await httpProtocol.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/"));
+            while (true)
+            {
+                Console.Write("path> ");
+                var path = Console.ReadLine();
 
+                // Send a request (we're ignoring the response for now since it will be dumped to the console)
+                await httpProtocol.SendAsync(new HttpRequestMessage(HttpMethod.Get, path));
+            }
             // await response.Content.CopyToAsync(Console.OpenStandardOutput());
         }
 
