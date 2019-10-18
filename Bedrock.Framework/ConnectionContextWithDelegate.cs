@@ -8,18 +8,23 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
-    internal class ClientConnectionContext : ConnectionContext
+    internal class ConnectionContextWithDelegate : ConnectionContext
     {
         private readonly ConnectionContext _connection;
         private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly Task _middlewareTask;
+        private Task _middlewareTask;
+        private ConnectionDelegate _connectionDelegate;
 
-        public ClientConnectionContext(ConnectionContext connection, ConnectionDelegate connectionDelegate)
+        public ConnectionContextWithDelegate(ConnectionContext connection, ConnectionDelegate connectionDelegate)
         {
             _connection = connection;
+            _connectionDelegate = connectionDelegate;
+        }
 
-            // Doing this in the constructor feels bad
-            _middlewareTask = connectionDelegate(this);
+        // Execute the middleware pipeline
+        public void Start()
+        {
+            _middlewareTask = _connectionDelegate(this);
         }
 
         public TaskCompletionSource<ConnectionContext> Initialized { get; set; } = new TaskCompletionSource<ConnectionContext>();

@@ -36,14 +36,14 @@ namespace Bedrock.Framework
 
             _connectionBuilder.Run(connection =>
             {
-                if (connection is ClientConnectionContext clientConnection)
+                if (connection is ConnectionContextWithDelegate connectionContextWithDelegate)
                 {
-                    clientConnection.Initialized.TrySetResult(clientConnection);
+                    connectionContextWithDelegate.Initialized.TrySetResult(connectionContextWithDelegate);
 
 
                     // This task needs to stay around until the connection is disposed
                     // only then can we unwind the middleware chain
-                    return clientConnection.ExecutionTask;
+                    return connectionContextWithDelegate.ExecutionTask;
                 }
 
                 // REVIEW: Do we throw in this case? It's edgy but possible to call next with a differnt
