@@ -68,7 +68,6 @@ namespace ClientApplication
                 // Send a request (we're ignoring the response for now since it will be dumped to the console)
                 await httpProtocol.SendAsync(new HttpRequestMessage(HttpMethod.Get, path));
             }
-            // await response.Content.CopyToAsync(Console.OpenStandardOutput());
         }
 
         private static async Task SignalR(ServiceProvider serviceProvider)
