@@ -148,6 +148,10 @@ namespace Bedrock.Framework
 
                         await connectionDelegate(connection);
                     }
+                    catch (ConnectionResetException)
+                    {
+                        // Don't let connection aborted exceptions out
+                    }
                     catch (ConnectionAbortedException)
                     {
                         // Don't let connection aborted exceptions out

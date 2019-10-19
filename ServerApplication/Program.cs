@@ -29,22 +29,26 @@ namespace ServerApplication
                         .UseSockets(sockets =>
                         {
                             // Echo server
-                            sockets.ListenLocalhost(5000, builder => builder.UseConnectionHandler<EchoServerApplication>());
+                            sockets.ListenLocalhost(5000, 
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
 
                             // HTTP/1.1 server
-                            sockets.Listen(IPAddress.Loopback, 5001, builder => builder.UseHttpServer(new HttpApplication()));
+                            sockets.Listen(IPAddress.Loopback, 5001, 
+                                builder => builder.UseConnectionLogging().UseHttpServer(new HttpApplication()));
 
                             // SignalR Hub
-                            sockets.Listen(IPAddress.Loopback, 5002, builder => builder.UseHub<Chat>());
+                            sockets.Listen(IPAddress.Loopback, 5002, 
+                                builder => builder.UseConnectionLogging().UseHub<Chat>());
 
                             // MQTT application
-                            sockets.Listen(IPAddress.Loopback, 5003, builder => builder.UseConnectionHandler<MqttApplication>());
+                            sockets.Listen(IPAddress.Loopback, 5003, 
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<MqttApplication>());
                         })
                         .Build();
 
             await server.StartAsync();
 
-            Console.WriteLine("Process any key to exit");
+            Console.WriteLine("Press any key to exit");
             Console.ReadLine();
 
             await server.StopAsync();

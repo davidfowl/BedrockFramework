@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ClientApplication
 {
@@ -24,9 +25,25 @@ namespace ClientApplication
             })
             .BuildServiceProvider();
 
-            await EchoServer(serviceProvider);
-            // await HttpClient(serviceProvider);
-            // await SignalR(serviceProvider);
+            Console.WriteLine("Samples: ");
+            Console.WriteLine("1. Echo Server");
+            Console.WriteLine("2. HttpClient");
+            Console.WriteLine("3. SignalR");
+
+            var keyInfo = Console.ReadKey(true);
+
+            if (keyInfo.Key == ConsoleKey.D1)
+            {
+                await EchoServer(serviceProvider);
+            }
+            else if (keyInfo.Key == ConsoleKey.D2)
+            {
+                await HttpClient(serviceProvider);
+            }
+            else if (keyInfo.Key == ConsoleKey.D3)
+            {
+                await SignalR(serviceProvider);
+            }
         }
 
         private static async Task EchoServer(ServiceProvider serviceProvider)
@@ -78,11 +95,11 @@ namespace ClientApplication
                         .Build();
 
             var json = new JsonHubProtocol();
-            var hubConnection = new HubConnection(client, 
-                json, 
-                new IPEndPoint(IPAddress.Loopback, 5002), 
-                serviceProvider, 
-                serviceProvider.GetRequiredService<ILoggerFactory>());
+            var hubConnection = new HubConnection(client,
+                json,
+                new IPEndPoint(IPAddress.Loopback, 5002),
+                serviceProvider,
+                NullLoggerFactory.Instance);
 
             hubConnection.On<string>("Send", data =>
             {
