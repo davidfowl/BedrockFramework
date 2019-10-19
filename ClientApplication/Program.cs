@@ -7,10 +7,8 @@ using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.AspNetCore.SignalR.Protocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ClientApplication
 {
@@ -30,18 +28,21 @@ namespace ClientApplication
             Console.WriteLine("2. HttpClient");
             Console.WriteLine("3. SignalR");
 
-            var keyInfo = Console.ReadKey(true);
+            var keyInfo = Console.ReadKey();
 
             if (keyInfo.Key == ConsoleKey.D1)
             {
+                Console.WriteLine("Running echo server example");
                 await EchoServer(serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D2)
             {
+                Console.WriteLine("Running http client example");
                 await HttpClient(serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D3)
             {
+                Console.WriteLine("Running SignalR example");
                 await SignalR(serviceProvider);
             }
         }
@@ -79,7 +80,7 @@ namespace ClientApplication
 
             while (true)
             {
-                Console.Write("path> ");
+                Console.Write("http1.1> ");
                 var path = Console.ReadLine();
 
                 // Send a request (we're ignoring the response for now since it will be dumped to the console)
@@ -96,6 +97,7 @@ namespace ClientApplication
 
             var hubConnection = new HubConnectionBuilder()
                                 .WithConnectionFactory(client, new IPEndPoint(IPAddress.Loopback, 5002))
+                                .WithAutomaticReconnect()
                                 .Build();
 
             hubConnection.On<string>("Send", data =>
