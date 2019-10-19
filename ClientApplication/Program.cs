@@ -46,7 +46,7 @@ namespace ClientApplication
             }
         }
 
-        private static async Task EchoServer(ServiceProvider serviceProvider)
+        private static async Task EchoServer(IServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
                                     .UseSockets()
@@ -64,7 +64,7 @@ namespace ClientApplication
             await writes;
         }
 
-        private static async Task HttpClient(ServiceProvider serviceProvider)
+        private static async Task HttpClient(IServiceProvider serviceProvider)
         {
             // Build the client pipeline
             var client = new ClientBuilder(serviceProvider)
@@ -87,19 +87,16 @@ namespace ClientApplication
             }
         }
 
-        private static async Task SignalR(ServiceProvider serviceProvider)
+        private static async Task SignalR(IServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
                         .UseSockets()
                         .UseConnectionLogging()
                         .Build();
 
-            var json = new JsonHubProtocol();
-            var hubConnection = new HubConnection(client,
-                json,
-                new IPEndPoint(IPAddress.Loopback, 5002),
-                serviceProvider,
-                NullLoggerFactory.Instance);
+            var hubConnection = new HubConnectionBuilder()
+                                .WithConnectionFactory(client, new IPEndPoint(IPAddress.Loopback, 5002))
+                                .Build();
 
             hubConnection.On<string>("Send", data =>
             {
