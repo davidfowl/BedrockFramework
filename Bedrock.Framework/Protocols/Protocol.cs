@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
@@ -15,7 +16,10 @@ namespace Bedrock.Framework.Protocols
         private readonly TReader _reader;
         private readonly TWriter _writer;
         private readonly int? _maximumMessageSize;
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private readonly Channel<TReadMessage> _input = Channel.CreateBounded<TReadMessage>(100);
+        private readonly Channel<TWriteMessage> _output = Channel.CreateBounded<TWriteMessage>(100);
+        private Task _readerLoop;
+        private Task _writerLoop;
 
         public Protocol(ConnectionContext connection, TReader reader, TWriter writer, int? maximumMessageSize)
         {
@@ -27,16 +31,25 @@ namespace Bedrock.Framework.Protocols
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<TReadMessage> ReadAsync(CancellationToken cancellationToken = default)
+        public ValueTask<TReadMessage> ReadAsync(CancellationToken cancellationToken = default)
+        {
+            if (_readerLoop == null) 
+            {
+                _readerLoop = Task.Run(ReadLoop);
+            }
+
+            return _input.Reader.ReadAsync(cancellationToken);
+        }
+
+        private async Task ReadLoop() 
         {
             var input = Connection.Transport.Input;
             var reader = _reader;
-
-            TReadMessage protocolMessage = default;
-
+            var inputBuffer = _input.Writer;
+            
             while (true)
             {
-                var result = await input.ReadAsync(cancellationToken);
+                var result = await input.ReadAsync();
                 var buffer = result.Buffer;
                 var consumed = buffer.Start;
                 var examined = buffer.End;
@@ -53,40 +66,25 @@ namespace Bedrock.Framework.Protocols
                         // No message limit, just parse and dispatch
                         if (_maximumMessageSize == null)
                         {
-                            if (reader.TryParseMessage(buffer, out consumed, out examined, out protocolMessage))
+                            while (reader.TryParseMessage(buffer, out consumed, out examined, out var protocolMessage))
                             {
-                                return protocolMessage;
+                                await inputBuffer.WriteAsync(protocolMessage);
+                                buffer = buffer.Slice(consumed);
                             }
                         }
                         else
                         {
                             // We give the parser a sliding window of the default message size
                             var maxMessageSize = _maximumMessageSize.Value;
-
-                            if (!buffer.IsEmpty)
+                            if (buffer.Length > maxMessageSize)
                             {
-                                var segment = buffer;
-                                var overLength = false;
+                                inputBuffer.Complete(new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions."));
+                            }
 
-                                if (segment.Length > maxMessageSize)
-                                {
-                                    segment = segment.Slice(segment.Start, maxMessageSize);
-                                    overLength = true;
-                                }
-
-                                if (reader.TryParseMessage(segment, out consumed, out examined, out protocolMessage))
-                                {
-                                    return protocolMessage;
-                                }
-                                else if (overLength)
-                                {
-                                    throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
-                                }
-                                else
-                                {
-                                    // No need to update the buffer since we didn't parse anything
-                                    continue;
-                                }
+                            while (reader.TryParseMessage(buffer, out consumed, out examined, out var protocolMessage))
+                            {
+                                await inputBuffer.WriteAsync(protocolMessage);
+                                buffer = buffer.Slice(consumed);
                             }
                         }
                     }
@@ -95,9 +93,12 @@ namespace Bedrock.Framework.Protocols
                     {
                         if (!buffer.IsEmpty)
                         {
-                            throw new InvalidDataException("Connection terminated while reading a message.");
+                            inputBuffer.Complete(new InvalidDataException("Connection terminated while reading a message."));
                         }
-                        break;
+                        else
+                        {
+                            inputBuffer.Complete();
+                        }
                     }
                 }
                 finally
@@ -108,22 +109,30 @@ namespace Bedrock.Framework.Protocols
                     input.AdvanceTo(consumed, examined);
                 }
             }
-
-            return protocolMessage;
         }
 
-        public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
+        public ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
         {
-            await _semaphore.WaitAsync(cancellationToken);
-
-            try
+            if (_writerLoop == null)
             {
-                _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
-                await Connection.Transport.Output.FlushAsync(cancellationToken);
+                _writerLoop = Task.Run(WriteLoop);
             }
-            finally
+
+            return _output.Writer.WriteAsync(protocolMessage, cancellationToken);            
+        }
+
+        private async Task WriteLoop()
+        {
+            var outputBuffer = _output.Reader;
+            var output = Connection.Transport.Output;
+
+            while (await outputBuffer.WaitToReadAsync())
             {
-                _semaphore.Release();
+                while (outputBuffer.TryRead(out var protocolMessage))
+                {
+                    _writer.WriteMessage(protocolMessage, output);
+                }
+                await output.FlushAsync();
             }
         }
 
