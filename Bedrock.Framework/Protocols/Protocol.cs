@@ -99,6 +99,7 @@ namespace Bedrock.Framework.Protocols
                         {
                             inputBuffer.Complete();
                         }
+                        break;
                     }
                 }
                 finally
