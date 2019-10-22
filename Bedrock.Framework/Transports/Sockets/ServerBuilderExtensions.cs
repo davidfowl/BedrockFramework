@@ -20,11 +20,5 @@ namespace Bedrock.Framework
         {
             return clientBuilder.UseMiddleware(previous => new SocketConnectionFactory());
         }
-
-        public static ClientBuilder UseMiddleware(this ClientBuilder clientBuilder, Func<IConnectionFactory, IConnectionFactory> middleware)
-        {
-            clientBuilder.ConnectionFactory = middleware(clientBuilder.ConnectionFactory);
-            return clientBuilder;
-        }
     }
 }
