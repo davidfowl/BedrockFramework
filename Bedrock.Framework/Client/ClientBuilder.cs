@@ -58,7 +58,7 @@ namespace Bedrock.Framework
             return new Client(ConnectionFactory, application);
         }
 
-        public ClientBuilder UseMiddleware(Func<IConnectionFactory, IConnectionFactory> middleware)
+        public ClientBuilder Use(Func<IConnectionFactory, IConnectionFactory> middleware)
         {
             ConnectionFactory = middleware(ConnectionFactory);
             return this;

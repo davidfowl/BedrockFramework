@@ -13,7 +13,7 @@ namespace ClientApplication
     {
         public static ClientBuilder UseDnsCaching(this ClientBuilder clientBuilder, TimeSpan timeout)
         {
-            return clientBuilder.UseMiddleware(previous => new DnsCachingConnectionFactory(timeout)
+            return clientBuilder.Use(previous => new DnsCachingConnectionFactory(timeout)
             {
                 ConnectionFactory = previous
             });
