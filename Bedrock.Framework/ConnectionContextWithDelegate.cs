@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Net;
 using System.Threading;
@@ -24,7 +25,21 @@ namespace Bedrock.Framework
         // Execute the middleware pipeline
         public void Start()
         {
-            _middlewareTask = _connectionDelegate(this);
+            _middlewareTask = RunMiddleware();
+        }
+
+        private async Task RunMiddleware()
+        {
+            try
+            {
+                await _connectionDelegate(this);
+            }
+            catch (Exception ex)
+            {
+                // If we failed to initialize, bubble that exception to the caller.
+                // If we've already initailized then this will noop
+                Initialized.TrySetException(ex);
+            }
         }
 
         public TaskCompletionSource<ConnectionContext> Initialized { get; set; } = new TaskCompletionSource<ConnectionContext>();

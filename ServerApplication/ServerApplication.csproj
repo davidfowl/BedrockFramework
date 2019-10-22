@@ -1,9 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <UserSecretsId>28f0cf03-301e-48be-ae8e-f1e3b03e6cae</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\Certs\testcert.pfx" Link="testcert.pfx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MQTTnet.AspNetCore" Version="3.0.8" />

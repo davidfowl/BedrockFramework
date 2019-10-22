@@ -3,6 +3,8 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
@@ -27,6 +29,7 @@ namespace ClientApplication
             Console.WriteLine("1. Echo Server");
             Console.WriteLine("2. HttpClient");
             Console.WriteLine("3. SignalR");
+            Console.WriteLine("4. Echo Server With TLS enabled");
 
             var keyInfo = Console.ReadKey();
 
@@ -44,6 +47,11 @@ namespace ClientApplication
             {
                 Console.WriteLine("Running SignalR example");
                 await SignalR(serviceProvider);
+            }
+            else if (keyInfo.Key == ConsoleKey.D4)
+            {
+                Console.WriteLine("Running echo server with TLS example");
+                await EchoServerWithTls(serviceProvider);
             }
         }
 
@@ -113,6 +121,37 @@ namespace ClientApplication
                 var line = Console.ReadLine();
                 await hubConnection.InvokeAsync("Send", line);
             }
+        }
+
+
+        private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                                    .UseSockets()
+                                    .UseConnectionLogging()
+                                    .UseClientTls(options =>
+                                    {
+                                        options.OnAuthenticateAsClient = (connection, o) =>
+                                        {
+                                            o.TargetHost = "foo";
+                                        };
+
+                                        options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
+                                        
+                                        // NOTE: Do not do this in a production environment
+                                        options.AllowAnyRemoteCertificate();
+                                    })
+                                    .Build();
+
+            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5004));
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+
+            Console.WriteLine("Echo server running, type into the console");
+            var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
+            var writes = connection.Transport.Input.CopyToAsync(Stream.Null);
+
+            await reads;
+            await writes;
         }
     }
 }
