@@ -168,13 +168,13 @@ namespace ClientApplication
 
             var client = new ClientBuilder(serviceProvider)
                                     .UseConnectionFactory(memoryTransport)
-                                    .UseConnectionLogging()
+                                    .UseConnectionLogging("Client")
                                     .Build();
 
             var server = new ServerBuilder(serviceProvider)
                         .Listen(endPoint: null, memoryTransport, builder =>
                         {
-                            builder.UseConnectionLogging().Run(connection => connection.Transport.Input.CopyToAsync(connection.Transport.Output));
+                            builder.UseConnectionLogging("Server").Run(connection => connection.Transport.Input.CopyToAsync(connection.Transport.Output));
                         })
                         .Build();
 
