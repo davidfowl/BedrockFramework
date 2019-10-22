@@ -70,10 +70,11 @@ namespace ClientApplication
             // Build the client pipeline
             var client = new ClientBuilder(serviceProvider)
                         .UseSockets()
+                        .UseDnsCaching(TimeSpan.FromHours(1))
                         .UseConnectionLogging()
                         .Build();
 
-            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5001));
+            await using var connection = await client.ConnectAsync(new DnsEndPoint("localhost", 5001));
 
             // Use the HTTP/1.1 protocol
             var httpProtocol = HttpClientProtocol.CreateFromConnection(connection);

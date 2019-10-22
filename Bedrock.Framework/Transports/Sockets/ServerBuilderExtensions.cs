@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Net;
-using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
@@ -23,8 +18,13 @@ namespace Bedrock.Framework
 
         public static ClientBuilder UseSockets(this ClientBuilder clientBuilder)
         {
-            clientBuilder.ConnectionFactory = new SocketConnectionFactory();
-            return clientBuilder;   
+            return clientBuilder.UseMiddleware(previous => new SocketConnectionFactory());
+        }
+
+        public static ClientBuilder UseMiddleware(this ClientBuilder clientBuilder, Func<IConnectionFactory, IConnectionFactory> middleware)
+        {
+            clientBuilder.ConnectionFactory = middleware(clientBuilder.ConnectionFactory);
+            return clientBuilder;
         }
     }
 }
