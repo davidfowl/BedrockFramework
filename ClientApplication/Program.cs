@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
+using Bedrock.Framework.Transports.Memory;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,6 +32,7 @@ namespace ClientApplication
             Console.WriteLine("2. HttpClient");
             Console.WriteLine("3. SignalR");
             Console.WriteLine("4. Echo Server With TLS enabled");
+            Console.WriteLine("5. In Memory Transport Echo Server and client");
 
             var keyInfo = Console.ReadKey();
 
@@ -52,6 +55,11 @@ namespace ClientApplication
             {
                 Console.WriteLine("Running echo server with TLS example");
                 await EchoServerWithTls(serviceProvider);
+            }
+            else if (keyInfo.Key == ConsoleKey.D5)
+            {
+                Console.WriteLine("In Memory Transport Echo Server and client.");
+                await InMemoryEchoTransport(serviceProvider);
             }
         }
 
@@ -152,6 +160,39 @@ namespace ClientApplication
 
             await reads;
             await writes;
+        }
+
+        private static async Task InMemoryEchoTransport(IServiceProvider serviceProvider)
+        {
+            var memoryTransport = new MemoryTransport();
+
+            var client = new ClientBuilder(serviceProvider)
+                                    .UseConnectionFactory(memoryTransport)
+                                    .UseConnectionLogging()
+                                    .Build();
+
+            var server = new ServerBuilder(serviceProvider)
+                        .Listen(endPoint: null, memoryTransport, builder =>
+                        {
+                            builder.UseConnectionLogging().Run(connection => connection.Transport.Input.CopyToAsync(connection.Transport.Output));
+                        })
+                        .Build();
+
+            await server.StartAsync();
+            Console.WriteLine("Started Server");
+
+            var connection = await client.ConnectAsync(endPoint: null);
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+
+            Console.WriteLine("Echo server running, type into the console");
+            var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
+            var writes = connection.Transport.Input.CopyToAsync(Stream.Null);
+
+            await reads;
+            await writes;
+
+            await server.StopAsync();
+
         }
     }
 }

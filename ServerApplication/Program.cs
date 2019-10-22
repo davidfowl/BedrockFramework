@@ -3,7 +3,6 @@ using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bedrock.Framework;
-using Bedrock.Framework.Middleware.Tls;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;

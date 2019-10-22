@@ -18,7 +18,7 @@ namespace Bedrock.Framework
 
         internal static object Key { get; } = new object();
 
-        public IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
+        private IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
 
         public IServiceProvider ApplicationServices => _connectionBuilder.ApplicationServices;
 
@@ -57,6 +57,18 @@ namespace Bedrock.Framework
 
             return new Client(ConnectionFactory, application);
         }
+
+        public ClientBuilder UseConnectionFactory(IConnectionFactory connectionFactory)
+        {
+            if (connectionFactory == null)
+            {
+                throw new ArgumentNullException(nameof(connectionFactory));
+            }
+
+            ConnectionFactory = connectionFactory;
+            return this;
+        }
+
 
         public ClientBuilder Use(Func<IConnectionFactory, IConnectionFactory> middleware)
         {

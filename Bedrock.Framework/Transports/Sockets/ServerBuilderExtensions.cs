@@ -18,7 +18,7 @@ namespace Bedrock.Framework
 
         public static ClientBuilder UseSockets(this ClientBuilder clientBuilder)
         {
-            return clientBuilder.Use(previous => new SocketConnectionFactory());
+            return clientBuilder.UseConnectionFactory(new SocketConnectionFactory());
         }
     }
 }
