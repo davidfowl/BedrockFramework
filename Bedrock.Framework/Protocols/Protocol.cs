@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -76,15 +74,28 @@ namespace Bedrock.Framework.Protocols
                         {
                             // We give the parser a sliding window of the default message size
                             var maxMessageSize = _maximumMessageSize.Value;
-                            if (buffer.Length > maxMessageSize)
+                            var segment = buffer;
+                            var overLength = false;
+
+                            if (segment.Length > maxMessageSize)
                             {
-                                inputBuffer.Complete(new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions."));
+                                segment = segment.Slice(segment.Start, maxMessageSize);
+                                overLength = true;
                             }
 
-                            while (reader.TryParseMessage(buffer, out consumed, out examined, out var protocolMessage))
+                            if (reader.TryParseMessage(segment, out consumed, out examined, out var protocolMessage))
                             {
                                 await inputBuffer.WriteAsync(protocolMessage);
-                                buffer = buffer.Slice(consumed);
+                            }
+                            else if (overLength)
+                            {
+                                inputBuffer.Complete(new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions."));
+                                break;
+                            }
+                            else
+                            {
+                                // No need to update the buffer since we didn't parse anything
+                                continue;
                             }
                         }
                     }
