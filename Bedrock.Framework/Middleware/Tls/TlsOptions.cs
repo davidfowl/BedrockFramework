@@ -24,7 +24,6 @@ namespace Bedrock.Framework.Middleware.Tls
         public TlsOptions()
         {
             RemoteCertificateMode = RemoteCertificateMode.RequireCertificate;
-            SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11;
             HandshakeTimeout = TimeSpan.FromSeconds(10);
         }
 
