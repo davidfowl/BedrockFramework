@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
@@ -16,7 +18,7 @@ namespace Bedrock.Framework
 
         internal static object Key { get; } = new object();
 
-        public IConnectionFactory ConnectionFactory { get; set; }
+        public IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
 
         public IServiceProvider ApplicationServices => _connectionBuilder.ApplicationServices;
 
@@ -64,6 +66,14 @@ namespace Bedrock.Framework
         ConnectionDelegate IConnectionBuilder.Build()
         {
             return _connectionBuilder.Build();
+        }
+
+        private class ThrowConnectionFactory : IConnectionFactory
+        {
+            public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("No transport configured. Set the ConnectionFactory property.");
+            }
         }
     }
 }
