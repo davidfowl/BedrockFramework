@@ -3,7 +3,6 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Http;
-using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Bedrock.Framework;
@@ -145,7 +144,7 @@ namespace ClientApplication
                                         };
 
                                         options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
-                                        
+
                                         // NOTE: Do not do this in a production environment
                                         options.AllowAnyRemoteCertificate();
                                     })

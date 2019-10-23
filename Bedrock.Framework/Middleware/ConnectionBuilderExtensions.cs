@@ -36,6 +36,14 @@ namespace Bedrock.Framework
             return builder;
         }
 
+        public static TBuilder UseConnectionLimits<TBuilder>(this TBuilder builder, int connectionLimit) where TBuilder : IConnectionBuilder
+        {
+            var loggerFactory = builder.ApplicationServices.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+            var logger = loggerFactory.CreateLogger<ConnectionLimitMiddleware>();
+            builder.Use(next => new ConnectionLimitMiddleware(next, logger, connectionLimit).OnConnectionAsync);
+            return builder;
+        }
+
         public static TBuilder UseServerTls<TBuilder>(
             this TBuilder builder,
             Action<TlsOptions> configure) where TBuilder : IConnectionBuilder

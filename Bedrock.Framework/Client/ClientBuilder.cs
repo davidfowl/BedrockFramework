@@ -60,12 +60,7 @@ namespace Bedrock.Framework
 
         public ClientBuilder UseConnectionFactory(IConnectionFactory connectionFactory)
         {
-            if (connectionFactory == null)
-            {
-                throw new ArgumentNullException(nameof(connectionFactory));
-            }
-
-            ConnectionFactory = connectionFactory;
+            ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             return this;
         }
 
