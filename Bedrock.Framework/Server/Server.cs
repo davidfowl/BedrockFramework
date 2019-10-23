@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -22,6 +23,17 @@ namespace Bedrock.Framework
             _logger = builder.ApplicationServices.GetLoggerFactory().CreateLogger<Server>();
             _builder = builder;
             _timerAwaitable = new TimerAwaitable(_builder.HeartBeatInterval, _builder.HeartBeatInterval);
+        }
+
+        public IEnumerable<EndPoint> EndPoints
+        {
+            get
+            {
+                foreach (var listener in _listeners)
+                {
+                    yield return listener.Listener.EndPoint;
+                }
+            }
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
