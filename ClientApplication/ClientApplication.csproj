@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\ServerApplication\LengthPrefixedProtocol.cs" Link="LengthPrefixedProtocol.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="..\Certs\testcert.pfx" Link="testcert.pfx" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   

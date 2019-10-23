@@ -4,6 +4,7 @@ using System.IO.Pipelines;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Protocols;
 
 namespace ClientApplication
 {
@@ -32,6 +34,7 @@ namespace ClientApplication
             Console.WriteLine("3. SignalR");
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
+            Console.WriteLine("6. Length prefixed custom binary protocol");
 
             var keyInfo = Console.ReadKey();
 
@@ -59,6 +62,11 @@ namespace ClientApplication
             {
                 Console.WriteLine("In Memory Transport Echo Server and client.");
                 await InMemoryEchoTransport(serviceProvider);
+            }
+            else if (keyInfo.Key == ConsoleKey.D6)
+            {
+                Console.WriteLine("Custom length prefixed protocol.");
+                await CustomProtocol(serviceProvider);
             }
         }
 
@@ -195,7 +203,28 @@ namespace ClientApplication
             await writes;
 
             await server.StopAsync();
-
         }
+
+        private static async Task CustomProtocol(IServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                                    .UseSockets()
+                                    .UseConnectionLogging()
+                                    .Build();
+
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+
+            var protocol = new LengthPrefixedProtocol();
+            var reader = Protocol.CreateReader(connection, protocol);
+            var writer = Protocol.CreateWriter(connection, protocol);
+
+            while (true)
+            {
+                var line = Console.ReadLine();
+                await writer.WriteAsync(new Message(Encoding.UTF8.GetBytes(line)));
+            }
+        }
+
     }
 }

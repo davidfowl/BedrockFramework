@@ -55,6 +55,9 @@ namespace ServerApplication
                                     options.AllowAnyRemoteCertificate();
                                 })
                                 .UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
+
+                            sockets.Listen(IPAddress.Loopback, 5005,
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<MyCustomProtocol>());
                         })
                         .Build();
 

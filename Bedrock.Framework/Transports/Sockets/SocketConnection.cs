@@ -59,6 +59,9 @@ namespace Bedrock.Framework
 
             var pair = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
 
+            LocalEndPoint = _socket.LocalEndPoint;
+            RemoteEndPoint = _socket.RemoteEndPoint;
+
             Transport = pair.Transport;
             _application = pair.Application;
 
