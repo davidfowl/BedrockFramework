@@ -9,10 +9,10 @@ namespace Bedrock.Framework.Protocols
 {
     public static class Protocol 
     {
-        public static ProtocolWriter<TWriteMessage> WriteProtocol<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
+        public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
             => new ProtocolWriter<TWriteMessage>(connection, writer);
 
-        public static ProtocolReader<TReadMessage> ReadProtocol<TReadMessage>(this ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize = null)
+        public static ProtocolReader<TReadMessage> CreateReader<TReadMessage>(this ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize = null)
             => new ProtocolReader<TReadMessage>(connection, reader, maximumMessageSize);
     }
 
