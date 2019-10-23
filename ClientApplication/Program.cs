@@ -21,7 +21,7 @@ namespace ClientApplication
         {
             var serviceProvider = new ServiceCollection().AddLogging(builder =>
             {
-                builder.SetMinimumLevel(LogLevel.Trace);
+                builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddConsole();
             })
             .BuildServiceProvider();
@@ -48,7 +48,7 @@ namespace ClientApplication
             else if (keyInfo.Key == ConsoleKey.D3)
             {
                 Console.WriteLine("Running SignalR example");
-                await SignalR(serviceProvider);
+                await SignalR();
             }
             else if (keyInfo.Key == ConsoleKey.D4)
             {
@@ -104,15 +104,19 @@ namespace ClientApplication
             }
         }
 
-        private static async Task SignalR(IServiceProvider serviceProvider)
+        private static async Task SignalR()
         {
-            var client = new ClientBuilder(serviceProvider)
-                        .UseSockets()
-                        .UseConnectionLogging()
-                        .Build();
-
             var hubConnection = new HubConnectionBuilder()
-                                .WithConnectionFactory(client, new IPEndPoint(IPAddress.Loopback, 5002))
+                                .WithClientBuilder(new IPEndPoint(IPAddress.Loopback, 5002), builder =>
+                                {
+                                    builder.UseSockets()
+                                           .UseConnectionLogging();
+                                })
+                                .ConfigureLogging(builder =>
+                                {
+                                    builder.SetMinimumLevel(LogLevel.Debug);
+                                    builder.AddConsole();
+                                })
                                 .WithAutomaticReconnect()
                                 .Build();
 

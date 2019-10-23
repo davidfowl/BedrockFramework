@@ -18,7 +18,7 @@ namespace ServerApplication
             var services = new ServiceCollection();
             services.AddLogging(builder =>
             {
-                builder.SetMinimumLevel(LogLevel.Trace);
+                builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddConsole();
             });
 
