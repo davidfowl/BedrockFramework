@@ -1,27 +1,58 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Protocol<TReader, TWriter, TReadMessage, TWriteMessage> where TReader : IProtocolReader<TReadMessage>
-                                                                         where TWriter : IProtocolWriter<TWriteMessage>
+    public static class Protocol 
     {
-        private readonly TReader _reader;
-        private readonly TWriter _writer;
-        private readonly int? _maximumMessageSize;
-        private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
+            => new ProtocolWriter<TWriteMessage>(connection, writer);
 
-        public Protocol(ConnectionContext connection, TReader reader, TWriter writer, int? maximumMessageSize)
+        public static ProtocolReader<TReadMessage> CreateReader<TReadMessage>(this ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize = null)
+            => new ProtocolReader<TReadMessage>(connection, reader, maximumMessageSize);
+    }
+
+    public class ProtocolWriter<TWriteMessage>
+    {
+        private readonly IProtocolWriter<TWriteMessage> _writer;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
+        {
+            Connection = connection;
+            _writer = writer;
+        }
+
+        public ConnectionContext Connection { get; }
+               
+        public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
+        {
+            await _semaphore.WaitAsync(cancellationToken);
+
+            try
+            {
+                _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                await Connection.Transport.Output.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+    }
+
+    public class ProtocolReader<TReadMessage> 
+    {
+        private readonly IProtocolReader<TReadMessage> _reader;
+        private readonly int? _maximumMessageSize;
+
+        public ProtocolReader(ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize)
         {
             Connection = connection;
             _reader = reader;
-            _writer = writer;
             _maximumMessageSize = maximumMessageSize;
         }
 
@@ -110,26 +141,6 @@ namespace Bedrock.Framework.Protocols
             }
 
             return protocolMessage;
-        }
-
-        public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
-        {
-            await _semaphore.WaitAsync(cancellationToken);
-
-            try
-            {
-                _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
-                await Connection.Transport.Output.FlushAsync(cancellationToken);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
-        }
-
-        public static Protocol<TReader, TWriter, TReadMessage, TWriteMessage> Create(ConnectionContext connection, TReader reader, TWriter writer, int? maxMessageSize = null)
-        {
-            return new Protocol<TReader, TWriter, TReadMessage, TWriteMessage>(connection, reader, writer, maxMessageSize);
         }
     }
 
