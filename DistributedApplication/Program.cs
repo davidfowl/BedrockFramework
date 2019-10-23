@@ -29,12 +29,15 @@ namespace DistributedApplication
 
             await server.StartAsync();
 
+            
             foreach (var ep in server.EndPoints)
             {
                 Console.WriteLine($"Listening on {ep}");
             }
 
-            Console.Read();
+            var tcs = new TaskCompletionSource<object>();
+            Console.CancelKeyPress += (sender, e) => tcs.TrySetResult(null);
+            await tcs.Task;
 
             await server.StopAsync();
         }

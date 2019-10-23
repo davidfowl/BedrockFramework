@@ -46,7 +46,7 @@ namespace ServerApplication
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MqttApplication>());
 
                             // Echo Server with TLS
-                            sockets.ListenLocalhost(5004,
+                            sockets.Listen(IPAddress.Loopback, 5004,
                                 builder => builder.UseServerTls(options =>
                                 {
                                     options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
@@ -58,10 +58,18 @@ namespace ServerApplication
                         })
                         .Build();
 
+            var logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<Program>();
+
             await server.StartAsync();
 
-            Console.WriteLine("Press any key to exit");
-            Console.ReadLine();
+            foreach (var ep in server.EndPoints)
+            {
+                logger.LogInformation("Listening on {EndPoint}", ep);
+            }
+
+            var tcs = new TaskCompletionSource<object>();
+            Console.CancelKeyPress += (sender, e) => tcs.TrySetResult(null);
+            await tcs.Task;
 
             await server.StopAsync();
         }
