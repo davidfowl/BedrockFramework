@@ -16,9 +16,9 @@ namespace Bedrock.Framework
             _application = application;
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            var connection = await _connectionFactory.ConnectAsync(endPoint, cancellationToken);
+            var connection = await _connectionFactory.ConnectAsync(endpoint, cancellationToken);
 
             // Since nothing is being returned from this middleware, we need to wait for the last middleware to run
             // until we yield this call. Stash a tcs in the items bag that allows this code to get notified

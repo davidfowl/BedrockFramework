@@ -196,7 +196,7 @@ namespace ClientApplication
             await server.StartAsync();
             Console.WriteLine("Started Server");
 
-            var connection = await client.ConnectAsync(endPoint: null);
+            var connection = await client.ConnectAsync(endpoint: null);
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");

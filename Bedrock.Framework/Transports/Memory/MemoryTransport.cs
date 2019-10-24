@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.IO.Pipelines;
 using System.Net;
 using System.Threading;
@@ -8,33 +9,33 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Transports.Memory
 {
-    public class MemoryTransport : IConnectionListenerFactory, IConnectionListener, IConnectionFactory
+    public partial class MemoryTransport : IConnectionListenerFactory, IConnectionFactory
     {
-        private Channel<ConnectionContext> _acceptQueue = Channel.CreateUnbounded<ConnectionContext>();
-
-        public EndPoint EndPoint { get; set; }
-
-        public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
-        {
-            if (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken))
-            {
-                while (_acceptQueue.Reader.TryRead(out var item))
-                {
-                    return item;
-                }
-            }
-
-            return null;
-        }
+        private readonly ConcurrentDictionary<EndPoint, MemoryConnectionListener> _listeners = new ConcurrentDictionary<EndPoint, MemoryConnectionListener>();
 
         public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            EndPoint = endpoint;
-            return new ValueTask<IConnectionListener>(this);
+            endpoint ??= MemoryEndPoint.Default;
+
+            if (_listeners.TryGetValue(endpoint, out _))
+            {
+                throw new AddressInUseException($"{endpoint} listener already bound");
+            }
+
+            MemoryConnectionListener listener;
+            _listeners[endpoint] = listener = new MemoryConnectionListener() { EndPoint = endpoint };
+            return new ValueTask<IConnectionListener>(listener);
         }
 
         public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
+            endpoint ??= MemoryEndPoint.Default;
+
+            if (!_listeners.TryGetValue(endpoint, out var listener))
+            {
+                throw new InvalidOperationException($"{endpoint} not bound!");
+            }
+
             var pair = DuplexPipe.CreateConnectionPair(new PipeOptions(), new PipeOptions());
 
             var serverConnection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application)
@@ -49,20 +50,40 @@ namespace Bedrock.Framework.Transports.Memory
                 RemoteEndPoint = endpoint
             };
 
-            _acceptQueue.Writer.TryWrite(serverConnection);
+            listener.AcceptQueue.Writer.TryWrite(serverConnection);
             return new ValueTask<ConnectionContext>(clientConnection);
         }
 
-        public ValueTask DisposeAsync()
+        private class MemoryConnectionListener : IConnectionListener
         {
-            return UnbindAsync(default);
-        }
+            public EndPoint EndPoint { get; set; }
 
-        public ValueTask UnbindAsync(CancellationToken cancellationToken = default)
-        {
-            _acceptQueue.Writer.TryComplete();
+            internal Channel<ConnectionContext> AcceptQueue { get; } = Channel.CreateUnbounded<ConnectionContext>();
 
-            return default;
+            public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+            {
+                if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken))
+                {
+                    while (AcceptQueue.Reader.TryRead(out var item))
+                    {
+                        return item;
+                    }
+                }
+
+                return null;
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                return UnbindAsync(default);
+            }
+
+            public ValueTask UnbindAsync(CancellationToken cancellationToken = default)
+            {
+                AcceptQueue.Writer.TryComplete();
+
+                return default;
+            }
         }
     }
 }
