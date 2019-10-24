@@ -90,6 +90,10 @@ namespace ClientApplication
 
         private static async Task HttpClient(IServiceProvider serviceProvider)
         {
+            // TODO: Missing scenarios
+            // - HTTP/2 needs to set the ALPN parameters (hard)
+            // - Proxy support needs to know if the connection is secure
+
             // Build the client pipeline
             var client = new ClientBuilder(serviceProvider)
                         .UseSockets()
@@ -227,4 +231,7 @@ namespace ClientApplication
         }
 
     }
+
+    // Property bag needed on ConnectAsync and BindAsync
+    // Maybe change EndPoint to some other binding abstraction
 }
