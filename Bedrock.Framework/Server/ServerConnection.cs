@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Bedrock.Framework
 {
-    internal class ServerConnection : IConnectionHeartbeatFeature, IConnectionCompleteFeature, IConnectionLifetimeNotificationFeature, IReadOnlyList<KeyValuePair<string, object>>
+    internal class ServerConnection : IConnectionHeartbeatFeature, IConnectionCompleteFeature, IConnectionLifetimeNotificationFeature, IConnectionEndPointFeature, IReadOnlyList<KeyValuePair<string, object>>
     {
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
         private readonly object _heartbeatLock = new object();
@@ -29,6 +30,11 @@ namespace Bedrock.Framework
             connectionContext.Features.Set<IConnectionHeartbeatFeature>(this);
             connectionContext.Features.Set<IConnectionCompleteFeature>(this);
             connectionContext.Features.Set<IConnectionLifetimeNotificationFeature>(this);
+            var endpointFeature = connectionContext.Features.Get<IConnectionEndPointFeature>();
+            if (endpointFeature == null)
+            {
+                connectionContext.Features.Set<IConnectionEndPointFeature>(this);
+            }
             ConnectionClosedRequested = _connectionClosingCts.Token;
         }
 
@@ -164,6 +170,17 @@ namespace Bedrock.Framework
         }
 
         public int Count => 1;
+
+        public EndPoint LocalEndPoint
+        {
+            get => TransportConnection.LocalEndPoint;
+            set => TransportConnection.LocalEndPoint = value;
+        }
+        public EndPoint RemoteEndPoint
+        {
+            get => TransportConnection.RemoteEndPoint;
+            set => TransportConnection.RemoteEndPoint = value;
+        }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {

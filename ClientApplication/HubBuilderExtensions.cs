@@ -7,18 +7,18 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ClientApplication
+namespace Microsoft.AspNetCore.SignalR.Client
 {
     public static class HubBuilderExtensions
     {
-        public static HubConnectionBuilder WithConnectionFactory(this HubConnectionBuilder hubConnectionBuilder, IConnectionFactory connectionFactory, EndPoint endPoint)
+        public static IHubConnectionBuilder WithConnectionFactory(this IHubConnectionBuilder hubConnectionBuilder, IConnectionFactory connectionFactory, EndPoint endPoint)
         {
             hubConnectionBuilder.Services.AddSingleton(connectionFactory);
             hubConnectionBuilder.Services.AddSingleton(endPoint);
             return hubConnectionBuilder;
         }
 
-        public static HubConnectionBuilder WithClientBuilder(this HubConnectionBuilder hubConnectionBuilder, EndPoint endPoint, Action<ClientBuilder> configure)
+        public static IHubConnectionBuilder WithClientBuilder(this IHubConnectionBuilder hubConnectionBuilder, EndPoint endPoint, Action<ClientBuilder> configure)
         {
             hubConnectionBuilder.Services.AddSingleton<IConnectionFactory>(sp =>
             {

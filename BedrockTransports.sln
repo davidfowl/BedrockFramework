@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework", "Bedroc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerApplication", "ServerApplication\ServerApplication.csproj", "{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedApplication", "DistributedApplication\DistributedApplication.csproj", "{CC34D2C9-A20F-4E20-A9E0-973754F019ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedApplication", "DistributedApplication\DistributedApplication.csproj", "{CC34D2C9-A20F-4E20-A9E0-973754F019ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedApplication.ServiceRegistry", "DistributedApplication.ServiceRegistry\DistributedApplication.ServiceRegistry.csproj", "{5531B956-7D0A-4670-A811-AC8DC8CE423F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
