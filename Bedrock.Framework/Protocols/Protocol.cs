@@ -11,6 +11,8 @@ namespace Bedrock.Framework.Protocols
     {
         public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
             => new ProtocolWriter<TWriteMessage>(connection, writer);
+        public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer, SemaphoreSlim semaphore)
+            => new ProtocolWriter<TWriteMessage>(connection, writer, semaphore);
 
         public static ProtocolReader<TReadMessage> CreateReader<TReadMessage>(this ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize = null)
             => new ProtocolReader<TReadMessage>(connection, reader, maximumMessageSize);
@@ -19,11 +21,18 @@ namespace Bedrock.Framework.Protocols
     public class ProtocolWriter<TWriteMessage>
     {
         private readonly IProtocolWriter<TWriteMessage> _writer;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim _semaphore;
+
         public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
+            : this(connection, writer, new SemaphoreSlim(1))
+        {
+        }
+
+        public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer, SemaphoreSlim semaphore)
         {
             Connection = connection;
             _writer = writer;
+            _semaphore = semaphore;
         }
 
         public ConnectionContext Connection { get; }
