@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,6 +45,25 @@ namespace Bedrock.Framework.Protocols
             try
             {
                 _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                await Connection.Transport.Output.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async ValueTask WriteManyAsync(IEnumerable<TWriteMessage> protocolMessages, CancellationToken cancellationToken = default)
+        {
+            await _semaphore.WaitAsync(cancellationToken);
+
+            try
+            {
+                foreach (var protocolMessage in protocolMessages)
+                {
+                    _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                }
+
                 await Connection.Transport.Output.FlushAsync(cancellationToken);
             }
             finally
