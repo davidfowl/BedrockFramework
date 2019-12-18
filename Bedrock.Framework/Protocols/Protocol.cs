@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ namespace Bedrock.Framework.Protocols
     {
         public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
             => new ProtocolWriter<TWriteMessage>(connection, writer);
+        public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer, SemaphoreSlim semaphore)
+            => new ProtocolWriter<TWriteMessage>(connection, writer, semaphore);
 
         public static ProtocolReader<TReadMessage> CreateReader<TReadMessage>(this ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize = null)
             => new ProtocolReader<TReadMessage>(connection, reader, maximumMessageSize);
@@ -19,11 +22,18 @@ namespace Bedrock.Framework.Protocols
     public class ProtocolWriter<TWriteMessage>
     {
         private readonly IProtocolWriter<TWriteMessage> _writer;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim _semaphore;
+
         public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
+            : this(connection, writer, new SemaphoreSlim(1))
+        {
+        }
+
+        public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer, SemaphoreSlim semaphore)
         {
             Connection = connection;
             _writer = writer;
+            _semaphore = semaphore;
         }
 
         public ConnectionContext Connection { get; }
@@ -35,6 +45,25 @@ namespace Bedrock.Framework.Protocols
             try
             {
                 _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                await Connection.Transport.Output.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async ValueTask WriteManyAsync(IEnumerable<TWriteMessage> protocolMessages, CancellationToken cancellationToken = default)
+        {
+            await _semaphore.WaitAsync(cancellationToken);
+
+            try
+            {
+                foreach (var protocolMessage in protocolMessages)
+                {
+                    _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                }
+
                 await Connection.Transport.Output.FlushAsync(cancellationToken);
             }
             finally
