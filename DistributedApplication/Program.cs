@@ -84,26 +84,27 @@ namespace DistributedApplication
             {
                 var servers = await hubConnection.InvokeAsync<Server[]>("Join", thisServer);
 
-                foreach (var server in servers)
+                foreach (var s in servers)
                 {
-                    if (serversMapping.TryAdd(server.Id, server))
+                    if (serversMapping.TryAdd(s.Id, s))
                     {
-                        await OnServerAdded(server);
+                        await OnServerAdded(s);
                     }
                 }
             }
 
-            async Task Join(Server server)
+            async Task Join(Server s)
             {
-                if (serversMapping.TryAdd(server.Id, server))
+                if (serversMapping.TryAdd(s.Id, s))
                 {
-                    await OnServerAdded(server);
+                    await OnServerAdded(s);
                 }
             }
 
-            async Task Leave(Server server)
+            Task Leave(Server s)
             {
                 // We use the hub connection to detect leave
+                return Task.CompletedTask;
             }
 
             Task OnReconnected(string id)
@@ -111,23 +112,23 @@ namespace DistributedApplication
                 return Sync();
             }
 
-            async Task OnServerAdded(Server server)
+            async Task OnServerAdded(Server s)
             {
                 try
                 {
                     var connection = new HubConnectionBuilder()
                                     // .ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Information).AddConsole())
-                                    .WithClientBuilder(new IPEndPoint(IPAddress.Parse(server.Host), server.Port), builder =>
+                                    .WithClientBuilder(new IPEndPoint(IPAddress.Parse(s.Host), s.Port), builder =>
                                     {
-                                        builder.UseSockets().UseConnectionLogging(server.Id);
+                                        builder.UseSockets().UseConnectionLogging(s.Id);
                                     })
                                     .Build();
 
                     connection.Closed += (e) =>
                     {
-                        if (serversMapping.TryRemove(server.Id, out _))
+                        if (serversMapping.TryRemove(s.Id, out _))
                         {
-                            logger.LogInformation("Disconnected from server {server}", server);
+                            logger.LogInformation("Disconnected from server {server}", s);
                         }
 
                         return Task.CompletedTask;
@@ -135,13 +136,13 @@ namespace DistributedApplication
 
                     await connection.StartAsync();
 
-                    logger.LogInformation("Connected to server {server}", server);
+                    logger.LogInformation("Connected to server {server}", s);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Unable to connect to {server}", server);
+                    logger.LogError(ex, "Unable to connect to {server}", s);
 
-                    serversMapping.TryRemove(server.Id, out _);
+                    serversMapping.TryRemove(s.Id, out _);
                 }
             }
 
