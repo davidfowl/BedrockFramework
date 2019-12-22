@@ -30,23 +30,23 @@ namespace ServerApplication
                         .UseSockets(sockets =>
                         {
                             // Echo server
-                            sockets.ListenLocalhost(5000,
+                            sockets.ListenAnyIP(5000,
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
 
                             // HTTP/1.1 server
-                            sockets.Listen(IPAddress.Loopback, 5001,
+                            sockets.ListenAnyIP(5001,
                                 builder => builder.UseConnectionLogging().UseHttpServer(new HttpApplication()));
 
                             // SignalR Hub
-                            sockets.Listen(IPAddress.Loopback, 5002,
+                            sockets.ListenAnyIP(5002,
                                 builder => builder.UseConnectionLogging().UseHub<Chat>());
 
                             // MQTT application
-                            sockets.Listen(IPAddress.Loopback, 5003,
+                            sockets.ListenAnyIP(5003,
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MqttApplication>());
 
                             // Echo Server with TLS
-                            sockets.Listen(IPAddress.Loopback, 5004,
+                            sockets.ListenAnyIP(5004,
                                 builder => builder.UseServerTls(options =>
                                 {
                                     options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
@@ -56,7 +56,7 @@ namespace ServerApplication
                                 })
                                 .UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
 
-                            sockets.Listen(IPAddress.Loopback, 5005,
+                            sockets.ListenAnyIP(5005,
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MyCustomProtocol>());
                         })
                         .Build();

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bedrock
+spec:
+  ports:
+    - name: echo-server
+      port: 5000
+      protocol: TCP
+    - name: http-server
+      port: 5001
+      protocol: TCP
+    - name: signalr-server
+      port: 5002
+      protocol: TCP
+    - name: mqtt-server
+      port: 5003
+      protocol: TCP
+    - name: tls-echo-server
+      port: 5004
+      protocol: TCP
+    - name: custom-protocol-server
+      port: 5005
+      protocol: TCP
+  selector:
+    app: bedrock
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bedrock
+spec:
+  selector:
+    matchLabels:
+      app: bedrock
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: bedrock
+    spec:
+      containers:
+        - image: davidfowl/bedrock:latest
+          name: bedrock
+          ports:
+            - containerPort: 5000
+            - containerPort: 5001
+            - containerPort: 5002
+            - containerPort: 5003
+            - containerPort: 5004
+            - containerPort: 5005

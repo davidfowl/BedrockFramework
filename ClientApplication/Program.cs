@@ -37,47 +37,48 @@ namespace ClientApplication
             Console.WriteLine("6. Length prefixed custom binary protocol");
 
             var keyInfo = Console.ReadKey();
+            var targetIP = IPAddress.Parse("13.87.157.140");
 
             if (keyInfo.Key == ConsoleKey.D1)
             {
                 Console.WriteLine("Running echo server example");
-                await EchoServer(serviceProvider);
+                await EchoServer(targetIP, serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D2)
             {
                 Console.WriteLine("Running http client example");
-                await HttpClient(serviceProvider);
+                await HttpClient(targetIP, serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D3)
             {
                 Console.WriteLine("Running SignalR example");
-                await SignalR();
+                await SignalR(targetIP);
             }
             else if (keyInfo.Key == ConsoleKey.D4)
             {
                 Console.WriteLine("Running echo server with TLS example");
-                await EchoServerWithTls(serviceProvider);
+                await EchoServerWithTls(targetIP, serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D5)
             {
                 Console.WriteLine("In Memory Transport Echo Server and client.");
-                await InMemoryEchoTransport(serviceProvider);
+                await InMemoryEchoTransport(targetIP, serviceProvider);
             }
             else if (keyInfo.Key == ConsoleKey.D6)
             {
                 Console.WriteLine("Custom length prefixed protocol.");
-                await CustomProtocol(serviceProvider);
+                await CustomProtocol(targetIP, serviceProvider);
             }
         }
 
-        private static async Task EchoServer(IServiceProvider serviceProvider)
+        private static async Task EchoServer(IPAddress address, IServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
                                     .UseSockets()
                                     .UseConnectionLogging()
                                     .Build();
 
-            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5000));
+            var connection = await client.ConnectAsync(new IPEndPoint(address, 5000));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
@@ -88,7 +89,7 @@ namespace ClientApplication
             await writes;
         }
 
-        private static async Task HttpClient(IServiceProvider serviceProvider)
+        private static async Task HttpClient(IPAddress address, IServiceProvider serviceProvider)
         {
             // TODO: Missing scenarios
             // - HTTP/2 needs to set the ALPN parameters (hard)
@@ -101,7 +102,7 @@ namespace ClientApplication
                         .UseConnectionLogging()
                         .Build();
 
-            await using var connection = await client.ConnectAsync(new DnsEndPoint("localhost", 5001));
+            await using var connection = await client.ConnectAsync(new IPEndPoint(address, 5001));
 
             // Use the HTTP/1.1 protocol
             var httpProtocol = HttpClientProtocol.CreateFromConnection(connection);
@@ -116,10 +117,10 @@ namespace ClientApplication
             }
         }
 
-        private static async Task SignalR()
+        private static async Task SignalR(IPAddress address)
         {
             var hubConnection = new HubConnectionBuilder()
-                                .WithClientBuilder(new IPEndPoint(IPAddress.Loopback, 5002), builder =>
+                                .WithClientBuilder(new IPEndPoint(address, 5002), builder =>
                                 {
                                     builder.UseSockets()
                                            .UseConnectionLogging();
@@ -147,7 +148,7 @@ namespace ClientApplication
         }
 
 
-        private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
+        private static async Task EchoServerWithTls(IPAddress address, ServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
                                     .UseSockets()
@@ -166,7 +167,7 @@ namespace ClientApplication
                                     })
                                     .Build();
 
-            var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5004));
+            var connection = await client.ConnectAsync(new IPEndPoint(address, 5004));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
@@ -177,7 +178,7 @@ namespace ClientApplication
             await writes;
         }
 
-        private static async Task InMemoryEchoTransport(IServiceProvider serviceProvider)
+        private static async Task InMemoryEchoTransport(IPAddress address, IServiceProvider serviceProvider)
         {
             var memoryTransport = new MemoryTransport();
 
@@ -209,14 +210,14 @@ namespace ClientApplication
             await server.StopAsync();
         }
 
-        private static async Task CustomProtocol(IServiceProvider serviceProvider)
+        private static async Task CustomProtocol(IPAddress address, IServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
                                     .UseSockets()
                                     .UseConnectionLogging()
                                     .Build();
 
-            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));
+            await using var connection = await client.ConnectAsync(new IPEndPoint(address, 5005));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             var protocol = new LengthPrefixedProtocol();
