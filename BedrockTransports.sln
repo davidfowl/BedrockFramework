@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29112.163
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientApplication", "ClientApplication\ClientApplication.csproj", "{44A257ED-D3A7-4170-BE67-4392F2A6FE18}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientApplication", "samples\ClientApplication\ClientApplication.csproj", "{44A257ED-D3A7-4170-BE67-4392F2A6FE18}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework", "Bedrock.Framework\Bedrock.Framework.csproj", "{53CD2C10-7FA3-4816-A44B-66E11B656102}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework", "src\Bedrock.Framework\Bedrock.Framework.csproj", "{53CD2C10-7FA3-4816-A44B-66E11B656102}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerApplication", "ServerApplication\ServerApplication.csproj", "{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerApplication", "samples\ServerApplication\ServerApplication.csproj", "{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedApplication", "DistributedApplication\DistributedApplication.csproj", "{CC34D2C9-A20F-4E20-A9E0-973754F019ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedApplication", "samples\DistributedApplication\DistributedApplication.csproj", "{CC34D2C9-A20F-4E20-A9E0-973754F019ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedApplication.ServiceRegistry", "DistributedApplication.ServiceRegistry\DistributedApplication.ServiceRegistry.csproj", "{5531B956-7D0A-4670-A811-AC8DC8CE423F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DistributedApplication.ServiceRegistry", "samples\DistributedApplication.ServiceRegistry\DistributedApplication.ServiceRegistry.csproj", "{5531B956-7D0A-4670-A811-AC8DC8CE423F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
