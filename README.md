@@ -46,3 +46,19 @@ A sample of a couple bedrock transports using new APIs added in .NET Core 3.0
 - **Pipes** - A named pipes transport based on NamedPipeClientStream and NamedPipeServerStream
 - **Http2** - An HTTP/2 based transport that uses turns each request into a duplex connection using HTTP/2 streams. Uses Kestrel on the server and HttpClient on the client
 - **WebSockets** - A WebSockets transport (uses Kestrel and the building blocks of SignalR internally).
+
+
+## Using CI builds
+
+To use CI builds add the following nuget feed:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <packageSources>
+        <clear />
+        <add key="bedrockframework" value="https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json" />
+        <add key="NuGet.org" value="https://api.nuget.org/v3/index.json" />
+    </packageSources>
+</configuration>
+```
