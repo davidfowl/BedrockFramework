@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Http2ServerProtocol : Http2Protocol
+    internal class Http2ServerProtocol : Http2Protocol
     {
         private readonly Http2PeerSettings _serverSettings = new Http2PeerSettings();
         private readonly Http2PeerSettings _clientSettings = new Http2PeerSettings();

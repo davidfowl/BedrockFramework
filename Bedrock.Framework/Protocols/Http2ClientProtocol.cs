@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Http2ClientProtocol : Http2Protocol
+    internal class Http2ClientProtocol : Http2Protocol
     {
         private const int DefaultInitialWindowSize = 65535;
 

@@ -17,13 +17,6 @@ namespace Bedrock.Framework
             return builder.Listen<Http2ConnectionListenerFactory>(new UriEndPoint(uri), serverApplication);
         }
 
-        public static ServerBuilder ListenAzureSignalR(this ServerBuilder builder, string connectionString, string hub, Action<IConnectionBuilder> serverApplication)
-        {
-            return builder.Listen<AzureSignalRConnectionListenerFactory>(
-                    new AzureSignalREndPoint(connectionString, hub, AzureSignalREndpointType.Server),
-                    serverApplication);
-        }
-
         public static ServerBuilder Listen<TTransport>(this ServerBuilder builder, EndPoint endPoint, Action<IConnectionBuilder> configure) where TTransport : IConnectionListenerFactory
         {
             return builder.Listen(endPoint, ActivatorUtilities.CreateInstance<TTransport>(builder.ApplicationServices), configure);

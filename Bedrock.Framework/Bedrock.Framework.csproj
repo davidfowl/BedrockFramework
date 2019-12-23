@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
@@ -10,9 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.SignalR.Protocols" Version="1.1.0-preview1-10442" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.0.0-rc1.19457.4" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.2.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
   </ItemGroup>
 
 </Project>
