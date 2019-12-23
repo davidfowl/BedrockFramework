@@ -32,12 +32,12 @@ jobs:
 
     - name: Set API key
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/featherhttp/nuget/index.json
+      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json
 
     - name: Set symbols API key
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/featherhttp/symbols
+      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/symbols
 
     - name: push packages
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push **/*.nupkg -s https://f.feedz.io/davidfowl/featherhttp/nuget/index.json -ss https://f.feedz.io/davidfowl/featherhttp/symbols --skip-duplicate
+      run: dotnet nuget push **/*.nupkg -s https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json -ss https://f.feedz.io/davidfowl/bedrockframework/symbols --skip-duplicate
