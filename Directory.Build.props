@@ -8,7 +8,7 @@
     <PackageReleaseNotes>https://github.com/davidfowl/BedrockFramework/releases</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>cloud API REST microservice web</PackageTags>
+    <PackageTags>cloud microservice networking sockets websockets tcp</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning">
