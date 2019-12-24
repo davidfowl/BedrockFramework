@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageDescription>Low level networking APIs for building custom severs and clients.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
