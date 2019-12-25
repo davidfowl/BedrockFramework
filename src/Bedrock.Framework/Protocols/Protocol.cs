@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public static class Protocol 
+    public static class Protocol
     {
         public static ProtocolWriter<TWriteMessage> CreateWriter<TWriteMessage>(this ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
             => new ProtocolWriter<TWriteMessage>(connection, writer);
@@ -37,7 +37,7 @@ namespace Bedrock.Framework.Protocols
         }
 
         public ConnectionContext Connection { get; }
-               
+
         public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken);
@@ -73,10 +73,12 @@ namespace Bedrock.Framework.Protocols
         }
     }
 
-    public class ProtocolReader<TReadMessage> 
+    public class ProtocolReader<TReadMessage>
     {
         private readonly IProtocolReader<TReadMessage> _reader;
         private readonly int? _maximumMessageSize;
+        private SequencePosition _examined;
+        private SequencePosition _consumed;
 
         public ProtocolReader(ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize)
         {
@@ -87,89 +89,89 @@ namespace Bedrock.Framework.Protocols
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<TReadMessage> ReadAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<ReadResult<TReadMessage>> ReadAsync(CancellationToken cancellationToken = default)
         {
             var input = Connection.Transport.Input;
             var reader = _reader;
 
             TReadMessage protocolMessage = default;
+            var isCanceled = false;
+            var isCompleted = false;
 
             while (true)
             {
                 var result = await input.ReadAsync(cancellationToken);
+                isCanceled = result.IsCanceled;
+                isCompleted = result.IsCompleted;
                 var buffer = result.Buffer;
-                var consumed = buffer.Start;
-                var examined = buffer.End;
+                _consumed = buffer.Start;
+                _examined = buffer.End;
 
-                try
+
+                if (result.IsCanceled)
                 {
-                    if (result.IsCanceled)
+                    break;
+                }
+
+                if (!buffer.IsEmpty)
+                {
+                    // No message limit, just parse and dispatch
+                    if (_maximumMessageSize == null)
                     {
-                        break;
-                    }
-
-                    if (!buffer.IsEmpty)
-                    {
-                        // No message limit, just parse and dispatch
-                        if (_maximumMessageSize == null)
+                        if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
                         {
-                            if (reader.TryParseMessage(buffer, out consumed, out examined, out protocolMessage))
-                            {
-                                return protocolMessage;
-                            }
-                        }
-                        else
-                        {
-                            // We give the parser a sliding window of the default message size
-                            var maxMessageSize = _maximumMessageSize.Value;
-
-                            if (!buffer.IsEmpty)
-                            {
-                                var segment = buffer;
-                                var overLength = false;
-
-                                if (segment.Length > maxMessageSize)
-                                {
-                                    segment = segment.Slice(segment.Start, maxMessageSize);
-                                    overLength = true;
-                                }
-
-                                if (reader.TryParseMessage(segment, out consumed, out examined, out protocolMessage))
-                                {
-                                    return protocolMessage;
-                                }
-                                else if (overLength)
-                                {
-                                    throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
-                                }
-                                else
-                                {
-                                    // No need to update the buffer since we didn't parse anything
-                                    continue;
-                                }
-                            }
+                            return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
                         }
                     }
-
-                    if (result.IsCompleted)
+                    else
                     {
+                        // We give the parser a sliding window of the default message size
+                        var maxMessageSize = _maximumMessageSize.Value;
+
                         if (!buffer.IsEmpty)
                         {
-                            throw new InvalidDataException("Connection terminated while reading a message.");
+                            var segment = buffer;
+                            var overLength = false;
+
+                            if (segment.Length > maxMessageSize)
+                            {
+                                segment = segment.Slice(segment.Start, maxMessageSize);
+                                overLength = true;
+                            }
+
+                            if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
+                            {
+                                return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+                            }
+                            else if (overLength)
+                            {
+                                throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
+                            }
+                            else
+                            {
+                                // No need to update the buffer since we didn't parse anything
+                                continue;
+                            }
                         }
-                        break;
                     }
                 }
-                finally
+
+                if (result.IsCompleted)
                 {
-                    // The buffer was sliced up to where it was consumed, so we can just advance to the start.
-                    // We mark examined as buffer.End so that if we didn't receive a full frame, we'll wait for more data
-                    // before yielding the read again.
-                    input.AdvanceTo(consumed, examined);
+                    if (!buffer.IsEmpty)
+                    {
+                        throw new InvalidDataException("Connection terminated while reading a message.");
+                    }
+                    break;
                 }
             }
 
-            return protocolMessage;
+            return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+        }
+
+        public void Advance()
+        {
+            Connection.Transport.Input.AdvanceTo(_consumed, _examined);
         }
     }
 
@@ -181,5 +183,19 @@ namespace Bedrock.Framework.Protocols
     public interface IProtocolWriter<TMessage>
     {
         void WriteMessage(TMessage message, IBufferWriter<byte> output);
+    }
+
+    public readonly struct ReadResult<TMessage>
+    {
+        public ReadResult(TMessage message, bool isCanceled, bool isCompleted)
+        {
+            Message = message;
+            IsCanceled = isCanceled;
+            IsCompleted = isCompleted;
+        }
+
+        public TMessage Message { get; }
+        public bool IsCanceled { get; }
+        public bool IsCompleted { get; }
     }
 }
