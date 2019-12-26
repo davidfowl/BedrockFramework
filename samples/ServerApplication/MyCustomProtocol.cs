@@ -24,14 +24,21 @@ namespace ServerApplication
 
             while (true)
             {
-                var message = await reader.ReadAsync();
-
-                _logger.LogInformation("Received a message of {Length} bytes", message.Payload.Length);
-
-                // REVIEW: We need a ReadResult<T> to indicate completion and cancellation
-                if (message.Payload == null)
+                try
                 {
-                    break;
+                    var result = await reader.ReadAsync();
+                    var message = result.Message;
+
+                    _logger.LogInformation("Received a message of {Length} bytes", message.Payload.Length);
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                    reader.Advance();
                 }
             }
         }
