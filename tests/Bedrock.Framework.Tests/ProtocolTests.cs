@@ -69,20 +69,27 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task ReadingWithoutCallingAdvanceThrows()
+        public async Task ReadingWithoutCallingAdvanceReadsPreviousResult()
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var reader = Protocol.CreateReader(connection, new MyProtocolReader(data.Length));
-            
+
             await connection.Application.Output.WriteAsync(data);
             var result = await reader.ReadAsync();
             Assert.Equal(data, result.Message);
 
-            // REVIEW: This only throws today because the underlying pipe throws, we should make this work properly
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.ReadAsync());
+            result = await reader.ReadAsync();
+            Assert.Equal(data, result.Message);
+            reader.Advance();
+
+            var task = reader.ReadAsync();
+            Assert.False(task.IsCompleted);
+            connection.Application.Output.Complete();
+            result = await task;
+            Assert.True(result.IsCompleted);
         }
 
         public class MyProtocolReader : IProtocolReader<byte[]>
