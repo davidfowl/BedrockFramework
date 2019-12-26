@@ -10,7 +10,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>cloud microservice networking sockets websockets tcp</PackageTags>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(IsPackable) == 'true'">
     <PackageReference Include="Nerdbank.GitVersioning">
       <Version>3.0.28</Version>
       <PrivateAssets>all</PrivateAssets>

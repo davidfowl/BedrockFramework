@@ -120,7 +120,12 @@ namespace Bedrock.Framework.Protocols
                     {
                         if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
                         {
-                            return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+                            return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
+                        }
+                        else
+                        {
+                            // No message so advance
+                            input.AdvanceTo(_consumed, _examined);
                         }
                     }
                     else
@@ -141,7 +146,7 @@ namespace Bedrock.Framework.Protocols
 
                             if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
                             {
-                                return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+                                return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
                             }
                             else if (overLength)
                             {
@@ -149,6 +154,7 @@ namespace Bedrock.Framework.Protocols
                             }
                             else
                             {
+                                input.AdvanceTo(_consumed, _examined);
                                 // No need to update the buffer since we didn't parse anything
                                 continue;
                             }
@@ -171,6 +177,7 @@ namespace Bedrock.Framework.Protocols
 
         public void Advance()
         {
+            // TODO: More error handling here
             Connection.Transport.Input.AdvanceTo(_consumed, _examined);
         }
     }
