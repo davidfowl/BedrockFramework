@@ -9,17 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework", "src\Be
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerApplication", "samples\ServerApplication\ServerApplication.csproj", "{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedApplication", "samples\DistributedApplication\DistributedApplication.csproj", "{CC34D2C9-A20F-4E20-A9E0-973754F019ED}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DistributedApplication.ServiceRegistry", "samples\DistributedApplication.ServiceRegistry\DistributedApplication.ServiceRegistry.csproj", "{5531B956-7D0A-4670-A811-AC8DC8CE423F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE56BD3F-A489-42F7-A3E3-93AE5A0A54E2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1F47B42E-790F-48AA-8BFB-AD1986D05A67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bedrock.Framework.Tests", "tests\Bedrock.Framework.Tests\Bedrock.Framework.Tests.csproj", "{37FED75D-A02F-43AF-B888-F331634C3FA7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework.Tests", "tests\Bedrock.Framework.Tests\Bedrock.Framework.Tests.csproj", "{37FED75D-A02F-43AF-B888-F331634C3FA7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EA6E96E9-C7CC-4051-8E3A-28236CE32CFD}"
 	ProjectSection(SolutionItems) = preProject
@@ -44,14 +40,6 @@ Global
 		{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4CB0147D-BCEB-43A7-8F21-D144F7E9B462}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CC34D2C9-A20F-4E20-A9E0-973754F019ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5531B956-7D0A-4670-A811-AC8DC8CE423F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{37FED75D-A02F-43AF-B888-F331634C3FA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{37FED75D-A02F-43AF-B888-F331634C3FA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37FED75D-A02F-43AF-B888-F331634C3FA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -64,8 +52,6 @@ Global
 		{44A257ED-D3A7-4170-BE67-4392F2A6FE18} = {B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}
 		{53CD2C10-7FA3-4816-A44B-66E11B656102} = {BE56BD3F-A489-42F7-A3E3-93AE5A0A54E2}
 		{4CB0147D-BCEB-43A7-8F21-D144F7E9B462} = {B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}
-		{CC34D2C9-A20F-4E20-A9E0-973754F019ED} = {B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}
-		{5531B956-7D0A-4670-A811-AC8DC8CE423F} = {B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}
 		{37FED75D-A02F-43AF-B888-F331634C3FA7} = {1F47B42E-790F-48AA-8BFB-AD1986D05A67}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

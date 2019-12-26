@@ -35,6 +35,8 @@ namespace ServerApplication
                     {
                         break;
                     }
+
+                    await writer.WriteAsync(message);
                 }
                 finally
                 {

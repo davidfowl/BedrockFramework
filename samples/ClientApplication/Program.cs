@@ -227,6 +227,14 @@ namespace ClientApplication
             {
                 var line = Console.ReadLine();
                 await writer.WriteAsync(new Message(Encoding.UTF8.GetBytes(line)));
+                var result = await reader.ReadAsync();
+
+                if (result.IsCompleted)
+                {
+                    break;
+                }
+
+                reader.Advance();
             }
         }
 
