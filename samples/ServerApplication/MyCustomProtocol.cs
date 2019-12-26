@@ -31,7 +31,6 @@ namespace ServerApplication
 
                     _logger.LogInformation("Received a message of {Length} bytes", message.Payload.Length);
 
-                    // REVIEW: We need a ReadResult<T> to indicate completion and cancellation
                     if (result.IsCompleted)
                     {
                         break;
