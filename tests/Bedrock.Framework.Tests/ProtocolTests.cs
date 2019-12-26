@@ -60,7 +60,7 @@ namespace Bedrock.Framework.Tests
             // Write byte by byte
             for (int i = 0; i < data.Length; i++)
             {
-                await connection.Application.Output.WriteAsync(data.AsMemory(i, 1));
+                await connection.Application.Output.WriteAsync(data.AsMemory(i, 2));
             }
 
             var result = await resultTask;
