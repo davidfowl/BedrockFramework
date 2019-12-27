@@ -24,7 +24,7 @@ namespace Bedrock.Framework.Tests
             }
             connection.Application.Output.Complete();
 
-            var reader = Protocol.CreateReader(connection, new MyProtocolReader(data.Length));
+            var reader = connection.CreateReader(new MyProtocolReader(data.Length));
             var count = 0;
 
             while (true)
@@ -54,7 +54,7 @@ namespace Bedrock.Framework.Tests
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = Protocol.CreateReader(connection, new MyProtocolReader(data.Length), maxMessageSize);
+            var reader = connection.CreateReader(new MyProtocolReader(data.Length), maxMessageSize);
             var resultTask = reader.ReadAsync();
 
             // Write byte by byte
@@ -75,7 +75,7 @@ namespace Bedrock.Framework.Tests
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = Protocol.CreateReader(connection, new MyProtocolReader(data.Length));
+            var reader = connection.CreateReader(new MyProtocolReader(data.Length));
 
             await connection.Application.Output.WriteAsync(data);
             var result = await reader.ReadAsync();

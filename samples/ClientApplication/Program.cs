@@ -220,8 +220,8 @@ namespace ClientApplication
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             var protocol = new LengthPrefixedProtocol();
-            var reader = Protocol.CreateReader(connection, protocol);
-            var writer = Protocol.CreateWriter(connection, protocol);
+            var reader = connection.CreateReader(protocol);
+            var writer = connection.CreateWriter(protocol);
 
             while (true)
             {
