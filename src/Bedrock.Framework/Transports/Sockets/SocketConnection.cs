@@ -214,7 +214,10 @@ namespace Bedrock.Framework
             finally
             {
                 _aborted = true;
-                _socket.Shutdown(SocketShutdown.Both);
+                if (_socket.Connected)
+                {
+                    _socket.Shutdown(SocketShutdown.Both);
+                }
             }
 
             return error;
