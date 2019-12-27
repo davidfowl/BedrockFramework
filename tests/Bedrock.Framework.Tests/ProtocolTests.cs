@@ -24,7 +24,7 @@ namespace Bedrock.Framework.Tests
             }
             connection.Application.Output.Complete();
 
-            var reader = connection.CreateReader(new MyProtocolReader(data.Length));
+            var reader = connection.CreateReader(new TestProtocol(data.Length));
             var count = 0;
 
             while (true)
@@ -54,7 +54,7 @@ namespace Bedrock.Framework.Tests
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = connection.CreateReader(new MyProtocolReader(data.Length), maxMessageSize);
+            var reader = connection.CreateReader(new TestProtocol(data.Length), maxMessageSize);
             var resultTask = reader.ReadAsync();
 
             // Write byte by byte
@@ -75,7 +75,7 @@ namespace Bedrock.Framework.Tests
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = connection.CreateReader(new MyProtocolReader(data.Length));
+            var reader = connection.CreateReader(new TestProtocol(data.Length));
 
             await connection.Application.Output.WriteAsync(data);
             var result = await reader.ReadAsync();
@@ -92,9 +92,9 @@ namespace Bedrock.Framework.Tests
             Assert.True(result.IsCompleted);
         }
 
-        public class MyProtocolReader : IProtocolReader<byte[]>
+        public class TestProtocol : IProtocolReader<byte[]>, IProtocolWriter<byte[]>
         {
-            public MyProtocolReader(int messageLength)
+            public TestProtocol(int messageLength)
             {
                 MessageLength = messageLength;
             }
@@ -118,6 +118,11 @@ namespace Bedrock.Framework.Tests
                 examined = buffer.End;
 
                 return true;
+            }
+
+            public void WriteMessage(byte[] message, IBufferWriter<byte> output)
+            {
+                output.Write(message);
             }
         }
     }

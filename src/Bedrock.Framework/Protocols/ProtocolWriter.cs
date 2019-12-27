@@ -38,7 +38,20 @@ namespace Bedrock.Framework.Protocols
                 }
 
                 _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
-                await Connection.Transport.Output.FlushAsync(cancellationToken);
+
+                var result = await Connection.Transport.Output.FlushAsync(cancellationToken);
+
+                if (result.IsCanceled)
+                {
+                    throw new OperationCanceledException();
+                }
+
+                if (result.IsCompleted)
+                {
+                    _disposed = true;
+
+                    await Connection.Transport.Output.CompleteAsync();
+                }
             }
             finally
             {
@@ -62,7 +75,19 @@ namespace Bedrock.Framework.Protocols
                     _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
                 }
 
-                await Connection.Transport.Output.FlushAsync(cancellationToken);
+                var result = await Connection.Transport.Output.FlushAsync(cancellationToken);
+
+                if (result.IsCanceled)
+                {
+                    throw new OperationCanceledException();
+                }
+
+                if (result.IsCompleted)
+                {
+                    _disposed = true;
+
+                    await Connection.Transport.Output.CompleteAsync();
+                }
             }
             finally
             {
@@ -76,6 +101,11 @@ namespace Bedrock.Framework.Protocols
 
             try
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 _disposed = true;
 
                 await Connection.Transport.Output.CompleteAsync();
