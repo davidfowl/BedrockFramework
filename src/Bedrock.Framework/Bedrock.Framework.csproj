@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PackageDescription>Low level networking APIs for building custom severs and clients.</PackageDescription>
+    <PackageDescription>High performance, low level networking APIs for building custom severs and clients.</PackageDescription>
     <Authors>David Fowler</Authors>
   </PropertyGroup>
 
