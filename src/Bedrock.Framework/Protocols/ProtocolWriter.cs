@@ -6,27 +6,25 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class ProtocolWriter<TWriteMessage> : IAsyncDisposable
+    public class ProtocolWriter : IAsyncDisposable
     {
-        private readonly IProtocolWriter<TWriteMessage> _writer;
         private readonly SemaphoreSlim _semaphore;
         private bool _disposed;
 
-        public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
-            : this(connection, writer, new SemaphoreSlim(1))
+        public ProtocolWriter(ConnectionContext connection)
+            : this(connection, new SemaphoreSlim(1))
         {
         }
 
-        public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer, SemaphoreSlim semaphore)
+        public ProtocolWriter(ConnectionContext connection, SemaphoreSlim semaphore)
         {
             Connection = connection;
-            _writer = writer;
             _semaphore = semaphore;
         }
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask WriteAsync(TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
+        public async ValueTask WriteAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer, TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken);
 
@@ -37,7 +35,7 @@ namespace Bedrock.Framework.Protocols
                     return;
                 }
 
-                _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                writer.WriteMessage(protocolMessage, Connection.Transport.Output);
 
                 var result = await Connection.Transport.Output.FlushAsync(cancellationToken);
 
@@ -57,7 +55,7 @@ namespace Bedrock.Framework.Protocols
             }
         }
 
-        public async ValueTask WriteManyAsync(IEnumerable<TWriteMessage> protocolMessages, CancellationToken cancellationToken = default)
+        public async ValueTask WriteManyAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer, IEnumerable<TWriteMessage> protocolMessages, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken);
 
@@ -70,7 +68,7 @@ namespace Bedrock.Framework.Protocols
 
                 foreach (var protocolMessage in protocolMessages)
                 {
-                    _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
+                    writer.WriteMessage(protocolMessage, Connection.Transport.Output);
                 }
 
                 var result = await Connection.Transport.Output.FlushAsync(cancellationToken);

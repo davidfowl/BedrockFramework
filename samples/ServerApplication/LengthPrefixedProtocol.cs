@@ -5,7 +5,7 @@ using Bedrock.Framework.Protocols;
 
 namespace Protocols
 {
-    public class LengthPrefixedProtocol : IProtocolReader<Message>, IProtocolWriter<Message>
+    public class LengthPrefixedProtocol : IMessageReader<Message>, IMessageWriter<Message>
     {
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out Message message)
         {

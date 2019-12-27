@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class HubProtocolWriter : IProtocolWriter<HubMessage>
+    public class HubMessageWriter : IMessageWriter<HubMessage>
     {
         private readonly IHubProtocol _hubProtocol;
 
-        public HubProtocolWriter(IHubProtocol hubProtocol)
+        public HubMessageWriter(IHubProtocol hubProtocol)
         {
             _hubProtocol = hubProtocol;
         }

@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class HubProtocolReader : IProtocolReader<HubMessage>
+    public class HubMessageReader : IMessageReader<HubMessage>
     {
         private readonly IHubProtocol _hubProtocol;
         private readonly IInvocationBinder _invocationBinder;
 
-        public HubProtocolReader(IHubProtocol hubProtocol, IInvocationBinder invocationBinder)
+        public HubMessageReader(IHubProtocol hubProtocol, IInvocationBinder invocationBinder)
         {
             _hubProtocol = hubProtocol;
             _invocationBinder = invocationBinder;

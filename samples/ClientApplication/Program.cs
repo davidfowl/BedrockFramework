@@ -220,14 +220,14 @@ namespace ClientApplication
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             var protocol = new LengthPrefixedProtocol();
-            var reader = connection.CreateReader(protocol);
-            var writer = connection.CreateWriter(protocol);
+            var reader = connection.CreateReader();
+            var writer = connection.CreateWriter();
 
             while (true)
             {
                 var line = Console.ReadLine();
-                await writer.WriteAsync(new Message(Encoding.UTF8.GetBytes(line)));
-                var result = await reader.ReadAsync();
+                await writer.WriteAsync(protocol, new Message(Encoding.UTF8.GetBytes(line)));
+                var result = await reader.ReadAsync(protocol);
 
                 if (result.IsCompleted)
                 {
