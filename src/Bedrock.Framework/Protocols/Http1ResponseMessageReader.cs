@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Http1ResponseMessageReader : IProtocolReader<HttpResponseMessage>
+    public class Http1ResponseMessageReader : IMessageReader<HttpResponseMessage>
     {
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };

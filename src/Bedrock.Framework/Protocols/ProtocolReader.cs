@@ -6,26 +6,23 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class ProtocolReader<TReadMessage> : IAsyncDisposable
+    public class ProtocolReader : IAsyncDisposable
     {
-        private readonly IProtocolReader<TReadMessage> _reader;
         private readonly int? _maximumMessageSize;
         private SequencePosition _examined;
         private SequencePosition _consumed;
-        private ReadResult<TReadMessage> _previousMessage;
         private bool _hasPreviousMessage = false;
         private bool _disposed;
 
-        public ProtocolReader(ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize)
+        public ProtocolReader(ConnectionContext connection, int? maximumMessageSize)
         {
             Connection = connection;
-            _reader = reader;
             _maximumMessageSize = maximumMessageSize;
         }
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<ReadResult<TReadMessage>> ReadAsync(CancellationToken cancellationToken = default)
+        public async ValueTask<ReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader,  CancellationToken cancellationToken = default)
         {
             if (_disposed)
             {
@@ -34,11 +31,10 @@ namespace Bedrock.Framework.Protocols
 
             if (_hasPreviousMessage)
             {
-                return _previousMessage;
+                throw new InvalidOperationException("Advance must be called before calling ReadAsync");
             }
 
             var input = Connection.Transport.Input;
-            var reader = _reader;
 
             TReadMessage protocolMessage = default;
             var isCanceled = false;
@@ -67,7 +63,6 @@ namespace Bedrock.Framework.Protocols
                         if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
                         {
                             var message = new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
-                            _previousMessage = message;
                             _hasPreviousMessage = true;
                             return message;
                         }
@@ -96,7 +91,6 @@ namespace Bedrock.Framework.Protocols
                             if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
                             {
                                 var message = new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
-                                _previousMessage = message;
                                 _hasPreviousMessage = true;
                                 return message;
                             }

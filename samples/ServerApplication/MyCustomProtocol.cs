@@ -19,14 +19,14 @@ namespace ServerApplication
         {
             // Use a length prefixed protocol
             var protocol = new LengthPrefixedProtocol();
-            var reader = connection.CreateReader(protocol);
-            var writer = connection.CreateWriter(protocol);
+            var reader = connection.CreateReader();
+            var writer = connection.CreateWriter();
 
             while (true)
             {
                 try
                 {
-                    var result = await reader.ReadAsync();
+                    var result = await reader.ReadAsync(protocol);
                     var message = result.Message;
 
                     _logger.LogInformation("Received a message of {Length} bytes", message.Payload.Length);
@@ -36,7 +36,7 @@ namespace ServerApplication
                         break;
                     }
 
-                    await writer.WriteAsync(message);
+                    await writer.WriteAsync(protocol, message);
                 }
                 finally
                 {

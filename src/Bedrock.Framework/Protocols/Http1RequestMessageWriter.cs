@@ -6,7 +6,7 @@ using Bedrock.Framework.Infrastructure;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class Http1RequestMessageWriter : IProtocolWriter<HttpRequestMessage>
+    public class Http1RequestMessageWriter : IMessageWriter<HttpRequestMessage>
     {
         private ReadOnlySpan<byte> Http11 => new byte[] { (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1' };
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };

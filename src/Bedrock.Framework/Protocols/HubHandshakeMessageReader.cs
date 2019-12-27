@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR.Protocol;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class HubHandshakeProtocolReader : IProtocolReader<HandshakeRequestMessage>
+    public class HubHandshakeMessageReader : IMessageReader<HandshakeRequestMessage>
     {
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HandshakeRequestMessage message)
         {

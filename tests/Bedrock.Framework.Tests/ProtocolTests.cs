@@ -24,12 +24,13 @@ namespace Bedrock.Framework.Tests
             }
             connection.Application.Output.Complete();
 
-            var reader = connection.CreateReader(new TestProtocol(data.Length));
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
             var count = 0;
 
             while (true)
             {
-                var result = await reader.ReadAsync();
+                var result = await reader.ReadAsync(protocol);
 
                 if (result.IsCompleted)
                 {
@@ -54,8 +55,9 @@ namespace Bedrock.Framework.Tests
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = connection.CreateReader(new TestProtocol(data.Length), maxMessageSize);
-            var resultTask = reader.ReadAsync();
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader(maxMessageSize);
+            var resultTask = reader.ReadAsync(protocol);
 
             // Write byte by byte
             for (int i = 0; i < data.Length; i++)
@@ -69,30 +71,23 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task ReadingWithoutCallingAdvanceReadsPreviousResult()
+        public async Task ReadingWithoutCallingAdvanceThrows()
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
-            var reader = connection.CreateReader(new TestProtocol(data.Length));
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
 
             await connection.Application.Output.WriteAsync(data);
-            var result = await reader.ReadAsync();
+            var result = await reader.ReadAsync(protocol);
             Assert.Equal(data, result.Message);
 
-            result = await reader.ReadAsync();
-            Assert.Equal(data, result.Message);
-            reader.Advance();
-
-            var task = reader.ReadAsync();
-            Assert.False(task.IsCompleted);
-            connection.Application.Output.Complete();
-            result = await task;
-            Assert.True(result.IsCompleted);
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.ReadAsync(protocol));
         }
 
-        public class TestProtocol : IProtocolReader<byte[]>, IProtocolWriter<byte[]>
+        public class TestProtocol : IMessageReader<byte[]>, IMessageWriter<byte[]>
         {
             public TestProtocol(int messageLength)
             {

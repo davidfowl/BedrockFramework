@@ -9,16 +9,18 @@ namespace Bedrock.Framework.Protocols
     public class HubProtocol
     {
         private readonly ConnectionContext _connection;
-        private readonly ProtocolReader<HandshakeRequestMessage> _handshakeReader;
-        private readonly ProtocolReader<HubMessage> _hubProtocolReader;
-        private readonly ProtocolWriter<HubMessage> _hubProtocolWriter;
+        private readonly ProtocolReader _protocolReader;
+        private readonly ProtocolWriter _protocolWriter;
+        private readonly IMessageReader<HubMessage> _hubMessageReader;
+        private readonly IMessageWriter<HubMessage> _hubMessageWriter;
 
         private HubProtocol(ConnectionContext connection, int? maximumMessageSize, IHubProtocol hubProtocol, IInvocationBinder invocationBinder)
         {
             _connection = connection;
-            _handshakeReader = connection.CreateReader(new HubHandshakeProtocolReader(), maximumMessageSize);
-            _hubProtocolReader = connection.CreateReader(new HubProtocolReader(hubProtocol, invocationBinder), maximumMessageSize);
-            _hubProtocolWriter = connection.CreateWriter(new HubProtocolWriter(hubProtocol));
+            _protocolReader = connection.CreateReader(maximumMessageSize);
+            _protocolWriter = connection.CreateWriter();
+            _hubMessageReader = new HubMessageReader(hubProtocol, invocationBinder);
+            _hubMessageWriter = new HubMessageWriter(hubProtocol);
         }
 
         public static HubProtocol CreateFromConnection(ConnectionContext connection, IHubProtocol hubProtocol, IInvocationBinder invocationBinder, int? maximumMessageSize = null)
@@ -28,29 +30,29 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask<HandshakeRequestMessage> ReadHandshakeAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _handshakeReader.ReadAsync(cancellationToken);
+            var result = await _protocolReader.ReadAsync(new HubHandshakeMessageReader(), cancellationToken);
 
             var message = result.Message;
 
-            _handshakeReader.Advance();
+            _protocolReader.Advance();
 
             return message;
         }
 
         public async ValueTask<HubMessage> ReadAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _hubProtocolReader.ReadAsync(cancellationToken);
+            var result = await _protocolReader.ReadAsync(_hubMessageReader, cancellationToken);
 
             var message = result.Message;
 
-            _hubProtocolReader.Advance();
+            _protocolReader.Advance();
 
             return message;
         }
 
         public ValueTask WriteAsync(HubMessage message, CancellationToken cancellationToken = default)
         {
-            return _hubProtocolWriter.WriteAsync(message, cancellationToken);
+            return _protocolWriter.WriteAsync(_hubMessageWriter, message, cancellationToken);
         }
     }
 }
