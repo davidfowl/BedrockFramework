@@ -49,8 +49,6 @@ namespace Bedrock.Framework.Protocols
                 if (result.IsCompleted)
                 {
                     _disposed = true;
-
-                    await Connection.Transport.Output.CompleteAsync();
                 }
             }
             finally
@@ -85,8 +83,6 @@ namespace Bedrock.Framework.Protocols
                 if (result.IsCompleted)
                 {
                     _disposed = true;
-
-                    await Connection.Transport.Output.CompleteAsync();
                 }
             }
             finally
@@ -107,8 +103,6 @@ namespace Bedrock.Framework.Protocols
                 }
 
                 _disposed = true;
-
-                await Connection.Transport.Output.CompleteAsync();
             }
             finally
             {

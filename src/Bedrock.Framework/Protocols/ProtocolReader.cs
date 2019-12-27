@@ -14,6 +14,7 @@ namespace Bedrock.Framework.Protocols
         private SequencePosition _consumed;
         private ReadResult<TReadMessage> _previousMessage;
         private bool _hasPreviousMessage = false;
+        private bool _disposed;
 
         public ProtocolReader(ConnectionContext connection, IProtocolReader<TReadMessage> reader, int? maximumMessageSize)
         {
@@ -26,6 +27,11 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask<ReadResult<TReadMessage>> ReadAsync(CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             if (_hasPreviousMessage)
             {
                 return _previousMessage;
@@ -130,8 +136,8 @@ namespace Bedrock.Framework.Protocols
 
         public ValueTask DisposeAsync()
         {
-            // TODO: More error handling here to make sure this doesn't happen during reads
-            return Connection.Transport.Input.CompleteAsync();
+            _disposed = true;
+            return default;
         }
     }
 }
