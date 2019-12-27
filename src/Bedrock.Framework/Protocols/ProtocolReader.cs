@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class ProtocolReader<TReadMessage>
+    public class ProtocolReader<TReadMessage> : IAsyncDisposable
     {
         private readonly IProtocolReader<TReadMessage> _reader;
         private readonly int? _maximumMessageSize;
@@ -126,6 +126,12 @@ namespace Bedrock.Framework.Protocols
             // TODO: More error handling here
             Connection.Transport.Input.AdvanceTo(_consumed, _examined);
             _hasPreviousMessage = false;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            // TODO: More error handling here to make sure this doesn't happen during reads
+            return Connection.Transport.Input.CompleteAsync();
         }
     }
 }

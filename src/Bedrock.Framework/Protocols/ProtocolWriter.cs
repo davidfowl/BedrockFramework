@@ -1,14 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class ProtocolWriter<TWriteMessage>
+    public class ProtocolWriter<TWriteMessage> : IAsyncDisposable
     {
         private readonly IProtocolWriter<TWriteMessage> _writer;
         private readonly SemaphoreSlim _semaphore;
+        private bool _disposed;
 
         public ProtocolWriter(ConnectionContext connection, IProtocolWriter<TWriteMessage> writer)
             : this(connection, writer, new SemaphoreSlim(1))
@@ -30,6 +32,11 @@ namespace Bedrock.Framework.Protocols
 
             try
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
                 await Connection.Transport.Output.FlushAsync(cancellationToken);
             }
@@ -45,12 +52,33 @@ namespace Bedrock.Framework.Protocols
 
             try
             {
+                if (_disposed)
+                {
+                    return;
+                }
+
                 foreach (var protocolMessage in protocolMessages)
                 {
                     _writer.WriteMessage(protocolMessage, Connection.Transport.Output);
                 }
 
                 await Connection.Transport.Output.FlushAsync(cancellationToken);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _semaphore.WaitAsync();
+
+            try
+            {
+                _disposed = true;
+
+                await Connection.Transport.Output.CompleteAsync();
             }
             finally
             {
