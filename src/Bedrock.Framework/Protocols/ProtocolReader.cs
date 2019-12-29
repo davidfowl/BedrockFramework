@@ -22,7 +22,7 @@ namespace Bedrock.Framework.Protocols
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<ReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader,  CancellationToken cancellationToken = default)
+        public async ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader,  CancellationToken cancellationToken = default)
         {
             if (_disposed)
             {
@@ -62,7 +62,7 @@ namespace Bedrock.Framework.Protocols
                     {
                         if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
                         {
-                            var message = new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
+                            var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
                             _hasPreviousMessage = true;
                             return message;
                         }
@@ -90,7 +90,7 @@ namespace Bedrock.Framework.Protocols
 
                             if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
                             {
-                                var message = new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
+                                var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
                                 _hasPreviousMessage = true;
                                 return message;
                             }
@@ -118,7 +118,7 @@ namespace Bedrock.Framework.Protocols
                 }
             }
 
-            return new ReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+            return new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
         }
 
         public void Advance()

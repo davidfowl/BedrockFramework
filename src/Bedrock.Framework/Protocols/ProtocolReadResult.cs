@@ -1,8 +1,8 @@
 ﻿namespace Bedrock.Framework.Protocols
 {
-    public readonly struct ReadResult<TMessage>
+    public readonly struct ProtocolReadResult<TMessage>
     {
-        public ReadResult(TMessage message, bool isCanceled, bool isCompleted)
+        public ProtocolReadResult(TMessage message, bool isCanceled, bool isCompleted)
         {
             Message = message;
             IsCanceled = isCanceled;

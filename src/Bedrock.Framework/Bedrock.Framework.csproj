@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageDescription>High performance, low level networking APIs for building custom severs and clients.</PackageDescription>
     <Authors>David Fowler</Authors>
   </PropertyGroup>
@@ -10,9 +9,4 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
-  </ItemGroup>
-
 </Project>

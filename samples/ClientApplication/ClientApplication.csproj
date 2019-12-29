@@ -17,9 +17,9 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.0.0" />
     <PackageReference Include="MQTTnet.AspNetCore" Version="3.0.8" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
+    <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
   </ItemGroup>
 
 </Project>
