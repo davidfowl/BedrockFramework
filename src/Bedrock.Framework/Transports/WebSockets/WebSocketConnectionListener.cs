@@ -58,7 +58,7 @@ namespace Bedrock.Framework
 
         public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
         {
-            while (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken))
+            while (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 if (_acceptQueue.Reader.TryRead(out var connection))
                 {
@@ -75,7 +75,7 @@ namespace Bedrock.Framework
 
         public async ValueTask DisposeAsync()
         {
-            await UnbindAsync();
+            await UnbindAsync().ConfigureAwait(false);
 
             _server.Dispose();
         }
@@ -92,7 +92,7 @@ namespace Bedrock.Framework
 
         public async ValueTask UnbindAsync(CancellationToken cancellationToken = default)
         {
-            await _server.StopAsync(cancellationToken);
+            await _server.StopAsync(cancellationToken).ConfigureAwait(false);
 
             _acceptQueue.Writer.TryComplete();
         }

@@ -28,7 +28,7 @@ namespace Bedrock.Framework
             {
                 _logger.LogInformation("{ConnectionId} queued", connectionContext.ConnectionId);
 
-                if (!await task)
+                if (!await task.ConfigureAwait(false))
                 {
                     _logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.ConnectionId);
                     return;
@@ -37,7 +37,7 @@ namespace Bedrock.Framework
 
             try
             {
-                await _next(connectionContext);
+                await _next(connectionContext).ConfigureAwait(false);
             }
             finally
             {

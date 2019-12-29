@@ -92,14 +92,14 @@ namespace Bedrock.Framework.Infrastructure
 
         public async override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            int read = await _inner.ReadAsync(buffer, offset, count, cancellationToken);
+            int read = await _inner.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             Log("ReadAsync", new ReadOnlySpan<byte>(buffer, offset, read));
             return read;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
         {
-            int read = await _inner.ReadAsync(destination, cancellationToken);
+            int read = await _inner.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
             Log("ReadAsync", destination.Span.Slice(0, read));
             return read;
         }

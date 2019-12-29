@@ -48,8 +48,8 @@ namespace Bedrock.Framework.Infrastructure
                 _disposed = true;
             }
 
-            await Input.CompleteAsync();
-            await Output.CompleteAsync();
+            await Input.CompleteAsync().ConfigureAwait(false);
+            await Output.CompleteAsync().ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)

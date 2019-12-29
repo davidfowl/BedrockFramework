@@ -32,7 +32,7 @@ namespace Bedrock.Framework
         {
             try
             {
-                await _connectionDelegate(this);
+                await _connectionDelegate(this).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -96,11 +96,11 @@ namespace Bedrock.Framework
 
         public override async ValueTask DisposeAsync()
         {
-            await _connection.DisposeAsync();
+            await _connection.DisposeAsync().ConfigureAwait(false);
 
             _executionTcs.TrySetResult(null);
 
-            await _middlewareTask;
+            await _middlewareTask.ConfigureAwait(false);
         }
     }
 }

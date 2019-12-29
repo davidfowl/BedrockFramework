@@ -19,14 +19,14 @@ namespace Bedrock.Framework
             },
             tcs))
             {
-                var resultTask = await Task.WhenAny(task, tcs.Task);
+                var resultTask = await Task.WhenAny(task, tcs.Task).ConfigureAwait(false);
                 if (resultTask == tcs.Task)
                 {
                     // Operation cancelled
                     return false;
                 }
 
-                await task;
+                await task.ConfigureAwait(false);
                 return true;
             }
         }
@@ -36,7 +36,7 @@ namespace Bedrock.Framework
             using var cts = new CancellationTokenSource();
             var delayTask = Task.Delay(timeout, cts.Token);
 
-            var resultTask = await Task.WhenAny(task, delayTask);
+            var resultTask = await Task.WhenAny(task, delayTask).ConfigureAwait(false);
             if (resultTask == delayTask)
             {
                 // Operation cancelled
@@ -48,7 +48,7 @@ namespace Bedrock.Framework
                 cts.Cancel();
             }
 
-            await task;
+            await task.ConfigureAwait(false);
             return true;
         }
     }

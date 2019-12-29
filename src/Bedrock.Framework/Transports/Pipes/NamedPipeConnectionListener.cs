@@ -41,7 +41,7 @@ namespace Bedrock.Framework
 
                 try
                 {
-                    await stream.WaitForConnectionAsync(ListeningToken);
+                    await stream.WaitForConnectionAsync(ListeningToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (ListeningToken.IsCancellationRequested)
                 {
@@ -62,7 +62,7 @@ namespace Bedrock.Framework
 
         public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
         {
-            while (await _acceptedQueue.Reader.WaitToReadAsync(cancellationToken))
+            while (await _acceptedQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 if (_acceptedQueue.Reader.TryRead(out var connection))
                 {
@@ -82,7 +82,7 @@ namespace Bedrock.Framework
         {
             _listeningSource.Cancel();
 
-            await _listeningTask;
+            await _listeningTask.ConfigureAwait(false);
         }
     }
 }

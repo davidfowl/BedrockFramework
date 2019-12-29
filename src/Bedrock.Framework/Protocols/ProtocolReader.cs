@@ -42,7 +42,7 @@ namespace Bedrock.Framework.Protocols
 
             while (true)
             {
-                var result = await input.ReadAsync(cancellationToken);
+                var result = await input.ReadAsync(cancellationToken).ConfigureAwait(false);
                 isCanceled = result.IsCanceled;
                 isCompleted = result.IsCompleted;
                 var buffer = result.Buffer;

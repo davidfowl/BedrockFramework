@@ -28,11 +28,11 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType webSocketMessageType, bool endOfMessage, CancellationToken cancellationToken = default)
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
-                await WebSocket.SendAsync(buffer, webSocketMessageType, endOfMessage, cancellationToken);
+                await WebSocket.SendAsync(buffer, webSocketMessageType, endOfMessage, cancellationToken).ConfigureAwait(false);
             }
             finally
             {

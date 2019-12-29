@@ -66,7 +66,7 @@ namespace Bedrock.Framework
 
             var listener = new Http2ConnectionListener(server);
 
-            await listener.BindAsync(cancellationToken);
+            await listener.BindAsync(cancellationToken).ConfigureAwait(false);
 
             listener.EndPoint = listenOptions.IPEndPoint;
 

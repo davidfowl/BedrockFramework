@@ -38,9 +38,9 @@ namespace Bedrock.Framework
             };
             var connection = new HttpClientConnectionContext();
             request.Content = new HttpClientConnectionContextContent(connection);
-            var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            var response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             connection.HttpResponseMessage = response;
-            var responseStream = await response.Content.ReadAsStreamAsync();
+            var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
             connection.Input = PipeReader.Create(responseStream);
 
             return connection;

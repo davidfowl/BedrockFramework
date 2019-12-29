@@ -17,7 +17,7 @@ namespace Bedrock.Framework
             }
 
             var pipeStream = new NamedPipeClientStream(np.ServerName, np.PipeName, PipeDirection.InOut, np.PipeOptions);
-            await pipeStream.ConnectAsync(cancellationToken);
+            await pipeStream.ConnectAsync(cancellationToken).ConfigureAwait(false);
 
             return new NamedPipeConnectionContext(pipeStream);
         }

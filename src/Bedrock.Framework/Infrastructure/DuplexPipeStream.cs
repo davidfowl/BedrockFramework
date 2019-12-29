@@ -92,13 +92,13 @@ namespace Bedrock.Framework.Infrastructure
                 _output.Write(new ReadOnlySpan<byte>(buffer, offset, count));
             }
 
-            await _output.FlushAsync(cancellationToken);
+            await _output.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
         {
             _output.Write(source.Span);
-            await _output.FlushAsync(cancellationToken);
+            await _output.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override void Flush()
@@ -115,7 +115,7 @@ namespace Bedrock.Framework.Infrastructure
         {
             while (true)
             {
-                var result = await _input.ReadAsync(cancellationToken);
+                var result = await _input.ReadAsync(cancellationToken).ConfigureAwait(false);
                 var readableBuffer = result.Buffer;
                 try
                 {

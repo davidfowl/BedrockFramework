@@ -18,7 +18,7 @@ namespace Bedrock.Framework
 
         public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            var connection = await _connectionFactory.ConnectAsync(endpoint, cancellationToken);
+            var connection = await _connectionFactory.ConnectAsync(endpoint, cancellationToken).ConfigureAwait(false);
 
             // Since nothing is being returned from this middleware, we need to wait for the last middleware to run
             // until we yield this call. Stash a tcs in the items bag that allows this code to get notified
@@ -29,7 +29,7 @@ namespace Bedrock.Framework
             connectionContextWithDelegate.Start();
 
             // Wait for it the most inner middleware to run
-            return await connectionContextWithDelegate.Initialized.Task;
+            return await connectionContextWithDelegate.Initialized.Task.ConfigureAwait(false);
         }
     }
 }

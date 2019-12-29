@@ -42,7 +42,7 @@ namespace Bedrock.Framework
             {
                 foreach (var binding in _builder.Bindings)
                 {
-                    await foreach (var listener in binding.BindAsync(cancellationToken))
+                    await foreach (var listener in binding.BindAsync(cancellationToken).ConfigureAwait(false))
                     {
                         var runningListener = new RunningListener(this, binding, listener);
                         _listeners.Add(runningListener);
@@ -84,7 +84,7 @@ namespace Bedrock.Framework
                 tasks[i] = _listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Signal to all of the listeners that it's time to start the shutdown process
             // We call this after unbind so that we're not touching the listener anymore (each loop will dispose the listener)
@@ -99,7 +99,7 @@ namespace Bedrock.Framework
 
             if (cancellationToken.CanBeCanceled)
             {
-                await shutdownTask.WithCancellation(cancellationToken);
+                await shutdownTask.WithCancellation(cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -110,7 +110,7 @@ namespace Bedrock.Framework
             {
                 _timerAwaitable.Stop();
 
-                await _timerTask;
+                await _timerTask.ConfigureAwait(false);
             }
         }
 
@@ -158,7 +158,7 @@ namespace Bedrock.Framework
                     {
                         using var scope = BeginConnectionScope(serverConnection);
 
-                        await connectionDelegate(connection);
+                        await connectionDelegate(connection).ConfigureAwait(false);
                     }
                     catch (ConnectionResetException)
                     {
@@ -175,9 +175,9 @@ namespace Bedrock.Framework
                     finally
                     {
                         // Fire the OnCompleted callbacks
-                        await serverConnection.FireOnCompletedAsync();
+                        await serverConnection.FireOnCompletedAsync().ConfigureAwait(false);
 
-                        await connection.DisposeAsync();
+                        await connection.DisposeAsync().ConfigureAwait(false);
 
                         // Remove the connection from tracking
                         _connections.TryRemove(serverConnection.Id, out _);
@@ -190,7 +190,7 @@ namespace Bedrock.Framework
                 {
                     try
                     {
-                        var connection = await listener.AcceptAsync();
+                        var connection = await listener.AcceptAsync().ConfigureAwait(false);
 
                         if (connection == null)
                         {
@@ -216,7 +216,7 @@ namespace Bedrock.Framework
                 }
 
                 // Don't shut down connections until entire server is shutting down
-                await _server._shutdownTcs.Task;
+                await _server._shutdownTcs.Task.ConfigureAwait(false);
 
                 // Give connections a chance to close gracefully
                 var tasks = new List<Task>(_connections.Count);
@@ -227,7 +227,7 @@ namespace Bedrock.Framework
                     tasks.Add(pair.Value.ExecutionTask);
                 }
 
-                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._builder.ShutdownTimeout))
+                if (!await Task.WhenAll(tasks).TimeoutAfter(_server._builder.ShutdownTimeout).ConfigureAwait(false))
                 {
                     // Abort all connections still in flight
                     foreach (var pair in _connections)
@@ -235,10 +235,10 @@ namespace Bedrock.Framework
                         pair.Value.Connection.TransportConnection.Abort();
                     }
 
-                    await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
 
-                await listener.DisposeAsync();
+                await listener.DisposeAsync().ConfigureAwait(false);
             }
 
 

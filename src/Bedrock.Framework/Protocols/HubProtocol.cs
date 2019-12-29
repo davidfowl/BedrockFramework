@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask<HandshakeRequestMessage> ReadHandshakeAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _protocolReader.ReadAsync(new HubHandshakeMessageReader(), cancellationToken);
+            var result = await _protocolReader.ReadAsync(new HubHandshakeMessageReader(), cancellationToken).ConfigureAwait(false);
 
             var message = result.Message;
 
@@ -41,7 +41,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask<HubMessage> ReadAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _protocolReader.ReadAsync(_hubMessageReader, cancellationToken);
+            var result = await _protocolReader.ReadAsync(_hubMessageReader, cancellationToken).ConfigureAwait(false);
 
             var message = result.Message;
 

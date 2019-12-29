@@ -26,7 +26,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask WriteAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer, TWriteMessage protocolMessage, CancellationToken cancellationToken = default)
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -37,7 +37,7 @@ namespace Bedrock.Framework.Protocols
 
                 writer.WriteMessage(protocolMessage, Connection.Transport.Output);
 
-                var result = await Connection.Transport.Output.FlushAsync(cancellationToken);
+                var result = await Connection.Transport.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
                 if (result.IsCanceled)
                 {
@@ -57,7 +57,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask WriteManyAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer, IEnumerable<TWriteMessage> protocolMessages, CancellationToken cancellationToken = default)
         {
-            await _semaphore.WaitAsync(cancellationToken);
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -71,7 +71,7 @@ namespace Bedrock.Framework.Protocols
                     writer.WriteMessage(protocolMessage, Connection.Transport.Output);
                 }
 
-                var result = await Connection.Transport.Output.FlushAsync(cancellationToken);
+                var result = await Connection.Transport.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
                 if (result.IsCanceled)
                 {
@@ -91,7 +91,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask DisposeAsync()
         {
-            await _semaphore.WaitAsync();
+            await _semaphore.WaitAsync().ConfigureAwait(false);
 
             try
             {

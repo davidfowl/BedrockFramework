@@ -31,7 +31,7 @@ namespace Bedrock.Framework
                 {
                     context.Transport = loggingDuplexPipe;
 
-                    await _next(context);
+                    await _next(context).ConfigureAwait(false);
                 }
             }
             finally
