@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
 using System.Text;
 using System.Threading.Tasks;
@@ -71,6 +72,22 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public async Task MessageBiggerThanMaxMessageSizeThrows()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader(maximumMessageSize: 5);
+            var resultTask = reader.ReadAsync(protocol);
+
+            await connection.Application.Output.WriteAsync(data);
+
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await resultTask);
+        }
+
+        [Fact]
         public async Task ReadingWithoutCallingAdvanceThrows()
         {
             var options = new PipeOptions(useSynchronizationContext: false);
@@ -85,6 +102,30 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(data, result.Message);
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.ReadAsync(protocol));
+        }
+
+        [Fact]
+        public async Task ReadingAfterCancellationWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
+            var resultTask = reader.ReadAsync(protocol);
+            
+            connection.Transport.Input.CancelPendingRead();
+
+            var result = await resultTask;
+            Assert.True(result.IsCanceled);
+            reader.Advance();
+
+            await connection.Application.Output.WriteAsync(data);
+            result = await reader.ReadAsync(protocol);
+            reader.Advance();
+
+            Assert.Equal(data, result.Message);
         }
 
         public class TestProtocol : IMessageReader<byte[]>, IMessageWriter<byte[]>

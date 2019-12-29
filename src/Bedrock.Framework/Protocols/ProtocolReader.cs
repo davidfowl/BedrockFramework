@@ -22,7 +22,7 @@ namespace Bedrock.Framework.Protocols
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader,  CancellationToken cancellationToken = default)
+        public async ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken = default)
         {
             if (_disposed)
             {
@@ -77,33 +77,30 @@ namespace Bedrock.Framework.Protocols
                         // We give the parser a sliding window of the default message size
                         var maxMessageSize = _maximumMessageSize.Value;
 
-                        if (!buffer.IsEmpty)
+                        var segment = buffer;
+                        var overLength = false;
+
+                        if (segment.Length > maxMessageSize)
                         {
-                            var segment = buffer;
-                            var overLength = false;
+                            segment = segment.Slice(segment.Start, maxMessageSize);
+                            overLength = true;
+                        }
 
-                            if (segment.Length > maxMessageSize)
-                            {
-                                segment = segment.Slice(segment.Start, maxMessageSize);
-                                overLength = true;
-                            }
-
-                            if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
-                            {
-                                var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
-                                _hasPreviousMessage = true;
-                                return message;
-                            }
-                            else if (overLength)
-                            {
-                                throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
-                            }
-                            else
-                            {
-                                input.AdvanceTo(_consumed, _examined);
-                                // No need to update the buffer since we didn't parse anything
-                                continue;
-                            }
+                        if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
+                        {
+                            var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
+                            _hasPreviousMessage = true;
+                            return message;
+                        }
+                        else if (overLength)
+                        {
+                            throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
+                        }
+                        else
+                        {
+                            input.AdvanceTo(_consumed, _examined);
+                            // No need to update the buffer since we didn't parse anything
+                            continue;
                         }
                     }
                 }
@@ -123,8 +120,19 @@ namespace Bedrock.Framework.Protocols
 
         public void Advance()
         {
-            // TODO: More error handling here
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            if (!_hasPreviousMessage)
+            {
+                // REVIEW: Should this throw?
+                return;
+            }
+
             Connection.Transport.Input.AdvanceTo(_consumed, _examined);
+
             _hasPreviousMessage = false;
         }
 
