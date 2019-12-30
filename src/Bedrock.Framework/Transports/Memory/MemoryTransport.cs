@@ -62,7 +62,7 @@ namespace Bedrock.Framework.Transports.Memory
 
             public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
             {
-                if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken))
+                if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
                 {
                     while (AcceptQueue.Reader.TryRead(out var item))
                     {
@@ -75,7 +75,7 @@ namespace Bedrock.Framework.Transports.Memory
 
             public ValueTask DisposeAsync()
             {
-                return UnbindAsync(default);
+                return UnbindAsync();
             }
 
             public ValueTask UnbindAsync(CancellationToken cancellationToken = default)

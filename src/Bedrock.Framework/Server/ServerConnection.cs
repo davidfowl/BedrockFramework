@@ -130,7 +130,7 @@ namespace Bedrock.Framework
         {
             try
             {
-                await currentTask;
+                await currentTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -141,7 +141,7 @@ namespace Bedrock.Framework
             {
                 try
                 {
-                    await entry.Key.Invoke(entry.Value);
+                    await entry.Key.Invoke(entry.Value).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

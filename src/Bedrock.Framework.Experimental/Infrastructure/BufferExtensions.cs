@@ -3,7 +3,9 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Bedrock.Framework.Infrastructure
 {
@@ -40,7 +42,8 @@ namespace Bedrock.Framework.Infrastructure
 
             // Fast path, try copying to the available memory directly
             var advanceBy = 0;
-            fixed (byte* output = span)
+            Debug.Assert(span.Length > 0);
+            fixed (byte* output = &MemoryMarshal.GetReference(span))
             {
                 var start = output;
                 if (number < 10 && bytesLeftInBlock >= 1)
@@ -84,14 +87,13 @@ namespace Bedrock.Framework.Infrastructure
         {
             const byte AsciiDigitStart = (byte)'0';
 
-            var value = number;
+            var value = (long)number;
             var position = _maxULongByteLength;
             var byteBuffer = NumericBytesScratch;
             do
             {
-                // Consider using Math.DivRem() if available
-                var quotient = value / 10;
-                byteBuffer[--position] = (byte)(AsciiDigitStart + (value - quotient * 10)); // 0x30 = '0'
+                var quotient = Math.DivRem(value, 10, out var remainder);
+                byteBuffer[--position] = (byte)(AsciiDigitStart + remainder); // 0x30 = '0'
                 value = quotient;
             }
             while (value != 0);
