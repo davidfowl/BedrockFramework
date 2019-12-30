@@ -46,5 +46,3 @@ namespace Bedrock.Framework
         }
     }
 }
-
-

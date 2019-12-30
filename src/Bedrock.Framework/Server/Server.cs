@@ -52,7 +52,7 @@ namespace Bedrock.Framework
             }
             catch
             {
-                await StopAsync();
+                await StopAsync().ConfigureAwait(false);
 
                 throw;
             }
@@ -103,7 +103,7 @@ namespace Bedrock.Framework
             }
             else
             {
-                await shutdownTask;
+                await shutdownTask.ConfigureAwait(false);
             }
 
             if (_timerAwaitable != null)

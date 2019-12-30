@@ -43,19 +43,20 @@ namespace Bedrock.Framework
         // We claim to have inherent keep-alive so the client doesn't kill the connection when it hasn't seen ping frames.
         public bool HasInherentKeepAlive { get; } = true;
 
-        public override ValueTask DisposeAsync()
+        public override async ValueTask DisposeAsync()
         {
-            Transport?.Output.Complete();
-            Transport?.Input.Complete();
+            if (Transport != null)
+            {
+                await Transport.Output.CompleteAsync().ConfigureAwait(false);
+                await Transport.Input.CompleteAsync().ConfigureAwait(false);
+            }
 
             _socket?.Dispose();
-
-            return default;
         }
 
         public async ValueTask<ConnectionContext> StartAsync()
         {
-            await _socket.ConnectAsync(_endPoint);
+            await _socket.ConnectAsync(_endPoint).ConfigureAwait(false);
 
             var pair = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
 
@@ -82,7 +83,7 @@ namespace Bedrock.Framework
                 // If the sending task completes then close the receive
                 // We don't need to do this in the other direction because the kestrel
                 // will trigger the output closing once the input is complete.
-                if (await Task.WhenAny(receiveTask, sendTask) == sendTask)
+                if (await Task.WhenAny(receiveTask, sendTask).ConfigureAwait(false) == sendTask)
                 {
                     // Tell the reader it's being aborted
                     _socket.Dispose();
@@ -105,13 +106,14 @@ namespace Bedrock.Framework
                 _application.Input.Complete(sendError);
             }
         }
+
         private async Task DoReceive()
         {
             Exception error = null;
 
             try
             {
-                await ProcessReceives();
+                await ProcessReceives().ConfigureAwait(false);
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionReset)
             {
@@ -147,10 +149,10 @@ namespace Bedrock.Framework
             {
                 if (_aborted)
                 {
-                    error = error ?? new ConnectionAbortedException();
+                    error ??= new ConnectionAbortedException();
                 }
 
-                _application.Output.Complete(error);
+                await _application.Output.CompleteAsync(error).ConfigureAwait(false);
             }
         }
 
@@ -175,10 +177,10 @@ namespace Bedrock.Framework
 
                 if (!flushTask.IsCompleted)
                 {
-                    await flushTask;
+                    await flushTask.ConfigureAwait(false);
                 }
 
-                var result = flushTask.GetAwaiter().GetResult();
+                var result = flushTask.Result;
                 if (result.IsCompleted)
                 {
                     // Pipe consumer is shut down, do we stop writing
@@ -193,7 +195,7 @@ namespace Bedrock.Framework
 
             try
             {
-                await ProcessSends();
+                await ProcessSends().ConfigureAwait(false);
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.OperationAborted)
             {
@@ -225,7 +227,7 @@ namespace Bedrock.Framework
             while (true)
             {
                 // Wait for data to write from the pipe producer
-                var result = await _application.Input.ReadAsync();
+                var result = await _application.Input.ReadAsync().ConfigureAwait(false);
                 var buffer = result.Buffer;
 
                 if (result.IsCanceled)

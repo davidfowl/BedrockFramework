@@ -164,18 +164,18 @@ namespace Bedrock.Framework.Middleware.Tls
 
                     _options.OnAuthenticateAsServer?.Invoke(context, sslOptions);
 
-                    await sslStream.AuthenticateAsServerAsync(sslOptions, cancellationTokeSource.Token);
+                    await sslStream.AuthenticateAsServerAsync(sslOptions, cancellationTokeSource.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     _logger?.LogDebug(2, "Authentication timed out");
-                    await sslStream.DisposeAsync();
+                    await sslStream.DisposeAsync().ConfigureAwait(false);
                     return;
                 }
                 catch (Exception ex) when (ex is IOException || ex is AuthenticationException)
                 {
                     _logger?.LogDebug(1, ex, "Authentication failed");
-                    await sslStream.DisposeAsync();
+                    await sslStream.DisposeAsync().ConfigureAwait(false);
                     return;
                 }
             }
@@ -202,7 +202,7 @@ namespace Bedrock.Framework.Middleware.Tls
                 await using (sslStream)
                 await using (sslDuplexPipe)
                 {
-                    await _next(context);
+                    await _next(context).ConfigureAwait(false);
                     // Dispose the inner stream (SslDuplexPipe) before disposing the SslStream
                     // as the duplex pipe can hit an ODE as it still may be writing.
                 }
