@@ -1,19 +1,32 @@
-﻿using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Bedrock.Framework.Protocols;
+using Microsoft.AspNetCore.Connections;
 
 namespace ServerApplication
 {
-    public class HttpApplication : IHttpApplication
+    public class HttpApplication : ConnectionHandler
     {
-        public async Task ProcessRequests(IAsyncEnumerable<IHttpContext> requests)
+        public override async Task OnConnectedAsync(ConnectionContext connection)
         {
-            var responseData = Encoding.ASCII.GetBytes("HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\nHello World");
+            var httpConnection = new HttpServerProtocol(connection);
 
-            await foreach (var context in requests)
+            while (true)
             {
-                await context.Output.WriteAsync(responseData);
+                var request = await httpConnection.ReadRequestAsync();
+
+                Console.WriteLine(request);
+
+                // Consume the request body
+                await request.Content.CopyToAsync(Stream.Null);
+
+                await httpConnection.WriteResponseAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("Hello World")
+                });
             }
         }
     }

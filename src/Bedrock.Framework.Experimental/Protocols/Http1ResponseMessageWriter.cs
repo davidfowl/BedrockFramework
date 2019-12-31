@@ -35,6 +35,24 @@ namespace Bedrock.Framework.Protocols
                 }
             }
 
+            if (message.Content != null)
+            {
+                // Access the property to compute the content length (if there is any)
+                _ = message.Content.Headers.ContentLength;
+
+                foreach (var header in message.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        writer.WriteAsciiNoValidation(header.Key);
+                        writer.Write(MemoryMarshal.CreateReadOnlySpan(ref colon, 1));
+                        writer.Write(Space);
+                        writer.WriteAsciiNoValidation(value);
+                        writer.Write(NewLine);
+                    }
+                }
+            }
+
             writer.Write(NewLine);
             writer.Commit();
         }

@@ -10,10 +10,10 @@ namespace Bedrock.Framework.Protocols
         private readonly ProtocolReader _reader;
         private readonly Http1RequestMessageWriter _messageWriter = new Http1RequestMessageWriter();
 
-        private HttpClientProtocol(ConnectionContext connection)
+        public HttpClientProtocol(ConnectionContext connection)
         {
             _connection = connection;
-            _reader = _connection.CreateReader();
+            _reader = connection.CreateReader();
         }
 
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead)
@@ -29,9 +29,8 @@ namespace Bedrock.Framework.Protocols
 
             await _connection.Transport.Output.FlushAsync().ConfigureAwait(false);
 
-            var headerReader = new Http1ResponseMessageReader();
-            var content = new HttpProtocolContent();
-            headerReader.SetResponse(new HttpResponseMessage() { Content = content });
+            var content = new HttpBodyContent();
+            var headerReader = new Http1ResponseMessageReader(content);
 
             var result = await _reader.ReadAsync(headerReader).ConfigureAwait(false);
 
@@ -42,23 +41,23 @@ namespace Bedrock.Framework.Protocols
 
             var response = result.Message;
 
-            if (response.Content.Headers.ContentLength != null)
+            // TODO: Handle upgrade
+            if (content.Headers.ContentLength != null)
             {
                 content.SetStream(new HttpBodyStream(_reader, new ContentLengthHttpBodyReader(response.Content.Headers.ContentLength.Value)));
             }
-            else // TODO: Handle upgrade
+            else if (response.Headers.TransferEncodingChunked.HasValue)
             {
                 content.SetStream(new HttpBodyStream(_reader, new ChunkedHttpBodyReader()));
+            }
+            else
+            {
+                content.SetStream(new HttpBodyStream(_reader, new ContentLengthHttpBodyReader(0)));
             }
 
             _reader.Advance();
 
             return response;
-        }
-
-        public static HttpClientProtocol CreateFromConnection(ConnectionContext connection)
-        {
-            return new HttpClientProtocol(connection);
         }
     }
 }

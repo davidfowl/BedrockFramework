@@ -13,13 +13,13 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
 
-        private HttpResponseMessage _httpResponseMessage;
+        private HttpResponseMessage _httpResponseMessage = new HttpResponseMessage();
 
         private State _state;
 
-        public void SetResponse(HttpResponseMessage message)
+        public Http1ResponseMessageReader(HttpContent content)
         {
-            _httpResponseMessage = message;
+            _httpResponseMessage.Content = content;
         }
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HttpResponseMessage message)

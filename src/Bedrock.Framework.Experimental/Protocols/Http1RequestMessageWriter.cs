@@ -37,6 +37,21 @@ namespace Bedrock.Framework.Protocols
                 }
             }
 
+            if (message.Content != null)
+            {
+                foreach (var header in message.Content.Headers)
+                {
+                    foreach (var value in header.Value)
+                    {
+                        writer.WriteAsciiNoValidation(header.Key);
+                        writer.Write(MemoryMarshal.CreateReadOnlySpan(ref colon, 1));
+                        writer.Write(Space);
+                        writer.WriteAsciiNoValidation(value);
+                        writer.Write(NewLine);
+                    }
+                }
+            }
+
             writer.Write(NewLine);
             writer.Commit();
         }

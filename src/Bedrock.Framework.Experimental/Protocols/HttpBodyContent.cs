@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Bedrock.Framework.Protocols
 {
-    internal class HttpProtocolContent : HttpContent
+    internal class HttpBodyContent : HttpContent
     {
         private Stream _stream;
 

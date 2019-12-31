@@ -35,7 +35,7 @@ namespace ServerApplication
 
                             // HTTP/1.1 server
                             sockets.Listen(IPAddress.Loopback, 5001,
-                                builder => builder.UseConnectionLogging().UseHttpServer(new HttpApplication()));
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<HttpApplication>());
 
                             // SignalR Hub
                             sockets.Listen(IPAddress.Loopback, 5002,

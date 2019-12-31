@@ -101,10 +101,10 @@ namespace ClientApplication
                         .UseConnectionLogging()
                         .Build();
 
-            await using var connection = await client.ConnectAsync(new DnsEndPoint("localhost", 5001));
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5001));
 
             // Use the HTTP/1.1 protocol
-            var httpProtocol = HttpClientProtocol.CreateFromConnection(connection);
+            var httpProtocol = new HttpClientProtocol(connection);
 
             while (true)
             {
@@ -128,7 +128,7 @@ namespace ClientApplication
                 var response = await httpProtocol.SendAsync(request);
 
                 await response.Content.CopyToAsync(Console.OpenStandardOutput());
-                
+
                 Console.WriteLine();
             }
         }
