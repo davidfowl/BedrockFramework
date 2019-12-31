@@ -121,6 +121,31 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public async Task FullMessageThenPartialMessage()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
+            var resultTask = reader.ReadAsync(protocol);
+
+            connection.Application.Output.Write(data);
+            connection.Application.Output.Write(data.AsSpan(0, 5));
+            await connection.Application.Output.FlushAsync();
+
+            var result = await resultTask;
+            Assert.Equal(data, result.Message);
+            reader.Advance();
+
+            resultTask = reader.ReadAsync(protocol);
+            await connection.Application.Output.WriteAsync(data.AsMemory(5));
+            result = await resultTask;
+            Assert.Equal(data, result.Message);
+        }
+
+        [Fact]
         public async Task MessageBiggerThanMaxMessageSizeThrows()
         {
             var options = new PipeOptions(useSynchronizationContext: false);

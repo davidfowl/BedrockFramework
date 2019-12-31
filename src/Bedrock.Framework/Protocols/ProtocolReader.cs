@@ -35,7 +35,7 @@ namespace Bedrock.Framework.Protocols
 
             if (_hasMessage)
             {
-                throw new InvalidOperationException("Advance must be called before calling ReadAsync");
+                throw new InvalidOperationException($"{nameof(Advance)} must be called before calling {nameof(ReadAsync)}");
             }
 
             var input = Connection.Transport.Input;
@@ -52,7 +52,8 @@ namespace Bedrock.Framework.Protocols
                     _hasMessage = true;
                     return new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false);
                 }
-                else if (_hasMessage)
+                // If this is the initial read, then don't Advance (it throws)
+                else if (_consumed.GetObject() != null)
                 {
                     input.AdvanceTo(_consumed, _examined);
                 }
@@ -126,16 +127,10 @@ namespace Bedrock.Framework.Protocols
 
             if (!_hasMessage)
             {
-                // REVIEW: Should this throw?
                 return;
             }
 
             _buffer = _buffer.Slice(_consumed);
-
-            if (_buffer.IsEmpty)
-            {
-                Connection.Transport.Input.AdvanceTo(_consumed, _examined);
-            }
 
             _hasMessage = false;
         }
