@@ -26,7 +26,7 @@ namespace Bedrock.Framework.Protocols
 
         public ConnectionContext Connection { get; }
 
-        public async ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken = default)
+        public ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken = default)
         {
             if (_disposed)
             {
@@ -38,22 +38,63 @@ namespace Bedrock.Framework.Protocols
                 throw new InvalidOperationException($"{nameof(Advance)} must be called before calling {nameof(ReadAsync)}");
             }
 
+            // If this is the very first read, then make it go async since we have no data
+            if (_consumed.GetObject() == null)
+            {
+                return DoAsyncRead(reader, cancellationToken);
+            }
+
+            // We have a buffer, test to see if there's any message left in the buffer
+            if (TryParseMessage(reader, _buffer, out var protocolMessage))
+            {
+                _hasMessage = true;
+                return new ValueTask<ProtocolReadResult<TReadMessage>>(new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false));
+            }
+            else
+            {
+                // We couldn't parse the message so advance the input so we can read
+                Connection.Transport.Input.AdvanceTo(_consumed, _examined);
+            }
+
+            if (_isCompleted)
+            {
+                // If we're complete then short-circuit
+                if (!_buffer.IsEmpty)
+                {
+                    throw new InvalidDataException("Connection terminated while reading a message.");
+                }
+
+                return new ValueTask<ProtocolReadResult<TReadMessage>>(new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted));
+            }
+
+            return DoAsyncRead(reader, cancellationToken);
+        }
+
+        private async ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
+        {
             var input = Connection.Transport.Input;
 
             while (true)
             {
+                var result = await input.ReadAsync(cancellationToken).ConfigureAwait(false);
+
+                _buffer = result.Buffer;
+                _isCanceled = result.IsCanceled;
+                _isCompleted = result.IsCompleted;
+                _consumed = _buffer.Start;
+                _examined = _buffer.End;
+
                 if (_isCanceled)
                 {
                     break;
                 }
 
-                if (TryGetMessage(reader, _buffer, out var protocolMessage))
+                if (TryParseMessage(reader, _buffer, out var protocolMessage))
                 {
                     _hasMessage = true;
                     return new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false);
                 }
-                // If this is the initial read, then don't Advance (it throws)
-                else if (_consumed.GetObject() != null)
+                else
                 {
                     input.AdvanceTo(_consumed, _examined);
                 }
@@ -67,19 +108,12 @@ namespace Bedrock.Framework.Protocols
 
                     break;
                 }
-
-                var result = await input.ReadAsync(cancellationToken).ConfigureAwait(false);
-                _buffer = result.Buffer;
-                _isCanceled = result.IsCanceled;
-                _isCompleted = result.IsCompleted;
-                _consumed = _buffer.Start;
-                _examined = _buffer.End;
             }
 
             return new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted);
         }
 
-        private bool TryGetMessage<TReadMessage>(IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
+        private bool TryParseMessage<TReadMessage>(IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
         {
             // No message limit, just parse and dispatch
             if (_maximumMessageSize == null)

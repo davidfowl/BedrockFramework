@@ -202,6 +202,53 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(data, result.Message);
         }
 
+        [Fact]
+        public async Task AdvanceAfterCancelledReadDoesNotLoseData()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
+
+            connection.Transport.Input.CancelPendingRead();
+            await connection.Application.Output.WriteAsync(data);
+            var resultTask = reader.ReadAsync(protocol);
+
+            var result = await resultTask;
+            Assert.True(result.IsCanceled);
+            reader.Advance();
+
+            resultTask = reader.ReadAsync(protocol);
+            result = await resultTask;
+            reader.Advance();
+
+            Assert.Equal(data, result.Message);
+        }
+
+        [Fact]
+        public async Task ReadingAfterCompleteWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
+            var resultTask = reader.ReadAsync(protocol);
+
+            connection.Application.Output.Complete();
+
+            var result = await resultTask;
+            Assert.True(result.IsCompleted);
+            reader.Advance();
+
+            result = await reader.ReadAsync(protocol);
+            Assert.True(result.IsCompleted);
+            reader.Advance();
+        }
+
         public class TestProtocol : IMessageReader<byte[]>, IMessageWriter<byte[]>
         {
             public TestProtocol(int messageLength)
