@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,51 +58,14 @@ namespace Bedrock.Framework.Protocols
 
                 if (!buffer.IsEmpty)
                 {
-                    // No message limit, just parse and dispatch
-                    if (_maximumMessageSize == null)
+                    if (TryGetMessage(reader, buffer, out protocolMessage))
                     {
-                        if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
-                        {
-                            var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
-                            _hasPreviousMessage = true;
-                            return message;
-                        }
-                        else
-                        {
-                            // No message so advance
-                            input.AdvanceTo(_consumed, _examined);
-                        }
+                        _hasPreviousMessage = true;
+                        return new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
                     }
                     else
                     {
-                        // We give the parser a sliding window of the default message size
-                        var maxMessageSize = _maximumMessageSize.Value;
-
-                        var segment = buffer;
-                        var overLength = false;
-
-                        if (segment.Length > maxMessageSize)
-                        {
-                            segment = segment.Slice(segment.Start, maxMessageSize);
-                            overLength = true;
-                        }
-
-                        if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
-                        {
-                            var message = new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted: false);
-                            _hasPreviousMessage = true;
-                            return message;
-                        }
-                        else if (overLength)
-                        {
-                            throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded. The message size can be configured in AddHubOptions.");
-                        }
-                        else
-                        {
-                            input.AdvanceTo(_consumed, _examined);
-                            // No need to update the buffer since we didn't parse anything
-                            continue;
-                        }
+                        input.AdvanceTo(_consumed, _examined);
                     }
                 }
 
@@ -116,6 +80,43 @@ namespace Bedrock.Framework.Protocols
             }
 
             return new ProtocolReadResult<TReadMessage>(protocolMessage, isCanceled, isCompleted);
+        }
+
+        private bool TryGetMessage<TReadMessage>(IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
+        {
+            // No message limit, just parse and dispatch
+            if (_maximumMessageSize == null)
+            {
+                if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+
+            // We give the parser a sliding window of the default message size
+            var maxMessageSize = _maximumMessageSize.Value;
+
+            var segment = buffer;
+            var overLength = false;
+
+            if (segment.Length > maxMessageSize)
+            {
+                segment = segment.Slice(segment.Start, maxMessageSize);
+                overLength = true;
+            }
+
+            if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
+            {
+                return true;
+            }
+            else if (overLength)
+            {
+                throw new InvalidDataException($"The maximum message size of {maxMessageSize}B was exceeded.");
+            }
+
+            return false;
         }
 
         public void Advance()
