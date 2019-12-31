@@ -66,6 +66,9 @@ namespace Bedrock.Framework.Protocols
 
             if (_isCompleted)
             {
+                _consumed = default;
+                _examined = default;
+
                 // If we're complete then short-circuit
                 if (!_buffer.IsEmpty)
                 {
@@ -109,6 +112,9 @@ namespace Bedrock.Framework.Protocols
 
                 if (_isCompleted)
                 {
+                    _consumed = default;
+                    _examined = default;
+
                     if (!_buffer.IsEmpty)
                     {
                         throw new InvalidDataException("Connection terminated while reading a message.");

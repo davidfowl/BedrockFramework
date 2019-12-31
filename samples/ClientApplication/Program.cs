@@ -111,10 +111,25 @@ namespace ClientApplication
                 Console.Write("http1.1> ");
                 var path = Console.ReadLine();
 
+                if (path == null)
+                {
+                    break;
+                }
+
+                if (path == string.Empty)
+                {
+                    path = "/";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Get, path);
+                request.Headers.Host = "localhost";
+
                 // Send a request (we're ignoring the response for now since it will be dumped to the console)
-                var response = await httpProtocol.SendAsync(new HttpRequestMessage(HttpMethod.Get, path));
+                var response = await httpProtocol.SendAsync(request);
 
                 await response.Content.CopyToAsync(Console.OpenStandardOutput());
+                
+                Console.WriteLine();
             }
         }
 

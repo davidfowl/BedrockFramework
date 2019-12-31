@@ -236,11 +236,17 @@ namespace Bedrock.Framework.Tests
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
+            await connection.Application.Output.WriteAsync(data);
+            await connection.Application.Output.CompleteAsync();
+
+            var result = await reader.ReadAsync(protocol);
+            Assert.False(result.IsCompleted);
+            Assert.Equal(data, result.Message);
+            reader.Advance();
+
             var resultTask = reader.ReadAsync(protocol);
 
-            connection.Application.Output.Complete();
-
-            var result = await resultTask;
+            result = await resultTask;
             Assert.True(result.IsCompleted);
             reader.Advance();
 

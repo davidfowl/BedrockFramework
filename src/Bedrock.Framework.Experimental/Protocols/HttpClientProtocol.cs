@@ -27,13 +27,18 @@ namespace Bedrock.Framework.Protocols
                 await requestMessage.Content.CopyToAsync(_connection.Transport.Output.AsStream()).ConfigureAwait(false);
             }
 
-            await _connection.Transport.Output.FlushAsync();
+            await _connection.Transport.Output.FlushAsync().ConfigureAwait(false);
 
             var headerReader = new Http1ResponseMessageReader();
             var content = new HttpProtocolContent();
             headerReader.SetResponse(new HttpResponseMessage() { Content = content });
 
-            var result = await _reader.ReadAsync(headerReader);
+            var result = await _reader.ReadAsync(headerReader).ConfigureAwait(false);
+
+            if (result.IsCompleted)
+            {
+                throw new ConnectionAbortedException();
+            }
 
             var response = result.Message;
 

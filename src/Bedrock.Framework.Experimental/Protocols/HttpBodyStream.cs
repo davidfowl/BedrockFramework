@@ -39,7 +39,7 @@ namespace Bedrock.Framework.Protocols
                 return 0;
             }
 
-            var result = await _reader.ReadAsync(_bodyReader, maximumMessageSize: buffer.Length, cancellationToken);
+            var result = await _reader.ReadAsync(_bodyReader, maximumMessageSize: buffer.Length, cancellationToken).ConfigureAwait(false);
 
             if (result.IsCompleted)
             {

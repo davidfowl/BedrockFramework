@@ -14,6 +14,7 @@ namespace Bedrock.Framework.Protocols
         public ContentLengthHttpBodyReader(long contentLength)
         {
             _remaining = contentLength;
+            IsCompleted = _remaining == 0;
         }
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out ReadOnlySequence<byte> message)
