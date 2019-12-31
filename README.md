@@ -41,11 +41,12 @@ Consumers:
 - SignalR is built on top of these APIs (.NET client and server)
 - [Orleans](https://github.com/dotnet/orleans/pull/5436/files) just recently adopted these abstractions
 
-A sample of a couple bedrock transports using new APIs added in .NET Core 3.0
-
-- **Pipes** - A named pipes transport based on NamedPipeClientStream and NamedPipeServerStream
-- **Http2** - An HTTP/2 based transport that uses turns each request into a duplex connection using HTTP/2 streams. Uses Kestrel on the server and HttpClient on the client
-- **WebSockets** - A WebSockets transport (uses Kestrel and the building blocks of SignalR internally).
+This project is split into 2 packages:
+- **Bedrock.Framework** - The core framework, server and client builder APIs, built in middleware and transports (sockets and memory).
+- **Bedrock.Framework.Experimental** - A set of protocol and transport implementations that may eventually make their way into core. Some of them are incomplete at this time.
+    - **Pipes** - A named pipes transport based on NamedPipeClientStream and NamedPipeServerStream
+    - **Http2** - An HTTP/2 based transport that uses turns each request into a duplex connection using HTTP/2 streams. Uses Kestrel on the server and HttpClient on the client
+    - **WebSockets** - A WebSockets transport (uses Kestrel and the building blocks of SignalR internally).
 
 
 ## Using CI builds
