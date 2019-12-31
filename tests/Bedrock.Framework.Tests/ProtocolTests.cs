@@ -47,6 +47,55 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(3, count);
         }
 
+        [Fact]
+        public async Task ReadMessagesAsynchronouslyWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+
+            async Task WritingTask()
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await connection.Application.Output.WriteAsync(data);
+                }
+
+                connection.Application.Output.Complete();
+            }
+
+            async Task ReadingTask()
+            {
+                var reader = connection.CreateReader();
+                var count = 0;
+
+                while (true)
+                {
+                    var result = await reader.ReadAsync(protocol);
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+
+                    count++;
+                    Assert.Equal(data, result.Message);
+
+                    reader.Advance();
+                }
+
+                Assert.Equal(3, count);
+            }
+
+            var readingTask = ReadingTask();
+            var writingTask = WritingTask();
+
+            await writingTask;
+            await readingTask;
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData(20)]
