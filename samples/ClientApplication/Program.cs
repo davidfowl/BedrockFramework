@@ -124,7 +124,6 @@ namespace ClientApplication
                 var request = new HttpRequestMessage(HttpMethod.Get, path);
                 request.Headers.Host = "localhost";
 
-                // Send a request (we're ignoring the response for now since it will be dumped to the console)
                 var response = await httpProtocol.SendAsync(request);
 
                 await response.Content.CopyToAsync(Console.OpenStandardOutput());
