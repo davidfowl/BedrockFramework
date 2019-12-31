@@ -13,9 +13,14 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> TrimChars => new byte[] { (byte)' ', (byte)'\t' };
 
-        private HttpResponseMessage HttpResponseMessage = new HttpResponseMessage();
+        private HttpResponseMessage _httpResponseMessage;
 
         private State _state;
+
+        public void SetResponse(HttpResponseMessage message)
+        {
+            _httpResponseMessage = message;
+        }
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HttpResponseMessage message)
         {
@@ -43,9 +48,9 @@ namespace Bedrock.Framework.Protocols
 
                 Utf8Parser.TryParse(statusCodeText, out int statusCode, out _);
 
-                HttpResponseMessage.StatusCode = (HttpStatusCode)statusCode;
-                HttpResponseMessage.ReasonPhrase = Encoding.ASCII.GetString(statusText.IsSingleSegment ? statusText.FirstSpan : statusText.ToArray());
-                HttpResponseMessage.Version = new Version(1, 1); // TODO: Check
+                _httpResponseMessage.StatusCode = (HttpStatusCode)statusCode;
+                _httpResponseMessage.ReasonPhrase = Encoding.ASCII.GetString(statusText.IsSingleSegment ? statusText.FirstSpan : statusText.ToArray());
+                _httpResponseMessage.Version = new Version(1, 1); // TODO: Check
 
                 _state = State.Headers;
 
@@ -61,8 +66,7 @@ namespace Bedrock.Framework.Protocols
                         consumed = sequenceReader.Position;
                         examined = consumed;
 
-                        message = HttpResponseMessage;
-                        HttpResponseMessage = new HttpResponseMessage();
+                        message = _httpResponseMessage;
 
                         // End of headers
                         _state = State.Body;
@@ -75,7 +79,10 @@ namespace Bedrock.Framework.Protocols
                     var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
                     var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
 
-                    HttpResponseMessage.Headers.TryAddWithoutValidation(key, value);
+                    if(!_httpResponseMessage.Headers.TryAddWithoutValidation(key, value))
+                    {
+                        _httpResponseMessage.Content.Headers.TryAddWithoutValidation(key, value);
+                    }
                     consumed = sequenceReader.Position;
                 }
             }

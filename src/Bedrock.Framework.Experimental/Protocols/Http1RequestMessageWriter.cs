@@ -17,7 +17,8 @@ namespace Bedrock.Framework.Protocols
             var writer = new BufferWriter<IBufferWriter<byte>>(output);
             writer.WriteAsciiNoValidation(message.Method.Method);
             writer.Write(Space);
-            writer.WriteAsciiNoValidation(message.RequestUri.PathAndQuery);
+            // REVIEW: This isn't right
+            writer.WriteAsciiNoValidation(message.RequestUri.ToString());
             writer.Write(Space);
             writer.Write(Http11);
             writer.Write(NewLine);

@@ -106,8 +106,8 @@ namespace Bedrock.Framework.Tests
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
-            var reader = connection.CreateReader(maxMessageSize);
-            var resultTask = reader.ReadAsync(protocol);
+            var reader = connection.CreateReader();
+            var resultTask = reader.ReadAsync(protocol, maximumMessageSize: maxMessageSize);
 
             // Write byte by byte
             for (int i = 0; i < data.Length; i++)
@@ -153,8 +153,8 @@ namespace Bedrock.Framework.Tests
             await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
-            var reader = connection.CreateReader(maximumMessageSize: 5);
-            var resultTask = reader.ReadAsync(protocol);
+            var reader = connection.CreateReader();
+            var resultTask = reader.ReadAsync(protocol, maximumMessageSize: 5);
 
             await connection.Application.Output.WriteAsync(data);
 

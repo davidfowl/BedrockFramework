@@ -11,7 +11,7 @@ namespace Bedrock.Framework.Protocols
         public static ProtocolWriter CreateWriter(this ConnectionContext connection, SemaphoreSlim semaphore)
             => new ProtocolWriter(connection, semaphore);
 
-        public static ProtocolReader CreateReader(this ConnectionContext connection, int? maximumMessageSize = null)
-            => new ProtocolReader(connection, maximumMessageSize);
+        public static ProtocolReader CreateReader(this ConnectionContext connection)
+            => new ProtocolReader(connection);
     }
 }

@@ -9,7 +9,6 @@ namespace Bedrock.Framework.Protocols
 {
     public class ProtocolReader : IAsyncDisposable
     {
-        private readonly int? _maximumMessageSize;
         private SequencePosition _examined;
         private SequencePosition _consumed;
         private ReadOnlySequence<byte> _buffer;
@@ -18,15 +17,24 @@ namespace Bedrock.Framework.Protocols
         private bool _hasMessage;
         private bool _disposed;
 
-        public ProtocolReader(ConnectionContext connection, int? maximumMessageSize)
+        public ProtocolReader(ConnectionContext connection)
         {
             Connection = connection;
-            _maximumMessageSize = maximumMessageSize;
         }
 
         public ConnectionContext Connection { get; }
 
         public ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken = default)
+        {
+            return ReadAsync(reader, maximumMessageSize: null, cancellationToken);
+        }
+
+        public ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, int maximumMessageSize, CancellationToken cancellationToken = default)
+        {
+            return ReadAsync(reader, (int?)maximumMessageSize, cancellationToken);
+        }
+
+        public ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, int? maximumMessageSize, CancellationToken cancellationToken = default)
         {
             if (_disposed)
             {
@@ -41,11 +49,11 @@ namespace Bedrock.Framework.Protocols
             // If this is the very first read, then make it go async since we have no data
             if (_consumed.GetObject() == null)
             {
-                return DoAsyncRead(reader, cancellationToken);
+                return DoAsyncRead(maximumMessageSize, reader, cancellationToken);
             }
 
             // We have a buffer, test to see if there's any message left in the buffer
-            if (TryParseMessage(reader, _buffer, out var protocolMessage))
+            if (TryParseMessage(maximumMessageSize, reader, _buffer, out var protocolMessage))
             {
                 _hasMessage = true;
                 return new ValueTask<ProtocolReadResult<TReadMessage>>(new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false));
@@ -67,10 +75,10 @@ namespace Bedrock.Framework.Protocols
                 return new ValueTask<ProtocolReadResult<TReadMessage>>(new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted));
             }
 
-            return DoAsyncRead(reader, cancellationToken);
+            return DoAsyncRead(maximumMessageSize, reader, cancellationToken);
         }
 
-        private async ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
+        private async ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
         {
             var input = Connection.Transport.Input;
 
@@ -89,7 +97,7 @@ namespace Bedrock.Framework.Protocols
                     break;
                 }
 
-                if (TryParseMessage(reader, _buffer, out var protocolMessage))
+                if (TryParseMessage(maximumMessageSize, reader, _buffer, out var protocolMessage))
                 {
                     _hasMessage = true;
                     return new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false);
@@ -113,10 +121,10 @@ namespace Bedrock.Framework.Protocols
             return new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted);
         }
 
-        private bool TryParseMessage<TReadMessage>(IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
+        private bool TryParseMessage<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
         {
             // No message limit, just parse and dispatch
-            if (_maximumMessageSize == null)
+            if (maximumMessageSize == null)
             {
                 if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
                 {
@@ -127,7 +135,7 @@ namespace Bedrock.Framework.Protocols
             }
 
             // We give the parser a sliding window of the default message size
-            var maxMessageSize = _maximumMessageSize.Value;
+            var maxMessageSize = maximumMessageSize.Value;
 
             var segment = buffer;
             var overLength = false;

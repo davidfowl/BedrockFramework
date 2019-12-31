@@ -13,14 +13,16 @@ namespace Bedrock.Framework.Protocols
         private readonly ProtocolWriter _protocolWriter;
         private readonly IMessageReader<HubMessage> _hubMessageReader;
         private readonly IMessageWriter<HubMessage> _hubMessageWriter;
+        private readonly int? _maximumMessageSize;
 
         private HubProtocol(ConnectionContext connection, int? maximumMessageSize, IHubProtocol hubProtocol, IInvocationBinder invocationBinder)
         {
             _connection = connection;
-            _protocolReader = connection.CreateReader(maximumMessageSize);
+            _protocolReader = connection.CreateReader();
             _protocolWriter = connection.CreateWriter();
             _hubMessageReader = new HubMessageReader(hubProtocol, invocationBinder);
             _hubMessageWriter = new HubMessageWriter(hubProtocol);
+            _maximumMessageSize = maximumMessageSize;
         }
 
         public static HubProtocol CreateFromConnection(ConnectionContext connection, IHubProtocol hubProtocol, IInvocationBinder invocationBinder, int? maximumMessageSize = null)
@@ -30,7 +32,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask<HandshakeRequestMessage> ReadHandshakeAsync(CancellationToken cancellationToken = default)
         {
-            var result = await _protocolReader.ReadAsync(new HubHandshakeMessageReader(), cancellationToken).ConfigureAwait(false);
+            var result = await _protocolReader.ReadAsync(new HubHandshakeMessageReader(), _maximumMessageSize, cancellationToken).ConfigureAwait(false);
 
             var message = result.Message;
 
