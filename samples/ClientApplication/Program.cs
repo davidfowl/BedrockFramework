@@ -105,7 +105,7 @@ namespace ClientApplication
 
             // Use the HTTP/1.1 protocol
             var httpProtocol = new HttpClientProtocol(connection);
-
+            
             while (true)
             {
                 Console.Write("http1.1> ");
