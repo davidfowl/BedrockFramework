@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Buffers;
 using System.IO;
+using System.IO.Pipelines;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
     public class ProtocolReader : IAsyncDisposable
     {
+        private readonly PipeReader _reader;
         private SequencePosition _examined;
         private SequencePosition _consumed;
         private ReadOnlySequence<byte> _buffer;
@@ -17,12 +18,16 @@ namespace Bedrock.Framework.Protocols
         private bool _hasMessage;
         private bool _disposed;
 
-        public ProtocolReader(ConnectionContext connection)
+        public ProtocolReader(Stream stream) : 
+            this(PipeReader.Create(stream))
         {
-            Connection = connection;
+
         }
 
-        public ConnectionContext Connection { get; }
+        public ProtocolReader(PipeReader reader)
+        {
+            _reader = reader;
+        }
 
         public ValueTask<ProtocolReadResult<TReadMessage>> ReadAsync<TReadMessage>(IMessageReader<TReadMessage> reader, CancellationToken cancellationToken = default)
         {
@@ -61,7 +66,7 @@ namespace Bedrock.Framework.Protocols
             else
             {
                 // We couldn't parse the message so advance the input so we can read
-                Connection.Transport.Input.AdvanceTo(_consumed, _examined);
+                _reader.AdvanceTo(_consumed, _examined);
             }
 
             if (_isCompleted)
@@ -83,11 +88,9 @@ namespace Bedrock.Framework.Protocols
 
         private async ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
         {
-            var input = Connection.Transport.Input;
-
             while (true)
             {
-                var result = await input.ReadAsync(cancellationToken).ConfigureAwait(false);
+                var result = await _reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                 _buffer = result.Buffer;
                 _isCanceled = result.IsCanceled;
@@ -107,7 +110,7 @@ namespace Bedrock.Framework.Protocols
                 }
                 else
                 {
-                    input.AdvanceTo(_consumed, _examined);
+                    _reader.AdvanceTo(_consumed, _examined);
                 }
 
                 if (_isCompleted)
