@@ -6,16 +6,24 @@ using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Protocols
 {
-    public class ChunkedHttpBodyReader : IHttpBodyReader
+    public class ChunkedHttpBodyReader : IMessageReader<ReadOnlySequence<byte>>
     {
         private static ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
 
         private int LastChunkRemaining { get; set; }
 
-        public bool IsCompleted { get; private set; }
+        private bool IsCompleted { get; set; }
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out ReadOnlySequence<byte> message)
         {
+            if (IsCompleted)
+            {
+                consumed = input.Start;
+                examined = input.End;
+                message = default;
+                return true;
+            }
+
             var sequenceReader = new SequenceReader<byte>(input);
             message = default;
             examined = input.End;
