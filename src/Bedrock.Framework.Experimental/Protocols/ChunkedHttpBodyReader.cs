@@ -14,19 +14,16 @@ namespace Bedrock.Framework.Protocols
 
         private bool IsCompleted { get; set; }
 
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out ReadOnlySequence<byte> message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
         {
             if (IsCompleted)
             {
-                consumed = input.Start;
-                examined = input.End;
                 message = default;
                 return true;
             }
 
             var sequenceReader = new SequenceReader<byte>(input);
             message = default;
-            examined = input.End;
 
             while (true)
             {

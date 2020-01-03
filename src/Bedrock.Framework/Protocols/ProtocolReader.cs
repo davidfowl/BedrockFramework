@@ -135,7 +135,7 @@ namespace Bedrock.Framework.Protocols
             // No message limit, just parse and dispatch
             if (maximumMessageSize == null)
             {
-                if (reader.TryParseMessage(buffer, out _consumed, out _examined, out protocolMessage))
+                if (reader.TryParseMessage(buffer, ref _consumed, ref _examined, out protocolMessage))
                 {
                     return true;
                 }
@@ -155,7 +155,7 @@ namespace Bedrock.Framework.Protocols
                 overLength = true;
             }
 
-            if (reader.TryParseMessage(segment, out _consumed, out _examined, out protocolMessage))
+            if (reader.TryParseMessage(segment, ref _consumed, ref _examined, out protocolMessage))
             {
                 return true;
             }

@@ -7,13 +7,11 @@ namespace Protocols
 {
     public class LengthPrefixedProtocol : IMessageReader<Message>, IMessageWriter<Message>
     {
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out Message message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out Message message)
         {
             var reader = new SequenceReader<byte>(input);
             if (!reader.TryReadBigEndian(out int length) || input.Length < length)
             {
-                consumed = input.Start;
-                examined = input.End;
                 message = default;
                 return false;
             }

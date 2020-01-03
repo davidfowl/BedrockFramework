@@ -22,11 +22,9 @@ namespace Bedrock.Framework.Protocols
             _httpResponseMessage.Content = content;
         }
 
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HttpResponseMessage message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out HttpResponseMessage message)
         {
             var sequenceReader = new SequenceReader<byte>(input);
-            consumed = input.Start;
-            examined = input.End;
             message = null;
 
             if (_state == State.StartLine)
