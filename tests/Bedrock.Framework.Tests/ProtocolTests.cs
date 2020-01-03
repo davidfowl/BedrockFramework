@@ -264,11 +264,8 @@ namespace Bedrock.Framework.Tests
 
             public int MessageLength { get; }
 
-            public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out byte[] message)
+            public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out byte[] message)
             {
-                consumed = input.Start;
-                examined = input.End;
-
                 if (input.Length < MessageLength)
                 {
                     message = default;

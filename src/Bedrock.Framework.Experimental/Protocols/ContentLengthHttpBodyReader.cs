@@ -14,12 +14,10 @@ namespace Bedrock.Framework.Protocols
             _remaining = contentLength;
         }
 
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out ReadOnlySequence<byte> message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
         {
             if (_remaining == 0)
             {
-                consumed = input.Start;
-                examined = input.End;
                 message = default;
                 return true;
             }

@@ -16,7 +16,7 @@ namespace Bedrock.Framework.Protocols
             _invocationBinder = invocationBinder;
         }
 
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HubMessage message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out HubMessage message)
         {
             var buffer = input;
             if (_hubProtocol.TryParseMessage(ref buffer, _invocationBinder, out message))
@@ -26,8 +26,6 @@ namespace Bedrock.Framework.Protocols
                 return true;
             }
 
-            consumed = input.Start;
-            examined = input.End;
             return false;
         }
     }
