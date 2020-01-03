@@ -255,7 +255,7 @@ namespace Bedrock.Framework.Tests
             reader.Advance();
         }
 
-        public class TestProtocol : IMessageReader<byte[]>, IMessageWriter<byte[]>
+        private class TestProtocol : IMessageReader<byte[]>, IMessageWriter<byte[]>
         {
             public TestProtocol(int messageLength)
             {
