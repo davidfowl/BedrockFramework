@@ -256,7 +256,6 @@ namespace ClientApplication
                 reader.Advance();
             }
         }
-
     }
 
     // Property bag needed on ConnectAsync and BindAsync
