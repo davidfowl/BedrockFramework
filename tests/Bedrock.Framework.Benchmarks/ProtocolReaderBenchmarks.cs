@@ -87,7 +87,6 @@ namespace Bedrock.Framework.Benchmarks
         {
             private readonly int messageSize;
             
-
             public SimpleReader(int messageSize)
             {
                 this.messageSize = messageSize;
