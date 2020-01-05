@@ -7,87 +7,109 @@ using System.Threading.Tasks;
 
 namespace Bedrock.Framework.Benchmarks
 {
+    /// <summary>
+    /// Benchmarks for <see cref="ProtocolReader"/>.
+    /// </summary>
     public class ProtocolReaderBenchmarks
     {
         private Pipe dataPipe;
-        private SimpleDelimitedReader delimitedMessageReader;
-        
-        [Params(1, 10, 100, 1000, 10000)]
-        public int ChunkCount { get; set; }
+        private PipeWriter writer;
+        private ProtocolReader protReader;
+        private SimpleReader delimitedMessageReader;
+        private byte[] data;
+        private int halfDataSize;
 
-        [Params(10)]
-        public int ChunkSize { get; set; }
+        [Params(10, 100, 1000)]
+        public int MessageSize { get; set; }
 
         [GlobalSetup]
         public void Setup()
         {
+            // Establish as much that can be pre-calculated as possible.
             dataPipe = new Pipe();
+            writer = dataPipe.Writer;
+            delimitedMessageReader = new SimpleReader(MessageSize);
+            data = new byte[MessageSize];
+            data.AsSpan().Fill(1);
+            halfDataSize = MessageSize / 2;
 
-            delimitedMessageReader = new SimpleDelimitedReader(ChunkSize);
+            protReader = new ProtocolReader(dataPipe.Reader);
         }
 
-        class SimpleDelimitedReader : IMessageReader<int>
+        /// <summary>
+        /// Baseline writing the data to the pipe with out Bedrock; used to compare the cost of adding the protocol reader.
+        /// </summary>
+        [Benchmark(Baseline = true)]
+        public async ValueTask PipeOnly()
         {
-            private readonly int chunkSize;
+            writer.Write(data.AsSpan());
+            await writer.FlushAsync();
+
+            var result = await dataPipe.Reader.ReadAsync();
+
+            dataPipe.Reader.AdvanceTo(result.Buffer.End);
+        }
+
+        /// <summary>
+        /// Benchmark reading a stream where the entire message is always available.
+        /// </summary>
+        [Benchmark]
+        public async ValueTask ReadProtocolWithWholeMessageAvailable()
+        {
+            writer.Write(data.AsSpan());
+            await writer.FlushAsync();
+
+            await protReader.ReadAsync(delimitedMessageReader);
+
+            protReader.Advance();
+        }
+
+        /// <summary>
+        /// Benchmark reading a stream where the entire message is never available.
+        /// </summary>
+        [Benchmark]
+        public async ValueTask ReadProtocolWithPartialMessageAvailable()
+        {
+            writer.Write(data.AsSpan(0, halfDataSize));
+            await writer.FlushAsync();
+
+            var readTask = protReader.ReadAsync(delimitedMessageReader);
+
+            writer.Write(data.AsSpan(halfDataSize));
+            await writer.FlushAsync();
+
+            await readTask;
+
+            protReader.Advance();
+        }
+
+        class SimpleReader : IMessageReader<int>
+        {
+            private readonly int messageSize;
             
 
-            public SimpleDelimitedReader(int chunkSize)
+            public SimpleReader(int messageSize)
             {
-                this.chunkSize = chunkSize;
+                this.messageSize = messageSize;
             }
 
             public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out int message)
             {
-                if(input.IsEmpty)
+                // message isn't available/complete.
+                if(input.Length < messageSize)
                 {
                     message = 0;
                     return false;
                 }
 
                 // Move along in the set.
-                consumed = input.GetPosition(chunkSize);
+                consumed = input.GetPosition(messageSize);
                 examined = consumed;
 
-                message = chunkSize;
+                message = messageSize;
 
                 return true;
             }
-        }
-
-        /// <summary>
-        /// Benchmark reading a stream consisting of chunks of pre-determined lengths of data.
-        /// </summary>
-        [Benchmark]
-        public async ValueTask ReadChunkedProtocol()
-        {
-            var writeMemory = dataPipe.Writer.GetMemory(ChunkSize * ChunkCount);
-            // Tell the pipe we've put all the required data in memory (we haven't).
-            dataPipe.Writer.Advance(ChunkSize * ChunkCount);
-            dataPipe.Writer.Complete();
-            
-            var reader = new ProtocolReader(dataPipe.Reader);
-#if DEBUG
-            int chunkCounts = 0;
-#endif
-            // Read the chunks.
-            while(!(await reader.ReadAsync(delimitedMessageReader)).IsCompleted)
-            {
-#if DEBUG
-                chunkCounts++;
-#endif
-                reader.Advance();
-            }
-
-#if DEBUG
-            if(chunkCounts != ChunkCount)
-            {
-                throw new ApplicationException("Didn't read all the chunks");
-            }
-#endif
-            dataPipe.Reader.Complete();
-
-            // Reset the pipe back to 0.
-            dataPipe.Reset();
         }
     }
 }
