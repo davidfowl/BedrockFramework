@@ -51,7 +51,7 @@ namespace Bedrock.Framework
                 await Transport.Input.CompleteAsync().ConfigureAwait(false);
             }
 
-            _socket?.Dispose();
+            // Completing these loops will cause ExecuteAsync to Dispose the socket.
         }
 
         public async ValueTask<ConnectionContext> StartAsync()
