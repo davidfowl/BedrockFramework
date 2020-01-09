@@ -1,12 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Bedrock.Framework;
+using Bedrock.Framework.Experimental.Protocols.Kafka;
+using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests;
+using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
@@ -35,6 +42,10 @@ namespace ClientApplication
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
             Console.WriteLine("6. Length prefixed custom binary protocol");
+            Console.WriteLine("7. Kafka Producer");
+            Console.WriteLine("8. Kafka Consumer");
+
+            await KafkaConsumer(serviceProvider);
 
             while (true)
             {
@@ -69,6 +80,16 @@ namespace ClientApplication
                 {
                     Console.WriteLine("Custom length prefixed protocol.");
                     await CustomProtocol(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D7)
+                {
+                    Console.WriteLine("Kafka Producer");
+                    await KafkaProducer(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D8)
+                {
+                    Console.WriteLine("Kafka Consumer");
+                    await KafkaConsumer(serviceProvider);
                 }
             }
         }
@@ -165,7 +186,6 @@ namespace ClientApplication
             }
         }
 
-
         private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
@@ -226,6 +246,102 @@ namespace ClientApplication
             await writes;
 
             await server.StopAsync();
+        }
+
+        private static async Task KafkaProducer(IServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                .UseSockets()
+                .UseConnectionLogging()
+                .Build();
+
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 9092));
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+
+            var kafkaProtocol = new KafkaProtocol("bedrock-producer-1", connection);
+            var apiVersionsResponse = (ApiVersionsResponse)await kafkaProtocol.SendAsync(new ApiVersionsRequest());
+            if (!apiVersionsResponse.SupportedApis.Any())
+            {
+            }
+
+            var metadataResponse = (MetadataResponse)await kafkaProtocol.SendAsync(new MetadataRequest
+            {
+                AllowAutoTopicCreation = true,
+                IncludeClusterAuthorizedOperations = true,
+                IncludeTopicAuthorizedOperations = true,
+            });
+
+            if (!metadataResponse.Brokers.Any())
+            {
+
+            }
+
+            while (true)
+            {
+                Console.Write("kafka> ");
+                var message = Console.ReadLine();
+                //var response = await kafkaProtocol.SendAsync();
+
+                //await response.Content.CopyToAsync(Console.OpenStandardOutput());
+
+                Console.WriteLine();
+            }
+        }
+
+        private static async Task KafkaConsumer(IServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                .UseSockets()
+                .UseConnectionLogging()
+                .Build();
+
+            var cts = new CancellationTokenSource();
+
+            Console.CancelKeyPress += (_, args) =>
+            {
+                cts.Cancel();
+            };
+
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 9092), cts.Token);
+            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine();
+
+            // Console.Write("What Topic should be consumed from?: ");
+            // var topic = Console.ReadLine();
+
+            var clientId = "bedrock-consumer-1";
+            var kafkaProtocol = new KafkaProtocol(clientId, connection);
+
+            var fetch = (FetchResponse)await kafkaProtocol.SendAsync(new FetchRequest
+            {
+                ReplicaId = 1,
+                MaxWaitTime = 2,
+                MinBytes = 3,
+                MaxBytes = 4,
+            });
+
+            var apiVersionsResponse = (ApiVersionsResponse)await kafkaProtocol.SendAsync(new ApiVersionsRequest());
+            Debug.Assert(apiVersionsResponse.SupportedApis.Any());
+
+            var metadataResponse = (MetadataResponse)await kafkaProtocol.SendAsync(new MetadataRequest
+            {
+                // Topics = new List<string> { topic },
+                AllowAutoTopicCreation = false,
+            });
+
+            Debug.Assert(metadataResponse.Brokers.Any());
+            Debug.Assert(metadataResponse.Topics.Any());
+
+            while (!cts.IsCancellationRequested)
+            {
+                Console.Write($"{clientId}>");
+                var message = Console.ReadLine();
+                //var response = await kafkaProtocol.SendAsync();
+
+                //await response.Content.CopyToAsync(Console.OpenStandardOutput());
+
+                Console.WriteLine();
+            }
         }
 
         private static async Task CustomProtocol(IServiceProvider serviceProvider)

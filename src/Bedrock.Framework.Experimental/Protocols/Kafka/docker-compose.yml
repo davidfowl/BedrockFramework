@@ -1,0 +1,46 @@
+version: "2.4"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:4.1.0
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      - "ZOOKEEPER_CLIENT_PORT=2181"
+      - "KAFKA_JMX_PORT=39999"
+      - "KAFKA_JMX_HOSTNAME=zookeeper"
+    restart: on-failure
+
+  kafka:
+    image: confluentinc/cp-kafka:4.1.0
+    hostname: kafka
+    environment:
+      - "KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/jmx"
+      - "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT"
+      - "KAFKA_BROKER_ID=1"
+      - "ALLOW_PLAINTEXT_LISTENER=yes"
+      - "KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9093, DOCKER://localhost:9092"
+      - "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1"
+      - "KAFKA_JMX_PORT=49999"
+      - "JMX_PORT=49999"
+      - "KAFKA_JMX_HOSTNAME=kafka"
+      - "KAFKA_JMX_OPTS=-Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+    restart: on-failure
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+      - 9093:9093
+
+  kafkamanager:
+    image: kafkamanager/kafka-manager:latest
+    hostname: kafkamanager
+    environment:
+      - "ZK_HOSTS=zookeeper:2181"
+    restart: on-failure
+    depends_on:
+      - zookeeper
+      - kafka
+    ports:
+      - 9000:9000
