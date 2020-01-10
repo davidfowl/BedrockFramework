@@ -12,9 +12,9 @@ namespace Bedrock.Framework
     internal class PooledConnectionContext : ConnectionContext, IAsyncDisposable
     {
         private ConnectionContext _connection;
-        private IConnectionPool _pool;
+        private IEndPointPool _pool;
 
-        public PooledConnectionContext(ConnectionContext context, IConnectionPool pool)
+        public PooledConnectionContext(ConnectionContext context, IEndPointPool pool)
         {
             _connection = context;
             _pool = pool;

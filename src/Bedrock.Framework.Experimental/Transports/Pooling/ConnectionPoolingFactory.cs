@@ -15,10 +15,9 @@ namespace Bedrock.Framework
             _pool = pool;
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            var connectionContext = await _pool.GetConnectionAsync(endpoint, cancellationToken);
-            return new PooledConnectionContext(connectionContext, _pool);
+            return _pool.GetConnectionAsync(endpoint, cancellationToken);
         }
     }
 }

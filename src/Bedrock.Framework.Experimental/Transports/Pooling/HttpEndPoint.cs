@@ -9,24 +9,40 @@ namespace Bedrock.Framework
     {
         // Same options that are provided to the HttpConnectionPool.
         public HttpEndPoint(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri, int maxConnections)
-            : base(IPAddress.Parse(host), port) // TODO may need dns name.
+            : base(IPAddress.Parse(host), port)
         {
             Kind = kind;
+            Host = host;
+            SslHostName = sslHostName;
+            ProxyUri = proxyUri;
             MaxConnections = maxConnections;
         }
 
         public HttpConnectionKind Kind {get;}
+        public string Host {get;}
+        public string SslHostName {get;}
+        public Uri ProxyUri {get;}
         public int MaxConnections {get;}
-    }
 
+        public override bool Equals(object comparand)
+        {
+            return comparand is HttpEndPoint other 
+                && base.Equals(comparand) 
+                && other.Kind.Equals(Kind) 
+                && other.Host.Equals(Host) 
+                && other.SslHostName.Equals(SslHostName) 
+                && other.ProxyUri.Equals(ProxyUri) 
+                && other.MaxConnections == MaxConnections;
+        }
 
-    public enum HttpConnectionKind : byte
-    {
-        Http,               // Non-secure connection with no proxy.
-        Https,              // Secure connection with no proxy.
-        Proxy,              // HTTP proxy usage for non-secure (HTTP) requests.
-        ProxyTunnel,        // Non-secure websocket (WS) connection using CONNECT tunneling through proxy.
-        SslProxyTunnel,     // HTTP proxy usage for secure (HTTPS/WSS) requests using SSL and proxy CONNECT.
-        ProxyConnect        // Connection used for proxy CONNECT. Tunnel will be established on top of this.
+        public override int GetHashCode()
+        {
+            return base.GetHashCode() 
+                ^ Kind.GetHashCode()
+                ^ Host.GetHashCode()
+                ^ SslHostName.GetHashCode()
+                ^ ProxyUri.GetHashCode()
+                ^ MaxConnections.GetHashCode();
+        }
     }
 }

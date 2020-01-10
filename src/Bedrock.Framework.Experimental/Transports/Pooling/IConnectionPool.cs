@@ -9,6 +9,5 @@ namespace Bedrock.Framework
     public interface IConnectionPool
     {
         ValueTask<ConnectionContext> GetConnectionAsync(EndPoint endPoint, CancellationToken cancellationToken = default);
-        ValueTask ReturnAsync(ConnectionContext context);
     }
 }
