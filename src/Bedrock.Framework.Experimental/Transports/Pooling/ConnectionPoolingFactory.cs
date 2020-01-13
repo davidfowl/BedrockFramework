@@ -8,7 +8,7 @@ namespace Bedrock.Framework
 {
     public class ConnectionPoolingFactory : IConnectionFactory
     {
-         // Represents a mapping from an individual endpoint to a pool of connections
+        // Represents a mapping from an individual endpoint to a pool of connections
         // Every endpoint can have multiple connections associated with it.
         private ConcurrentDictionary<EndPoint, EndPointPool> _pool;
 
@@ -20,7 +20,7 @@ namespace Bedrock.Framework
             _innerFactory = innerFactory;
             _pool = new ConcurrentDictionary<EndPoint, EndPointPool>();
         }
-        
+
         public ValueTask DisposeAsync()
         {
             // Dispose all connections
@@ -29,11 +29,13 @@ namespace Bedrock.Framework
 
         public ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
         {
-            if (!_pool.TryGetValue(endPoint, out var endPointPool))
-            {
-                endPointPool = new EndPointPool(endPoint, _innerFactory, endPoint is IMaxConnectionFeature maxConnectionEndpoint ? maxConnectionEndpoint.MaxConnections : 1);
-                _pool.GetOrAdd(endPoint, endPointPool);
-            }
+            var endPointPool = _pool.GetOrAdd(
+                endPoint,
+                (ep, factory) =>
+                {
+                    var maxConnections = ep is IMaxConnectionFeature maxConnectionEndpoint ? maxConnectionEndpoint.MaxConnections : 1;
+                    return new EndPointPool(ep, factory, maxConnections);
+                }, _innerFactory);
 
             return endPointPool.GetConnectionAsync(cancellationToken);
         }
