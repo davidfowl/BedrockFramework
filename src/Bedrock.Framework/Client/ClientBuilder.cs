@@ -18,7 +18,7 @@ namespace Bedrock.Framework
 
         internal static object Key { get; } = new object();
 
-        internal IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
+        private IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
 
         public IServiceProvider ApplicationServices => _connectionBuilder.ApplicationServices;
 

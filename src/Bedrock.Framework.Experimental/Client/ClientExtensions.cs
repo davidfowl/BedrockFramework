@@ -6,7 +6,7 @@ namespace Bedrock.Framework
         public static ClientBuilder UseConnectionPooling(this ClientBuilder builder)
         {
             // TODO right now, this must be called after UseSockets
-            builder.ConnectionFactory = new ConnectionPoolingFactory(new ConnectionPool(builder.ConnectionFactory));
+            builder.Use(factory => new ConnectionPoolingFactory(factory));
             return builder;
         }
     }

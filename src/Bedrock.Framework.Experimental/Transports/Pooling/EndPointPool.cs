@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
@@ -15,7 +16,7 @@ namespace Bedrock.Framework
         private int _maxConnectionCount;
         private int _connectionCount;
 
-        private object SyncObj = new object();
+        private object _syncObj = new object();
         private Queue<TaskCompletionSourceWithCancellation<ConnectionContext>> _waiters;
 
         public EndPointPool(EndPoint endPoint, IConnectionFactory connectionFactory, int maxConnections)
@@ -28,7 +29,7 @@ namespace Bedrock.Framework
 
         internal void IncrementConnectionCount()
         {
-            lock (SyncObj)
+            lock (_syncObj)
             {
                 IncrementConnectionCountNoLock();
             }
@@ -36,7 +37,7 @@ namespace Bedrock.Framework
 
         private void DecrementConnectionCount()
         {
-            lock (SyncObj)
+            lock (_syncObj)
             {
                 // if (TransferConnection(null))
                 // {
@@ -52,7 +53,7 @@ namespace Bedrock.Framework
         public ValueTask ReturnAsync(ConnectionContext context)
         {
             // TODO handle context being invalid.
-            lock (SyncObj)
+            lock (_syncObj)
             {
                 if (HasWaiter())
                 {
@@ -102,7 +103,7 @@ namespace Bedrock.Framework
             List<ConnectionContext> _connectionsToDispose = null;
             async ValueTask<ConnectionContext> DisposeConnectionsAndReturn(List<ConnectionContext> toDispose, ConnectionContext context)
             {
-                foreach(var disposeContext in toDispose)
+                foreach (var disposeContext in toDispose)
                 {
                     await disposeContext.DisposeAsync();
                 }
@@ -124,7 +125,7 @@ namespace Bedrock.Framework
 
             while (true)
             {
-                lock (SyncObj)
+                lock (_syncObj)
                 {
                     if (list.Count > 0)
                     {

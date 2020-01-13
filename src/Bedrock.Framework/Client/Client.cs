@@ -18,8 +18,6 @@ namespace Bedrock.Framework
 
         public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            // How to do pooling here. Should the factory handle it?
-            
             var connection = await _connectionFactory.ConnectAsync(endpoint, cancellationToken).ConfigureAwait(false);
 
             // Since nothing is being returned from this middleware, we need to wait for the last middleware to run

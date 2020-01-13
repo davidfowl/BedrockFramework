@@ -5,7 +5,7 @@ namespace Bedrock.Framework
 {
     // A endpoint to route http traffic to.
     // Used to pool based on 
-    public class HttpEndPoint : IPEndPoint
+    public class HttpEndPoint : IPEndPoint, IMaxConnectionFeature
     {
         // Same options that are provided to the HttpConnectionPool.
         public HttpEndPoint(HttpConnectionKind kind, string host, int port, string sslHostName, Uri proxyUri, int maxConnections)
@@ -18,11 +18,11 @@ namespace Bedrock.Framework
             MaxConnections = maxConnections;
         }
 
-        public HttpConnectionKind Kind {get;}
-        public string Host {get;}
-        public string SslHostName {get;}
-        public Uri ProxyUri {get;}
-        public int MaxConnections {get;}
+        public HttpConnectionKind Kind { get; }
+        public string Host { get; }
+        public string SslHostName { get; }
+        public Uri ProxyUri { get; }
+        public int MaxConnections { get; }
 
         public override bool Equals(object comparand)
         {
@@ -37,12 +37,12 @@ namespace Bedrock.Framework
 
         public override int GetHashCode()
         {
-            return base.GetHashCode() 
-                ^ Kind.GetHashCode()
-                ^ Host.GetHashCode()
-                ^ SslHostName.GetHashCode()
-                ^ ProxyUri.GetHashCode()
-                ^ MaxConnections.GetHashCode();
+            return HashCode.Combine(base.GetType(), 
+                Kind,
+                Host,
+                SslHostName,
+                ProxyUri,
+                MaxConnections);
         }
     }
 }

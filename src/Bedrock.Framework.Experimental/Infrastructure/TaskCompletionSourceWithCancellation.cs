@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Bedrock.Framework
+namespace Bedrock.Framework.Infrastructure
 {
     internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
