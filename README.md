@@ -4,9 +4,7 @@
 
 
 [Project Bedrock](https://github.com/aspnet/AspNetCore/issues/4772) is a set of .NET Core APIs for doing transport agnostic networking. In .NET Core 3.0 we've introduced some new abstractions
-as part of [Microsoft.AspNetCore.Connections.Abstractions](https://www.nuget.org/packages/Microsoft.AspNetCore.Connections.Abstractions) for client-server communication.
-
-## Presentation
+as part of [Microsoft.AspNetCore.Connections.Abstractions](https://www.nuget.org/packages/Microsoft.AspNetCore.Connections.Abstractions) for client-server communication. 
 
 See the presentation [here](https://speakerdeck.com/davidfowl/project-bedrock)
 
