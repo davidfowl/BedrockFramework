@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Protocols
             consumed = message.End;
             examined = consumed;
 
-            return true;
+            return message.Length > 0;
         }
     }
 }
