@@ -124,10 +124,19 @@ namespace Bedrock.Framework.Protocols
             if (count < 0)
                 throw new ArgumentException(nameof(count));
 
-            if (_consumedCount + count > _index)
+            var newConsumed = _consumedCount + count;
+            if (newConsumed > _index)
                 ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
 
-            _consumedCount += count;
+            if (newConsumed == _index)
+            {
+                _index = 0;
+                _consumedCount = 0;
+            }
+            else
+            {
+                _consumedCount += count;
+            }
         }
 
         /// <summary>

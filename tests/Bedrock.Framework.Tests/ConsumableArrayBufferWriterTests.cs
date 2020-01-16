@@ -32,6 +32,19 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public void IfConsumedEqualsWrittenFreeCapacityIsReset()
+        {
+            var output = new ConsumableArrayBufferWriter<T>(256);
+            Assert.Equal(256, output.FreeCapacity);
+            WriteData(output, 128);
+            Assert.Equal(128, output.FreeCapacity);
+            output.Consume(64);
+            Assert.Equal(128, output.FreeCapacity);
+            output.Consume(64);
+            Assert.Equal(256, output.FreeCapacity);
+        }
+
+        [Fact]
         public void ConsumeReducesUnconsumedWrittenCount()
         {
             var output = new ConsumableArrayBufferWriter<T>();
