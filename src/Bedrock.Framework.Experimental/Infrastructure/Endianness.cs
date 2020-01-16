@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -28,30 +29,17 @@ namespace Bedrock.Framework.Experimental.Infrastructure
             }
             else if (len == 2)
             {
-                var val = Unsafe.Read<ushort>(&value);
-                val = (ushort)((val >> 8) | (val << 8));
+                var val = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, ushort>(ref value));
                 return Unsafe.Read<T>(&val);
             }
             else if (len == 4)
             {
-                var val = Unsafe.Read<uint>(&value);
-                val = (val << 24)
-                    | ((val & 0xFF00) << 8)
-                    | ((val & 0xFF0000) >> 8)
-                    | (val >> 24);
+                var val = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, uint>(ref value));
                 return Unsafe.Read<T>(&val);
             }
             else if (len == 8)
             {
-                var val = Unsafe.Read<ulong>(&value);
-                val = (val << 56)
-                    | ((val & 0xFF00) << 40)
-                    | ((val & 0xFF0000) << 24)
-                    | ((val & 0xFF000000) << 8)
-                    | ((val & 0xFF00000000) >> 8)
-                    | ((val & 0xFF0000000000) >> 24)
-                    | ((val & 0xFF000000000000) >> 40)
-                    | (val >> 56);
+                var val = BinaryPrimitives.ReverseEndianness(Unsafe.As<T, ulong>(ref value));
                 return Unsafe.Read<T>(&val);
             }
             else if (len < 512)
