@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls
 {
+    // from IANA registry https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
     internal enum ApplicationLayerProtocolType
     {
         None = -1,
