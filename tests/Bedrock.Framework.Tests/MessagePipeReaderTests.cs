@@ -740,7 +740,7 @@ namespace Bedrock.Framework.Tests
 
         private class TestProtocol : IMessageReader<ReadOnlySequence<byte>>, IMessageWriter<byte[]>
         {
-            public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out ReadOnlySequence<byte> message)
+            public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
             {
                 var reader = new SequenceReader<byte>(input);
 

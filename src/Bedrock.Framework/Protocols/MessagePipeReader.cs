@@ -115,7 +115,7 @@ namespace Bedrock.Framework.Protocols
                 return true;
             }
 
-            if (_messageReader.TryParseMessage(buffer, out _consumed, out _examined, out _message))
+            if (_messageReader.TryParseMessage(buffer, ref _consumed, ref _examined, out _message))
             {
                 if (_backlog.UnconsumedWrittenCount > 0)
                 {
