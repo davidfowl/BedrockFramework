@@ -5,7 +5,7 @@ using static Bedrock.Framework.Experimental.Protocols.Tls.Interop.LibCrypto.LibC
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
 {
-    internal class OpenSslHash : Hash
+    public class OpenSslHash : Hash
     {
         private readonly HashType _hashType;
         private readonly int _size;

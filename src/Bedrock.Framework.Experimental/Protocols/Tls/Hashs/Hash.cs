@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
 {
-    internal abstract class Hash
+    public abstract class Hash
     {
         public abstract void HashData(ReadOnlySpan<byte> data);
         public abstract int HashSize { get; }

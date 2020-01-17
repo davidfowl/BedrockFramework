@@ -5,7 +5,7 @@ using static Bedrock.Framework.Experimental.Protocols.Tls.Interop.LibCrypto.LibC
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
 {
-    internal sealed class OpenSslHashProvider : HashProvider
+    public sealed class OpenSslHashProvider : HashProvider
     {
         public override void HmacData(HashType hashType, ReadOnlySpan<byte> key, ReadOnlySpan<byte> message, Span<byte> result)
         {

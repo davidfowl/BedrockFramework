@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
 {
-    internal abstract class HashProvider
+    public abstract class HashProvider
     {
         public abstract int HashSize(HashType hashType);
         public abstract Hash GetHash(HashType hashType);
