@@ -35,38 +35,47 @@ namespace ClientApplication
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
             Console.WriteLine("6. Length prefixed custom binary protocol");
+            Console.WriteLine("7. Talk to local docker dameon");
 
-            var keyInfo = Console.ReadKey();
+            while (true)
+            {
+                var keyInfo = Console.ReadKey();
 
-            if (keyInfo.Key == ConsoleKey.D1)
-            {
-                Console.WriteLine("Running echo server example");
-                await EchoServer(serviceProvider);
-            }
-            else if (keyInfo.Key == ConsoleKey.D2)
-            {
-                Console.WriteLine("Running http client example");
-                await HttpClient(serviceProvider);
-            }
-            else if (keyInfo.Key == ConsoleKey.D3)
-            {
-                Console.WriteLine("Running SignalR example");
-                await SignalR();
-            }
-            else if (keyInfo.Key == ConsoleKey.D4)
-            {
-                Console.WriteLine("Running echo server with TLS example");
-                await EchoServerWithTls(serviceProvider);
-            }
-            else if (keyInfo.Key == ConsoleKey.D5)
-            {
-                Console.WriteLine("In Memory Transport Echo Server and client.");
-                await InMemoryEchoTransport(serviceProvider);
-            }
-            else if (keyInfo.Key == ConsoleKey.D6)
-            {
-                Console.WriteLine("Custom length prefixed protocol.");
-                await CustomProtocol(serviceProvider);
+                if (keyInfo.Key == ConsoleKey.D1)
+                {
+                    Console.WriteLine("Running echo server example");
+                    await EchoServer(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D2)
+                {
+                    Console.WriteLine("Running http client example");
+                    await HttpClient(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D3)
+                {
+                    Console.WriteLine("Running SignalR example");
+                    await SignalR();
+                }
+                else if (keyInfo.Key == ConsoleKey.D4)
+                {
+                    Console.WriteLine("Running echo server with TLS example");
+                    await EchoServerWithTls(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D5)
+                {
+                    Console.WriteLine("In Memory Transport Echo Server and client.");
+                    await InMemoryEchoTransport(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D6)
+                {
+                    Console.WriteLine("Custom length prefixed protocol.");
+                    await CustomProtocol(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.D7)
+                {
+                    Console.WriteLine("Talk to local docker daemon");
+                    await DockerDaemon(serviceProvider);
+                }
             }
         }
 
@@ -254,6 +263,45 @@ namespace ClientApplication
             }
         }
 
+        private static async Task DockerDaemon(IServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                        .UseConnectionFactory(new NamedPipeConnectionFactory())
+                        .UseConnectionLogging()
+                        .Build();
+
+            await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
+
+            // Use the HTTP/1.1 protocol
+            var httpProtocol = new HttpClientProtocol(connection);
+
+            while (true)
+            {
+                // Console.Write("http1.1> ");
+                var path = Console.ReadLine();
+
+                if (path == null)
+                {
+                    break;
+                }
+
+                // Console.WriteLine();
+
+                if (path == string.Empty)
+                {
+                    path = "/";
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Get, path);
+                request.Headers.Host = "localhost";
+
+                var response = await httpProtocol.SendAsync(request);
+
+                await response.Content.CopyToAsync(Console.OpenStandardOutput());
+
+                Console.WriteLine();
+            }
+        }
     }
 
     // Property bag needed on ConnectAsync and BindAsync

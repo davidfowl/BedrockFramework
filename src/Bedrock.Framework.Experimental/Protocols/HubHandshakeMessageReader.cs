@@ -6,7 +6,7 @@ namespace Bedrock.Framework.Protocols
 {
     public class HubHandshakeMessageReader : IMessageReader<HandshakeRequestMessage>
     {
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, out SequencePosition consumed, out SequencePosition examined, out HandshakeRequestMessage message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out HandshakeRequestMessage message)
         {
             var buffer = input;
             if (HandshakeProtocol.TryParseRequestMessage(ref buffer, out message))
@@ -16,8 +16,6 @@ namespace Bedrock.Framework.Protocols
                 return true;
             }
 
-            consumed = input.Start;
-            examined = input.End;
             return false;
         }
     }
