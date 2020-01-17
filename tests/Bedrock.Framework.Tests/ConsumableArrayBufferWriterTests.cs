@@ -73,17 +73,17 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public void CapacityDoesNotIncreaseIfThereIsEnoughConsumedSpace()
+        public void CapacityDoesNotIncreaseIfThereIsPlentyOfConsumedSpace()
         {
             var output = new ConsumableArrayBufferWriter<T>(256);
             WriteData(output, 256);
-            output.Consume(16);
+            output.Consume(156);
             var data = output.WrittenSpan.ToArray();
             output.GetMemory(16);
             Assert.Equal(256, output.Capacity);
             Assert.Equal(data, output.WrittenSpan.ToArray());
-            Assert.Equal(16, output.FreeCapacity);
-            Assert.Equal(240, output.UnconsumedWrittenCount);
+            Assert.Equal(156, output.FreeCapacity);
+            Assert.Equal(100, output.UnconsumedWrittenCount);
         }
 
         [Fact]
@@ -98,6 +98,20 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(data, output.WrittenSpan.ToArray());
             Assert.Equal(272, output.FreeCapacity);
             Assert.Equal(240, output.UnconsumedWrittenCount);
+        }
+
+        [Fact]
+        public void CapacityDoesIncreaseIfThereIsOnlyMinimalConsumedSpace()
+        {
+            var output = new ConsumableArrayBufferWriter<T>(256);
+            WriteData(output, 256);
+            output.Consume(100);
+            var data = output.WrittenSpan.ToArray();
+            output.GetMemory(16);
+            Assert.Equal(512, output.Capacity);
+            Assert.Equal(data, output.WrittenSpan.ToArray());
+            Assert.Equal(356, output.FreeCapacity);
+            Assert.Equal(156, output.UnconsumedWrittenCount);
         }
 
         #region ArrayBufferWriterTests

@@ -124,18 +124,18 @@ namespace Bedrock.Framework.Protocols
             if (count < 0)
                 throw new ArgumentException(nameof(count));
 
-            var newConsumed = _consumedCount + count;
-            if (newConsumed > _index)
+            var newConsumedCount = _consumedCount + count;
+            if (newConsumedCount > _index)
                 ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
 
-            if (newConsumed == _index)
+            if (newConsumedCount == _index)
             {
                 _index = 0;
                 _consumedCount = 0;
             }
             else
             {
-                _consumedCount += count;
+                _consumedCount = newConsumedCount;
             }
         }
 
@@ -199,7 +199,14 @@ namespace Bedrock.Framework.Protocols
             if (sizeHint > FreeCapacity)
             {
                 var countUnconsumed = _index - _consumedCount;
-                if (sizeHint > FreeCapacity + _consumedCount)
+                var countAvailable = _buffer.Length - countUnconsumed;
+                // If doing so would give us significant free capacity (half the array arbitrarily chosen here)
+                // Shift the array left rather than allocating a new array.
+                if (countAvailable > sizeHint&& countAvailable > _buffer.Length / 2)
+                {
+                    Array.Copy(_buffer, _consumedCount, _buffer, 0, countUnconsumed);
+                }
+                else
                 {
                     var growBy = Math.Max(sizeHint - _consumedCount, _buffer.Length);
 
@@ -207,15 +214,11 @@ namespace Bedrock.Framework.Protocols
                     {
                         growBy = Math.Max(growBy, DefaultInitialBufferSize);
                     }
- 
+
                     var newSize = checked(_buffer.Length + growBy);
                     var destinationArray = new T[newSize];
                     Array.Copy(_buffer, _consumedCount, destinationArray, 0, countUnconsumed);
                     _buffer = destinationArray;
-                }
-                else
-                {
-                    Array.Copy(_buffer, _consumedCount, _buffer, 0, countUnconsumed);
                 }
                 _index = countUnconsumed;
                 _consumedCount = 0;
