@@ -15,7 +15,7 @@ namespace Bedrock.Framework.Protocols
             _hubProtocol = hubProtocol;
         }
 
-        public void WriteMessage(ref HubMessage message, IBufferWriter<byte> output)
+        public void WriteMessage(HubMessage message, IBufferWriter<byte> output)
         {
             _hubProtocol.WriteMessage(message, output);
         }

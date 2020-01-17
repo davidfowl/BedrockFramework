@@ -280,7 +280,7 @@ namespace Bedrock.Framework.Tests
                 return true;
             }
 
-            public void WriteMessage(ref byte[] message, IBufferWriter<byte> output)
+            public void WriteMessage(byte[] message, IBufferWriter<byte> output)
             {
                 output.Write(message);
             }

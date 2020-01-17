@@ -16,7 +16,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// </summary>
         /// <param name="input">The sequence to parse messages from.</param>
         /// <param name="consumed">The position in the sequence to which the parser has fully consumed.</param>
-        /// <param name="examined">The position in the sequence to which the parse has examined but not yet consumed.</param>
+        /// <param name="examined">The position in the sequence to which the parser has examined but not yet consumed.</param>
         /// <param name="message">The WebSocketHeader for the current message frame.</param>
         /// <returns>True if parsed successfully, false otherwise.</returns>
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out WebSocketReadFrame message)

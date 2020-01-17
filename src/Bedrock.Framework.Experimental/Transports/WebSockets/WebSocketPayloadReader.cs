@@ -23,11 +23,6 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         private ulong _payloadBytesRemaining;
 
         /// <summary>
-        /// Whether or not to use SIMD acceleration for payload unmasking.
-        /// </summary>
-        private bool _useSimd;
-
-        /// <summary>
         /// Whether or not the payload is masked.
         /// </summary>
         private bool _masked;
@@ -46,8 +41,6 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             _payloadBytesRemaining = header.PayloadLength;
             _payloadEncoder = new WebSocketPayloadEncoder(header.MaskingKey);
             _masked = header.Masked;
-
-            _useSimd = _masked && Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0;
         }
 
         /// <summary>
@@ -88,7 +81,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             }
             else
             {
-                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, _useSimd, out consumed);
+                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, out consumed);
                 examined = consumed;
             }
 

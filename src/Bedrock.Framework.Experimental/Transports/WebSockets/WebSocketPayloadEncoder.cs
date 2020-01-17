@@ -44,10 +44,9 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// </remarks>
         /// <param name="input">The sequence to mask or unmask.</param>
         /// <param name="length">The length of the total payload remaining.</param>
-        /// <param name="useSimd">Whether or not to use SIMD accelerated masking.</param>
         /// <param name="position">The position in the consumed portion of the sequence.</param>
         /// <returns>The number of bytes consumed, which may be less than the number of total payload bytes.</returns>
-        public unsafe long MaskUnmaskPayload(in ReadOnlySequence<byte> input, ulong length, bool useSimd, out SequencePosition position)
+        public unsafe long MaskUnmaskPayload(in ReadOnlySequence<byte> input, ulong length, out SequencePosition position)
         {
             var lengthRemaining = (long)length;
             var consumed = 0;
@@ -56,7 +55,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             if (input.IsSingleSegment)
             {
                 var bytesToRead = (int)Math.Min(lengthRemaining, input.First.Length);
-                MaskUnmaskSpan(input.FirstSpan, bytesToRead, useSimd);
+                MaskUnmaskSpan(input.FirstSpan, bytesToRead);
 
                 position = input.GetPosition(bytesToRead);
                 return lengthRemaining - bytesToRead;
@@ -65,7 +64,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             foreach (var memory in input)
             {
                 var bytesToRead = (int)Math.Min(lengthRemaining, memory.Length);
-                MaskUnmaskSpan(memory.Span, bytesToRead, useSimd);
+                MaskUnmaskSpan(memory.Span, bytesToRead);
 
                 consumed += bytesToRead;
                 position = input.GetPosition(consumed);
@@ -82,7 +81,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <param name="bytesToRead">The number of bytes to read from the span.</param>
         /// <param name="useSimd">Whether or not to use SIMD accelerated masking.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void MaskUnmaskSpan(in ReadOnlySpan<byte> span, long bytesToRead, bool useSimd)
+        private unsafe void MaskUnmaskSpan(in ReadOnlySpan<byte> span, long bytesToRead)
         {
             var maskingKey = _maskingKey;
             var localMaskIndex = _currentMaskIndex;
@@ -112,7 +111,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     var fullVectorReadPtr = dataEndPtr - Vector<byte>.Count;
 
                     //If we found we should use SIMD and there is sufficient data to read
-                    if (useSimd && dataPtr <= fullVectorReadPtr)
+                    if (Vector.IsHardwareAccelerated && dataPtr <= fullVectorReadPtr)
                     {
                         //Align by whole ints to full SIMD load boundary to avoid a perf penalty for unaligned loads
                         while ((ulong)dataPtr % (uint)Vector<byte>.Count != 0)
@@ -124,7 +123,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                         }
 
                         //Unmask full aligned vectors at a time
-                        if (dataEndPtr - dataPtr >= Vector<byte>.Count)
+                        if (dataPtr <= fullVectorReadPtr)
                         {
                             Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(alignedMask));
 

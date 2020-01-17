@@ -24,7 +24,7 @@ namespace Protocols
             return true;
         }
 
-        public void WriteMessage(ref Message message, IBufferWriter<byte> output)
+        public void WriteMessage(Message message, IBufferWriter<byte> output)
         {
             var lengthBuffer = output.GetSpan(4);
             BinaryPrimitives.WriteInt32BigEndian(lengthBuffer, (int)message.Payload.Length);

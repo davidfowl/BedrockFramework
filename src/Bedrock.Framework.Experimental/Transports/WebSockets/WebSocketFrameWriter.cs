@@ -17,7 +17,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// </summary>
         /// <param name="message">The message to write.</param>
         /// <param name="output">The buffer writer to write the message to.</param>
-        public unsafe void WriteMessage(ref WebSocketWriteFrame message, IBufferWriter<byte> output)
+        public unsafe void WriteMessage(WebSocketWriteFrame message, IBufferWriter<byte> output)
         {
             if (message.Header.PayloadLength != (ulong)message.Payload.Length)
             {
@@ -44,14 +44,14 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
 
             if (message.Header.Masked)
             {
-                headerSize = headerSize + extendedPayloadLengthSize + 4;
+                headerSize += extendedPayloadLengthSize + 4;
             }
             else
             {
-                headerSize = headerSize + extendedPayloadLengthSize;
+                headerSize += extendedPayloadLengthSize;
             }
 
-            Span<byte> headerSpan = stackalloc byte[headerSize];
+            Span<byte> headerSpan = (stackalloc byte[14]).Slice(0, headerSize);
             headerSpan[0] = (byte)message.Header.Opcode;
 
             if (message.Header.Fin)
@@ -90,10 +90,8 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
 
                 if (!message.MaskingComplete)
                 {
-                    var useSimd = Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0;
-
                     var encoder = new WebSocketPayloadEncoder(message.Header.MaskingKey);
-                    encoder.MaskUnmaskPayload(message.Payload, message.Header.PayloadLength, useSimd, out var _);
+                    encoder.MaskUnmaskPayload(message.Payload, message.Header.PayloadLength, out var _);
                 }
             }
 

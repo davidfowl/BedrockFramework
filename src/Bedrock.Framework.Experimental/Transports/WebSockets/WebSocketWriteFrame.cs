@@ -8,7 +8,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
     /// <summary>
     /// A WebSocket frame to write as output.
     /// </summary>
-    public struct WebSocketWriteFrame
+    public class WebSocketWriteFrame
     {
         /// <summary>
         /// The header of the WebSocket frame.
