@@ -20,13 +20,13 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySequence<byte> _message;
         private bool _isCanceled;
         private bool _isCompleted;
-        private bool _hasMessage;
-        // private ArrayBufferWriter<byte> _backlog = new ArrayBufferWriter<byte>();
+        private ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
+        private bool _allExamined;
 
         public MessagePipeReader(PipeReader reader, IMessageReader<ReadOnlySequence<byte>> messageReader)
         {
-            _reader = reader;
-            _messageReader = messageReader;
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _messageReader = messageReader ?? throw new ArgumentNullException(nameof(messageReader));
         }
 
         public override void AdvanceTo(SequencePosition consumed)
@@ -36,24 +36,31 @@ namespace Bedrock.Framework.Protocols
 
         public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
         {
-            //var consumedBytes = _message.Slice(_message.Start, consumed).Length;
+            if (examined.Equals(_message.End))
+            {
+                _allExamined = true;
+            }
+            
+            var consumedLength = (int)_message.Slice(_message.Start, consumed).Length;
 
-            //if (consumedBytes > _message.Length)
-            //{
-            //    _backlog.Clear();
-            //}
-            //else
-            //{
-            //    var unconsumed = _message.Slice(consumed);
+            if (_backlog.UnconsumedWrittenCount > 0)
+            {
+                _backlog.Consume(consumedLength);
+            }
+            else
+            {
+                var unconsumed = _message.Slice(consumed);
+                if (!unconsumed.IsEmpty)
+                {
+                    foreach (var m in unconsumed)
+                    {
+                        _backlog.Write(m.Span);
+                    }
+                }
+            }
 
-            //    foreach (var m in unconsumed)
-            //    {
-            //        _backlog.Write(m.Span);
-            //    }
-            //}
-
-            //// REVIEW: Use the correct value for examined
-            //_reader.AdvanceTo(_consumed, _examined);
+            // REVIEW: Use the correct value for examined
+            _reader.AdvanceTo(_consumed, _examined);
         }
 
         public override void CancelPendingRead()
@@ -63,7 +70,7 @@ namespace Bedrock.Framework.Protocols
 
         public override void Complete(Exception exception = null)
         {
-
+            _reader.Complete();
         }
 
         public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
@@ -72,51 +79,75 @@ namespace Bedrock.Framework.Protocols
             {
                 var result = await _reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-                var buffer = result.Buffer;
-                _isCanceled = result.IsCanceled;
-                _isCompleted = result.IsCompleted;
-
-                if (_isCanceled)
-                {
-                    break;
-                }
-
-                if (_messageReader.TryParseMessage(buffer, out _consumed, out _examined, out _message))
-                {
-                    //if (_backlog.WrittenCount > 0)
-                    //{
-                    //    foreach (var m in _message)
-                    //    {
-                    //        _backlog.Write(m.Span);
-                    //    }
-
-                    //    return new ReadResult(new ReadOnlySequence<byte>(_backlog.WrittenMemory), _isCanceled, _isCompleted);
-                    //}
-
-                    _hasMessage = true;
-                    return new ReadResult(_message, _isCanceled, _isCompleted);
-                }
-                else
-                {
-                    _reader.AdvanceTo(_consumed, _examined);
-                }
-
-                if (_isCompleted)
-                {
-                    if (!buffer.IsEmpty)
-                    {
-                        throw new InvalidDataException("Connection terminated while reading a message.");
-                    }
-
-                    break;
-                }
+                if (TryCreateReadResult(result, out var readResult))
+                    return readResult;
             }
-
-            return new ReadResult(default, _isCanceled, _isCompleted);
         }
 
         public override bool TryRead(out ReadResult readResult)
         {
+            if (_reader.TryRead(out var result))
+            {
+                if (TryCreateReadResult(result, out readResult))
+                    return true;
+            }
+
+            if (_allExamined)
+            {
+                readResult = default;
+                return false;
+            }
+
+            _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
+            readResult = new ReadResult(_message, _isCanceled, _isCompleted);
+            return true;
+        }
+
+        private bool TryCreateReadResult(ReadResult underlyingReadResult, out ReadResult readResult)
+        {
+            var buffer = underlyingReadResult.Buffer;
+            _isCanceled = underlyingReadResult.IsCanceled;
+            _isCompleted = underlyingReadResult.IsCompleted;
+
+            if (_isCanceled)
+            {
+                readResult = new ReadResult(default, _isCanceled, _isCompleted);
+                return true;
+            }
+
+            if (_messageReader.TryParseMessage(buffer, out _consumed, out _examined, out _message))
+            {
+                if (_backlog.UnconsumedWrittenCount > 0)
+                {
+                    foreach (var m in _message)
+                    {
+                        _backlog.Write(m.Span);
+                    }
+
+                    _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
+                }
+
+                if (!_message.IsEmpty)
+                    _allExamined = false;
+
+                readResult = new ReadResult(_message, _isCanceled, _isCompleted);
+                return true;
+            }
+
+            if (_isCompleted)
+            {
+                if (!buffer.IsEmpty)
+                {
+                    throw new InvalidDataException("Connection terminated while reading a message.");
+                }
+
+                _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
+                readResult = new ReadResult(_message, _isCanceled, _isCompleted);
+                return true;
+            }
+
+            _reader.AdvanceTo(_consumed, _examined);
+
             readResult = default;
             return false;
         }
