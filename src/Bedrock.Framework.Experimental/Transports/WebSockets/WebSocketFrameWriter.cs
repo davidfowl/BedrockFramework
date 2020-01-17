@@ -19,7 +19,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <param name="output">The buffer writer to write the message to.</param>
         public unsafe void WriteMessage(ref WebSocketWriteFrame message, IBufferWriter<byte> output)
         {
-            if(message.Header.PayloadLength != (ulong)message.Payload.Length)
+            if (message.Header.PayloadLength != (ulong)message.Payload.Length)
             {
                 throw new WebSocketFrameException($"Header payload length ({message.Header.PayloadLength}) does not equal supplied payload length ({message.Payload.Length})");
             }
@@ -28,9 +28,9 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             var extendedPayloadLengthSize = 0;
             var maskPosition = 2;
 
-            if(message.Header.PayloadLength > 125)
+            if (message.Header.PayloadLength > 125)
             {
-                if(message.Header.PayloadLength <= ushort.MaxValue)
+                if (message.Header.PayloadLength <= ushort.MaxValue)
                 {
                     extendedPayloadLengthSize = 2;
                     maskPosition += 2;
@@ -42,7 +42,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 }
             }
 
-            if(message.Header.Masked)
+            if (message.Header.Masked)
             {
                 headerSize = headerSize + extendedPayloadLengthSize + 4;
             }
@@ -54,12 +54,12 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             Span<byte> headerSpan = stackalloc byte[headerSize];
             headerSpan[0] = (byte)message.Header.Opcode;
 
-            if(message.Header.Fin)
+            if (message.Header.Fin)
             {
                 headerSpan[0] |= 0b1000_0000;
             }
 
-            switch(extendedPayloadLengthSize)
+            switch (extendedPayloadLengthSize)
             {
                 case 2:
                     headerSpan[1] = 126;
@@ -80,7 +80,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     break;
             }
 
-            if(message.Header.Masked)
+            if (message.Header.Masked)
             {
                 headerSpan[1] |= 0b1000_0000;
                 headerSpan[maskPosition] = (byte)message.Header.MaskingKey;
@@ -88,7 +88,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 headerSpan[maskPosition + 2] = (byte)(message.Header.MaskingKey >> 16);
                 headerSpan[maskPosition + 3] = (byte)(message.Header.MaskingKey >> 24);
 
-                if(!message.MaskingComplete)
+                if (!message.MaskingComplete)
                 {
                     var useSimd = Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0;
 
@@ -98,13 +98,13 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             }
 
             output.Write(headerSpan);
-            if(message.Payload.IsSingleSegment)
+            if (message.Payload.IsSingleSegment)
             {
                 output.Write(message.Payload.FirstSpan);
             }
             else
             {
-                foreach(var memory in message.Payload)
+                foreach (var memory in message.Payload)
                 {
                     output.Write(memory.Span);
                 }

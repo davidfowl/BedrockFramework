@@ -23,7 +23,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <summary>
         /// The current index into the masking key to use to mask or unmask payloads.
         /// </summary>
-        private int _currentMaskIndex;
+        private uint _currentMaskIndex;
 
         /// <summary>
         /// Creates an instance of a WebSocketPayloadEncoder.
@@ -50,23 +50,25 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         public unsafe long MaskUnmaskPayload(in ReadOnlySequence<byte> input, ulong length, bool useSimd, out SequencePosition position)
         {
             var lengthRemaining = (long)length;
+            var consumed = 0;
             position = input.Start;
 
-            if(input.IsSingleSegment)
+            if (input.IsSingleSegment)
             {
-                var bytesToRead = (int)Math.Min((long)lengthRemaining, input.First.Length);
+                var bytesToRead = (int)Math.Min(lengthRemaining, input.First.Length);
                 MaskUnmaskSpan(input.FirstSpan, bytesToRead, useSimd);
 
-                position = new SequencePosition(input.First, bytesToRead);
+                position = input.GetPosition(bytesToRead);
                 return lengthRemaining - bytesToRead;
             }
 
             foreach (var memory in input)
             {
-                var bytesToRead = (int)Math.Min((long)lengthRemaining, memory.Length);
+                var bytesToRead = (int)Math.Min(lengthRemaining, memory.Length);
                 MaskUnmaskSpan(memory.Span, bytesToRead, useSimd);
 
-                position = new SequencePosition(memory, bytesToRead);
+                consumed += bytesToRead;
+                position = input.GetPosition(consumed);
                 lengthRemaining -= bytesToRead;
             }
 
@@ -83,6 +85,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         private unsafe void MaskUnmaskSpan(in ReadOnlySpan<byte> span, long bytesToRead, bool useSimd)
         {
             var maskingKey = _maskingKey;
+            var localMaskIndex = _currentMaskIndex;
 
             fixed (byte* dataStartPtr = &MemoryMarshal.GetReference(span))
             {
@@ -98,16 +101,18 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     {
                         Debug.Assert(dataPtr < dataEndPtr);
 
-                        *dataPtr++ ^= maskPtr[_currentMaskIndex];
-                        _currentMaskIndex = (_currentMaskIndex + 1) & 3; //Modulus shortcut for power of 2 values for perf, same as _currentMaskIndex % 4
+                        *dataPtr++ ^= maskPtr[localMaskIndex];
+                        localMaskIndex = (localMaskIndex + 1) % 4;
                     }
 
                     //We may have moved forward an uneven number of bytes along the masking key,
                     //generate a new masking key that has those bytes rotated for whole-int unmasking
-                    int alignedMask = (int)BitOperations.RotateRight((uint)_maskingKey, _currentMaskIndex * 8);
+                    int alignedMask = (int)BitOperations.RotateRight((uint)_maskingKey, (int)localMaskIndex * 8);
+
+                    var fullVectorReadPtr = dataEndPtr - Vector<byte>.Count;
 
                     //If we found we should use SIMD and there is sufficient data to read
-                    if (useSimd && (dataEndPtr - dataPtr) >= Vector<byte>.Count)
+                    if (useSimd && dataPtr <= fullVectorReadPtr)
                     {
                         //Align by whole ints to full SIMD load boundary to avoid a perf penalty for unaligned loads
                         while ((ulong)dataPtr % (uint)Vector<byte>.Count != 0)
@@ -133,6 +138,8 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     }
 
                     //Process remaining data (or all, if couldn't use SIMD) one int at a time.
+                    Debug.Assert((int)dataPtr % sizeof(int) == 0);
+
                     while (dataEndPtr - dataPtr >= sizeof(int))
                     {
                         *(int*)dataPtr ^= alignedMask;
@@ -143,10 +150,12 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 //Remaining data less than size of int
                 while (dataPtr != dataEndPtr)
                 {
-                    *dataPtr++ ^= maskPtr[_currentMaskIndex];
-                    _currentMaskIndex = (_currentMaskIndex + 1) & 3;
+                    *dataPtr++ ^= maskPtr[localMaskIndex];
+                    localMaskIndex = (localMaskIndex + 1) % 4;
                 }
             }
+
+            _currentMaskIndex = localMaskIndex;
         }
     }
 }

@@ -55,14 +55,14 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// </summary>
         /// <param name="input">The sequence to parse messages from.</param>
         /// <param name="consumed">The position in the sequence to which the parser has fully consumed.</param>
-        /// <param name="examined">The position in the sequence to which the parse has examined but not yet consumed.</param>
+        /// <param name="examined">The position in the sequence to which the parser has examined but not yet consumed.</param>
         /// <param name="message">The payload data, unmasked if necessary. This will be default if the full payload has been read.</param>
         /// <returns>True if any data could be read or the payload is complete, false if the sequence was empty but payload data remains.</returns>
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
         {
             message = input;
 
-            if(_payloadBytesRemaining == 0)
+            if (_payloadBytesRemaining == 0)
             {
                 message = default;
                 consumed = input.Start;
@@ -70,7 +70,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 return true;
             }
 
-            if(input.IsEmpty)
+            if (input.IsEmpty)
             {
                 consumed = input.Start;
                 examined = input.Start;
@@ -89,7 +89,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             else
             {
                 bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, _useSimd, out consumed);
-                examined = consumed;              
+                examined = consumed;
             }
 
             _payloadBytesRemaining -= (ulong)bytesRead;

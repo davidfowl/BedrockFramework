@@ -26,8 +26,6 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             //We need to at least be able to read the start of frame header
             if (input.Length < 2)
             {
-                consumed = input.Start;
-                examined = input.End;
                 message = default;
                 return false;
             }
@@ -53,8 +51,6 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
 
             if (reader.Remaining < extendedPayloadLengthSize + maskSize)
             {
-                consumed = input.Start;
-                examined = input.End;
                 message = default;
                 return false;
             }
@@ -93,6 +89,9 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 Header = header,
                 Payload = new WebSocketPayloadReader(header)
             };
+
+            consumed = input.GetPosition(2 + extendedPayloadLengthSize + maskSize);
+            examined = consumed;
             return true;
         }
     }
