@@ -8,12 +8,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.BulkCiphers
     internal struct AdditionalInfo
     {
         private ulong _sequenceNumber;
-        private TlsFrameType _recordType;
+        private TlsRecordType _recordType;
         private TlsProtocolVersion _tlsVersion;
         private ushort _plainTextLength;
 
         public ulong SequenceNumber { get => Endianness.FromNetworkOrder(_sequenceNumber); set => _sequenceNumber = Endianness.ToNetworkOrder(value); }
-        public TlsFrameType RecordType { get => _recordType; set => _recordType = value; }
+        public TlsRecordType RecordType { get => _recordType; set => _recordType = value; }
         public TlsProtocolVersion TlsVersion { get => Endianness.FromNetworkOrder(_tlsVersion); set => _tlsVersion = Endianness.ToNetworkOrder(value); }
         public ushort PlainTextLength { get => Endianness.FromNetworkOrder(_plainTextLength); set => _plainTextLength = Endianness.ToNetworkOrder(value); }
     }

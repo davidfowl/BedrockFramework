@@ -15,9 +15,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.BulkCiphers
 
         public int Overhead => _key.TagSize + sizeof(ulong);
 
-        public abstract void Decrypt(IBufferWriter<byte> pipeWriter, ReadOnlySequence<byte> cipherText, TlsFrameType recordType, TlsProtocolVersion tlsVersion);
-        public abstract void Encrypt(IBufferWriter<byte> pipeWriter, ReadOnlySpan<byte> plainText, TlsFrameType recordType);
-        public abstract void Encrypt(IBufferWriter<byte> pipeWriter, ReadOnlySequence<byte> plainText, TlsFrameType recordType);
+        public abstract void Decrypt(IBufferWriter<byte> pipeWriter, ReadOnlySequence<byte> cipherText, TlsRecordType recordType, TlsProtocolVersion tlsVersion);
+        public abstract void Encrypt(IBufferWriter<byte> pipeWriter, ReadOnlySpan<byte> plainText, TlsRecordType recordType);
+        public abstract void Encrypt(IBufferWriter<byte> pipeWriter, ReadOnlySequence<byte> plainText, TlsRecordType recordType);
 
         public void SetKey(BulkCipherKey key)
         {
