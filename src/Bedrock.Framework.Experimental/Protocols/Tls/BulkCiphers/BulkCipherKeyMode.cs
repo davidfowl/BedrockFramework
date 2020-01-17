@@ -6,7 +6,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.BulkCiphers
 {
     internal enum KeyMode
     {
-        Encryption = 1,
-        Decryption = 0,
+        Encrypt = 1,
+        Decrypt = 0,
     }
 }

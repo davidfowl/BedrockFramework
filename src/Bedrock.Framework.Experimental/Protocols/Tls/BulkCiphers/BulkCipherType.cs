@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.BulkCiphers
 {
-    internal enum BulkCipherType
+    enum BulkCipherType
     {
         AES_128_GCM,
         AES_256_GCM,
