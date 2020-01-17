@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.BulkCiphers
 {
-    internal interface ISymmertricalCipher : IDisposable
+    internal interface ISymmetricalCipher : IDisposable
     {
         Memory<byte> IV { get; }
         int TagSize { get; }
