@@ -246,6 +246,50 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public async Task CanConsumeAllBytes()
+        {
+            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var buffer = (await reader.ReadAsync()).Buffer;
+
+            reader.AdvanceTo(buffer.End);
+
+            reader.Complete();
+        }
+
+        [Fact]
+        public async Task CanConsumeNoBytes()
+        {
+            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var buffer = (await reader.ReadAsync()).Buffer;
+
+            reader.AdvanceTo(buffer.Start);
+
+            reader.Complete();
+        }
+
+        [Fact]
+        public async Task CanExamineAllBytes()
+        {
+            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var buffer = (await reader.ReadAsync()).Buffer;
+
+            reader.AdvanceTo(buffer.Start, buffer.End);
+
+            reader.Complete();
+        }
+
+        [Fact]
+        public async Task CanExamineNoBytes()
+        {
+            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var buffer = (await reader.ReadAsync()).Buffer;
+
+            reader.AdvanceTo(buffer.Start, buffer.Start);
+
+            reader.Complete();
+        }
+
+        [Fact]
         public async Task ReadAsyncAfterReceivingCompletedReadResultDoesNotThrow()
         {
             var stream = new ThrowAfterZeroByteReadStream();
@@ -321,6 +365,15 @@ namespace Bedrock.Framework.Tests
 
             reader.Complete();
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.ReadAsync());
+        }
+
+        [Fact]
+        public void TryReadAfterCompleteThrows()
+        {
+            var reader = new MessagePipeReader(PipeReader.Create(Stream.Null), new TestProtocol());
+
+            reader.Complete();
+            Assert.Throws<InvalidOperationException>(() => reader.TryRead(out _));
         }
 
         [Fact]
@@ -612,6 +665,72 @@ namespace Bedrock.Framework.Tests
             Assert.Throws<ArgumentNullException>(() => new MessagePipeReader(PipeReader.Create(Stream.Null), null));
         }
 
+        [Fact]
+        public async Task CanReadLargeMessages()
+        {
+            var reader = await CreateReaderOverBytes(new byte[10000]).ConfigureAwait(false);
+
+            var readResult = await reader.ReadAsync();
+            Assert.Equal(10000, readResult.Buffer.Length);
+            reader.AdvanceTo(readResult.Buffer.End);
+            reader.Complete();
+        }
+
+        [Fact]
+        public async Task ReadMessagesAsynchronouslyWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol();
+
+            async Task WritingTask()
+            {
+                var writer = connection.Application.Output;
+
+                for (var i = 0; i < 3; i++)
+                {
+                    protocol.WriteMessage(data, writer);
+                    await writer.FlushAsync().ConfigureAwait(false);
+                }
+
+                await writer.CompleteAsync().ConfigureAwait(false);
+            }
+
+            async Task ReadingTask()
+            {
+                var reader = connection.CreatePipeReader(protocol);
+
+                while (true)
+                {
+                    var result = await reader.ReadAsync().ConfigureAwait(false);
+                    var buffer = result.Buffer;
+
+                    if (buffer.Length < 3 * data.Length)
+                    {
+                        reader.AdvanceTo(buffer.Start, buffer.End);
+                        continue;
+                    }
+
+                    Assert.Equal(Enumerable.Repeat(data, 3).SelectMany(a => a).ToArray(), buffer.ToArray());
+
+                    if (result.IsCompleted)
+                    {
+                        break;
+                    }
+                }
+
+                await reader.CompleteAsync();
+            }
+
+            var readingTask = ReadingTask();
+            var writingTask = WritingTask();
+
+            await writingTask;
+            await readingTask;
+        }
+
         private static async Task<string> ReadFromPipeAsString(PipeReader reader)
         {
             var readResult = await reader.ReadAsync();
@@ -683,61 +802,6 @@ namespace Bedrock.Framework.Tests
 #endif
         }
 
-        [Fact]
-        public async Task ReadMessagesAsynchronouslyWorks()
-        {
-            var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
-            var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
-            var data = Encoding.UTF8.GetBytes("Hello World");
-            var protocol = new TestProtocol();
-
-            async Task WritingTask()
-            {
-                var writer = connection.Application.Output;
-
-                for (var i = 0; i < 3; i++)
-                {
-                    protocol.WriteMessage(data, writer);
-                    await writer.FlushAsync().ConfigureAwait(false);
-                }
-
-                await writer.CompleteAsync().ConfigureAwait(false);
-            }
-
-            async Task ReadingTask()
-            {
-                var reader = connection.CreatePipeReader(protocol);
-
-                while (true)
-                {
-                    var result = await reader.ReadAsync().ConfigureAwait(false);
-                    var buffer = result.Buffer;
-
-                    if (buffer.Length < 3 * data.Length)
-                    {
-                        reader.AdvanceTo(buffer.Start, buffer.End);
-                        continue;
-                    }
-
-                    Assert.Equal(Enumerable.Repeat(data, 3).SelectMany(a => a).ToArray(), buffer.ToArray());
-
-                    if (result.IsCompleted)
-                    {
-                        break;
-                    }
-                }
-
-                await reader.CompleteAsync();
-            }
-
-            var readingTask = ReadingTask();
-            var writingTask = WritingTask();
-
-            await writingTask;
-            await readingTask;
-        }
-
         private class TestProtocol : IMessageReader<ReadOnlySequence<byte>>, IMessageWriter<byte[]>
         {
             public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
@@ -746,8 +810,6 @@ namespace Bedrock.Framework.Tests
 
                 if (!reader.TryReadLittleEndian(out int length) || reader.Remaining < length)
                 {
-                    consumed = input.Start;
-                    examined = input.End;
                     message = default;
                     return false;
                 }

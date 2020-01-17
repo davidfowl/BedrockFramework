@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,15 +9,16 @@ namespace Bedrock.Framework.Protocols
 {
     public class MessagePipeReader : PipeReader
     {
-        private IMessageReader<ReadOnlySequence<byte>> _messageReader;
+        private readonly IMessageReader<ReadOnlySequence<byte>> _messageReader;
         private readonly PipeReader _reader;
 
         private SequencePosition _examined;
         private SequencePosition _consumed;
         private ReadOnlySequence<byte> _message;
+        private bool _isThisCompleted;
         private bool _isCanceled;
         private bool _isCompleted;
-        private ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
+        private readonly ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
         private bool _allExamined;
 
         public MessagePipeReader(PipeReader reader, IMessageReader<ReadOnlySequence<byte>> messageReader)
@@ -36,11 +34,16 @@ namespace Bedrock.Framework.Protocols
 
         public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
         {
-            if (examined.Equals(_message.End))
+            if (_isThisCompleted)
+            {
+                ThrowReadAfterCompleted();
+            }
+
+            if (_message.Slice(examined).Length == 0)
             {
                 _allExamined = true;
             }
-            
+
             var consumedLength = (int)_message.Slice(_message.Start, consumed).Length;
 
             if (_backlog.UnconsumedWrittenCount > 0)
@@ -50,12 +53,9 @@ namespace Bedrock.Framework.Protocols
             else
             {
                 var unconsumed = _message.Slice(consumed);
-                if (!unconsumed.IsEmpty)
+                foreach (var m in unconsumed)
                 {
-                    foreach (var m in unconsumed)
-                    {
-                        _backlog.Write(m.Span);
-                    }
+                    _backlog.Write(m.Span);
                 }
             }
 
@@ -70,26 +70,41 @@ namespace Bedrock.Framework.Protocols
 
         public override void Complete(Exception exception = null)
         {
+            _isThisCompleted = true;
             _reader.Complete();
         }
 
         public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
+            if (_isThisCompleted)
+            {
+                ThrowReadAfterCompleted();
+            }
+
             while (true)
             {
                 var result = await _reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
                 if (TryCreateReadResult(result, out var readResult))
+                {
                     return readResult;
+                }
             }
         }
 
         public override bool TryRead(out ReadResult readResult)
         {
+            if (_isThisCompleted)
+            {
+                ThrowReadAfterCompleted();
+            }
+
             if (_reader.TryRead(out var result))
             {
                 if (TryCreateReadResult(result, out readResult))
+                {
                     return true;
+                }
             }
 
             if (_allExamined)
@@ -115,6 +130,8 @@ namespace Bedrock.Framework.Protocols
                 return true;
             }
 
+            _consumed = buffer.Start;
+            _examined = buffer.End;
             if (_messageReader.TryParseMessage(buffer, ref _consumed, ref _examined, out _message))
             {
                 if (_backlog.UnconsumedWrittenCount > 0)
@@ -128,7 +145,9 @@ namespace Bedrock.Framework.Protocols
                 }
 
                 if (!_message.IsEmpty)
+                {
                     _allExamined = false;
+                }
 
                 readResult = new ReadResult(_message, _isCanceled, _isCompleted);
                 return true;
@@ -150,6 +169,11 @@ namespace Bedrock.Framework.Protocols
 
             readResult = default;
             return false;
+        }
+
+        private static void ThrowReadAfterCompleted()
+        {
+            throw new InvalidOperationException("Reading is not allowed after reader was completed.");
         }
     }
 }
