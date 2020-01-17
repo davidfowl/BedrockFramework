@@ -41,7 +41,7 @@ namespace Bedrock.Framework.Protocols
                     return;
                 }
 
-                writer.WriteMessage(protocolMessage, _writer);
+                writer.WriteMessage(ref protocolMessage, _writer);
 
                 var result = await _writer.FlushAsync(cancellationToken).ConfigureAwait(false);
 
@@ -72,9 +72,13 @@ namespace Bedrock.Framework.Protocols
                     return;
                 }
 
-                foreach (var protocolMessage in protocolMessages)
+                var enumerator = protocolMessages.GetEnumerator();
+                while(enumerator.MoveNext())
                 {
-                    writer.WriteMessage(protocolMessage, _writer);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var protocolMessage = enumerator.Current;
+                    writer.WriteMessage(ref protocolMessage, _writer);
                 }
 
                 var result = await _writer.FlushAsync(cancellationToken).ConfigureAwait(false);

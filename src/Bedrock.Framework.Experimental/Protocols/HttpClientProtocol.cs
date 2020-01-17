@@ -19,7 +19,7 @@ namespace Bedrock.Framework.Protocols
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead)
         {
             // Write request message headers
-            _messageWriter.WriteMessage(requestMessage, _connection.Transport.Output);
+            _messageWriter.WriteMessage(ref requestMessage, _connection.Transport.Output);
 
             // Write the body directly
             if (requestMessage.Content != null)

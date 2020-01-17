@@ -52,7 +52,7 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask WriteResponseAsync(HttpResponseMessage responseMessage)
         {
-            _writer.WriteMessage(responseMessage, _connection.Transport.Output);
+            _writer.WriteMessage(ref responseMessage, _connection.Transport.Output);
 
             if (responseMessage.Content != null)
             {

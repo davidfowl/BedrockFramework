@@ -11,7 +11,7 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> Space => new byte[] { (byte)' ' };
 
-        public void WriteMessage(HttpResponseMessage message, IBufferWriter<byte> output)
+        public void WriteMessage(ref HttpResponseMessage message, IBufferWriter<byte> output)
         {
             var writer = new BufferWriter<IBufferWriter<byte>>(output);
             writer.WriteAsciiNoValidation("HTTP/1.1");

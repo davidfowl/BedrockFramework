@@ -2,17 +2,27 @@
 using Bedrock.Framework.Protocols;
 using System;
 using System.Buffers;
+using System.Numerics;
 using System.Security.Cryptography;
 
 namespace Bedrock.Framework.Experimental.Transports.WebSockets
 {
+    /// <summary>
+    /// Writes a WebSocket frame message to a buffer.
+    /// </summary>
     public struct WebSocketFrameWriter : IMessageWriter<WebSocketWriteFrame>
     {
-        private static readonly RandomNumberGenerator _random = RandomNumberGenerator.Create();
-
-        public unsafe void WriteMessage(WebSocketWriteFrame message, IBufferWriter<byte> output)
+        /// <summary>
+        /// Writes the WebSocketWriteFrame to the provided buffer writer.
+        /// </summary>
+        /// <param name="message">The message to write.</param>
+        /// <param name="output">The buffer writer to write the message to.</param>
+        public unsafe void WriteMessage(ref WebSocketWriteFrame message, IBufferWriter<byte> output)
         {
-            var writer = new BufferWriter<IBufferWriter<byte>>(output);
+            if(message.Header.PayloadLength != (ulong)message.Payload.Length)
+            {
+                throw new WebSocketFrameException($"Header payload length ({message.Header.PayloadLength}) does not equal supplied payload length ({message.Payload.Length})");
+            }
 
             var headerSize = 2;
             var extendedPayloadLengthSize = 0;
@@ -66,7 +76,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     }
                     break;
                 default:
-                    headerSpan[2] = (byte)message.Header.PayloadLength;
+                    headerSpan[1] = (byte)message.Header.PayloadLength;
                     break;
             }
 
@@ -78,8 +88,26 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 headerSpan[maskPosition + 2] = (byte)(message.Header.MaskingKey >> 16);
                 headerSpan[maskPosition + 3] = (byte)(message.Header.MaskingKey >> 24);
 
-                output.Write(headerSpan);
+                if(!message.MaskingComplete)
+                {
+                    var useSimd = Vector.IsHardwareAccelerated && Vector<byte>.Count % sizeof(int) == 0;
 
+                    var encoder = new WebSocketPayloadEncoder(message.Header.MaskingKey);
+                    encoder.MaskUnmaskPayload(message.Payload, message.Header.PayloadLength, useSimd, out var _);
+                }
+            }
+
+            output.Write(headerSpan);
+            if(message.Payload.IsSingleSegment)
+            {
+                output.Write(message.Payload.FirstSpan);
+            }
+            else
+            {
+                foreach(var memory in message.Payload)
+                {
+                    output.Write(memory.Span);
+                }
             }
         }
     }
