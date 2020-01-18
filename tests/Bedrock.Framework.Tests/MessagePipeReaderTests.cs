@@ -427,7 +427,10 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task ReadAsyncReturnsCanceledIfCanceledBeforeRead()
         {
-            var reader = await CreateReaderOverBytes(new byte[10000]).ConfigureAwait(false);
+            var reader = CreateReader(out var writeFunc);
+            await writeFunc(new byte[100]);
+            await writeFunc(new byte[100]);
+            await writeFunc(new byte[100]);
 
             // Make sure state isn't used from before
             for (var i = 0; i < 3; i++)
