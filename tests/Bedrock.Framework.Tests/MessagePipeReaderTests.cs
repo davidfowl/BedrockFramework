@@ -447,7 +447,10 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task ReadAsyncReturnsCanceledInterleaved()
         {
-            var reader = await CreateReaderOverBytes(new byte[10000]).ConfigureAwait(false);
+            var reader = CreateReader(out var writeFunc);
+            await writeFunc(new byte[100]);
+            await writeFunc(new byte[100]);
+            await writeFunc(new byte[100]);
 
             // Cancel and Read interleaved to confirm cancellations are independent
             for (var i = 0; i < 3; i++)
@@ -738,6 +741,38 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public async Task DoesNotReturnCompletedIfUnderlyingReaderIsCompletedIfThereAreMoreMessagesToParse()
+        {
+            var protocol = new TestProtocol();
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            protocol.WriteMessage(new byte[100], bufferWriter);
+            protocol.WriteMessage(new byte[100], bufferWriter);
+            var reader = new MessagePipeReader(
+                new CompletingPipeReader(new ReadOnlySequence<byte>(bufferWriter.WrittenMemory)),
+                protocol);
+
+            var readResult = await reader.ReadAsync();
+            var buffer = readResult.Buffer;
+
+            Assert.Equal(100, buffer.Length);
+            Assert.False(readResult.IsCompleted);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(200, buffer.Length);
+            Assert.False(readResult.IsCompleted);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(200, buffer.Length);
+            Assert.True(readResult.IsCompleted);
+
+            reader.Complete();
+        }
+
+        [Fact]
         public async Task ReadMessagesAsynchronouslyWorks()
         {
             var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
@@ -887,6 +922,45 @@ namespace Bedrock.Framework.Tests
                 BinaryPrimitives.WriteInt32LittleEndian(span, message.Length);
                 output.Advance(4);
                 output.Write(message);
+            }
+        }
+
+        private class CompletingPipeReader : PipeReader
+        {
+            private ReadOnlySequence<byte> _bytes;
+
+            public CompletingPipeReader(ReadOnlySequence<byte> bytes)
+            {
+                _bytes = bytes;
+            }
+
+            public override void AdvanceTo(SequencePosition consumed)
+            {
+                _bytes = _bytes.Slice(consumed);
+            }
+
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined)
+            {
+                _bytes = _bytes.Slice(consumed);
+            }
+
+            public override void CancelPendingRead()
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Complete(Exception exception = null)
+            {
+            }
+
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
+            {
+                return new ValueTask<ReadResult>(new ReadResult(_bytes, isCanceled: false, isCompleted: true));
+            }
+
+            public override bool TryRead(out ReadResult result)
+            {
+                throw new NotImplementedException();
             }
         }
     }
