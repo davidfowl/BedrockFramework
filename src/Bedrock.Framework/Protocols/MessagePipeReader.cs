@@ -20,6 +20,8 @@ namespace Bedrock.Framework.Protocols
         private bool _isCompleted;
         private readonly ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
         private bool _allExamined;
+        private bool _receivedTerminatingMessage;
+        private bool _advanced = true;
 
         public MessagePipeReader(PipeReader reader, IMessageReader<ReadOnlySequence<byte>> messageReader)
         {
@@ -56,8 +58,16 @@ namespace Bedrock.Framework.Protocols
                 }
             }
 
-            // REVIEW: Use the correct value for examined
-            _reader.AdvanceTo(_consumed, _examined);
+            // We cannot advance the underlying reader twice without calling _reader.ReadAsync/TryRead in between
+            // If _receivedTerminatingMessage is true we never call reader.ReadAsync/TryRead
+            // So we cannot call _reader.AdvanceTo after we call it once in TryCreateReadResult
+            if (!_receivedTerminatingMessage)
+            {
+                // REVIEW: Use the correct value for examined
+                _reader.AdvanceTo(_consumed, _examined);
+            }
+
+            _advanced = true;
         }
 
         public override void CancelPendingRead()
@@ -78,6 +88,18 @@ namespace Bedrock.Framework.Protocols
                 ThrowReadAfterCompleted();
             }
 
+            if (_receivedTerminatingMessage)
+            {
+                _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
+                return new ReadResult(_message, _isCanceled, isCompleted: true);
+            }
+
+
+            if (!_advanced)
+            {
+                AdvanceTo(_message.Start);
+            }
+
             while (true)
             {
                 var result = await _reader.ReadAsync(cancellationToken).ConfigureAwait(false);
@@ -94,6 +116,24 @@ namespace Bedrock.Framework.Protocols
             if (_isThisCompleted)
             {
                 ThrowReadAfterCompleted();
+            }
+
+            if (_receivedTerminatingMessage)
+            {
+                if (_allExamined)
+                {
+                    readResult = default;
+                    return false;
+                }
+
+                _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
+                readResult = new ReadResult(_message, _isCanceled, isCompleted: true);
+                return true;
+            }
+
+            if (!_advanced)
+            {
+                AdvanceTo(_message.Start);
             }
 
             if (_reader.TryRead(out var result))
@@ -127,21 +167,33 @@ namespace Bedrock.Framework.Protocols
                 return true;
             }
 
+            _advanced = false;
+
             _consumed = buffer.Start;
             _examined = buffer.End;
             if (_messageReader.TryParseMessage(buffer, ref _consumed, ref _examined, out _message))
             {
+                if (_message.IsEmpty)
+                {
+                    // The message is empty, so there's no need for the underlying reader to hold on to the bytes.
+                    AdvanceTo(_consumed, _examined);
+                    _isCompleted = true;
+                    _receivedTerminatingMessage = true;
+                }
+                else
+                {
+                    _allExamined = false;
+                }
+
                 if (_backlog.UnconsumedWrittenCount > 0)
                 {
-                    foreach (var m in _message)
-                    {
-                        _backlog.Write(m.Span);
-                    }
+                   foreach (var m in _message)
+                   {
+                       _backlog.Write(m.Span);
+                   }
 
                     _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
                 }
-
-                _allExamined = _message.IsEmpty;
 
                 readResult = new ReadResult(_message, _isCanceled, _isCompleted);
                 return true;

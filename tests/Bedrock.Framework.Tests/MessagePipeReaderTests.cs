@@ -1,6 +1,5 @@
 ﻿using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -673,6 +672,68 @@ namespace Bedrock.Framework.Tests
             var readResult = await reader.ReadAsync();
             Assert.Equal(10000, readResult.Buffer.Length);
             reader.AdvanceTo(readResult.Buffer.End);
+            reader.Complete();
+        }
+
+        [Fact]
+        public async Task DoesNotWriteTheSameMessageTwiceIfAdvanceNotCalledInBetweenCallsToReadAsync()
+        {
+            var reader = CreateReader(out var writeFunc);
+            await writeFunc(new byte[100]).ConfigureAwait(false);
+            await writeFunc(new byte[100]).ConfigureAwait(false);
+
+            var readResult = await reader.ReadAsync();
+            var buffer = readResult.Buffer;
+
+            Assert.Equal(100, buffer.Length);
+
+            reader.AdvanceTo(buffer.GetPosition(50));
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(150, buffer.Length);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(150, buffer.Length);
+        }
+
+        [Fact]
+        public async Task EmptyMessageCausesResultToBeCompleted()
+        {
+            var reader = CreateReader(out var writeFunc);
+            await writeFunc(new byte[100]).ConfigureAwait(false);
+            await writeFunc(new byte[0]).ConfigureAwait(false);
+            await writeFunc(new byte[100]).ConfigureAwait(false);
+
+            var readResult = await reader.ReadAsync();
+            var buffer = readResult.Buffer;
+
+            Assert.Equal(100, buffer.Length);
+            Assert.False(readResult.IsCompleted);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(100, buffer.Length);
+            Assert.True(readResult.IsCompleted);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(100, buffer.Length);
+            Assert.True(readResult.IsCompleted);
+
+            reader.AdvanceTo(buffer.End);
+
+            readResult = await reader.ReadAsync();
+            buffer = readResult.Buffer;
+
+            Assert.Equal(0, buffer.Length);
+            Assert.True(readResult.IsCompleted);
+
             reader.Complete();
         }
 
