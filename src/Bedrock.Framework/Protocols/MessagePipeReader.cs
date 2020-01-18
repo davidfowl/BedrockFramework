@@ -39,10 +39,7 @@ namespace Bedrock.Framework.Protocols
                 ThrowReadAfterCompleted();
             }
 
-            if (_message.Slice(examined).Length == 0)
-            {
-                _allExamined = true;
-            }
+            _allExamined = _message.Slice(examined).IsEmpty;
 
             var consumedLength = (int)_message.Slice(_message.Start, consumed).Length;
 
@@ -144,10 +141,7 @@ namespace Bedrock.Framework.Protocols
                     _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
                 }
 
-                if (!_message.IsEmpty)
-                {
-                    _allExamined = false;
-                }
+                _allExamined = _message.IsEmpty;
 
                 readResult = new ReadResult(_message, _isCanceled, _isCompleted);
                 return true;

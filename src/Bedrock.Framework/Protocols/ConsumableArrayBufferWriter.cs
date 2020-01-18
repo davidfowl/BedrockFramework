@@ -48,12 +48,12 @@ namespace Bedrock.Framework.Protocols
         /// <summary>
         /// Returns the unconsumed data written to the underlying buffer so far, as a <see cref="ReadOnlyMemory{T}"/>.
         /// </summary>
-        public ReadOnlyMemory<T> WrittenMemory => _buffer.AsMemory(_consumedCount, _index - _consumedCount);
+        public ReadOnlyMemory<T> WrittenMemory => _buffer.AsMemory(_consumedCount.._index);
 
         /// <summary>
         /// Returns the unconsumed data written to the underlying buffer so far, as a <see cref="ReadOnlySpan{T}"/>.
         /// </summary>
-        public ReadOnlySpan<T> WrittenSpan => _buffer.AsSpan(_consumedCount, _index - _consumedCount);
+        public ReadOnlySpan<T> WrittenSpan => _buffer.AsSpan(_consumedCount.._index);
 
         /// <summary>
         /// Returns the amount of unconsumed data written to the underlying buffer so far.
@@ -102,7 +102,7 @@ namespace Bedrock.Framework.Protocols
                 throw new ArgumentException(nameof(count));
 
             if (_index > _buffer.Length - count)
-                ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
+                throw new InvalidOperationException($"BufferWriter advanced too far. Capacity: {_buffer.Length}");
 
             _index += count;
         }
@@ -126,7 +126,7 @@ namespace Bedrock.Framework.Protocols
 
             var newConsumedCount = _consumedCount + count;
             if (newConsumedCount > _index)
-                ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
+                throw new InvalidOperationException($"More data consumed from BufferWriter than was written.");
 
             if (newConsumedCount == _index)
             {
@@ -202,7 +202,7 @@ namespace Bedrock.Framework.Protocols
                 var countAvailable = _buffer.Length - countUnconsumed;
                 // If doing so would give us significant free capacity (half the array arbitrarily chosen here)
                 // Shift the array left rather than allocating a new array.
-                if (countAvailable > sizeHint&& countAvailable > _buffer.Length / 2)
+                if (countAvailable > sizeHint && countAvailable > _buffer.Length / 2)
                 {
                     Array.Copy(_buffer, _consumedCount, _buffer, 0, countUnconsumed);
                 }
@@ -225,11 +225,6 @@ namespace Bedrock.Framework.Protocols
             }
 
             Debug.Assert(FreeCapacity > 0 && FreeCapacity >= sizeHint);
-        }
-
-        private static void ThrowInvalidOperationException_AdvancedTooFar(int capacity)
-        {
-            throw new InvalidOperationException($"BufferWriter advanced too far. Capacity: {capacity}");
         }
     }
 }
