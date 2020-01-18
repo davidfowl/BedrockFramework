@@ -36,7 +36,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             var masked = (maskLengthByte & 0b1000_0000) != 0;
             ulong payloadLength = (ulong)(maskLengthByte & 0b0111_1111);
 
-            var maskSize = masked ? 0 : 4;
+            var maskSize = masked ? 4 : 0;
             var extendedPayloadLengthSize = 0;
 
             switch (payloadLength)

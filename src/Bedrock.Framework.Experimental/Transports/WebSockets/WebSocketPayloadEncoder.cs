@@ -108,11 +108,14 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                     //generate a new masking key that has those bytes rotated for whole-int unmasking
                     int alignedMask = (int)BitOperations.RotateRight((uint)_maskingKey, (int)localMaskIndex * 8);
 
+                    //Calculate the last possible pointer position that would be able to consume a whole vector
                     var fullVectorReadPtr = dataEndPtr - Vector<byte>.Count;
 
                     //If we found we should use SIMD and there is sufficient data to read
                     if (Vector.IsHardwareAccelerated && dataPtr <= fullVectorReadPtr)
                     {
+                        Debug.Assert((int)dataPtr % sizeof(int) == 0);
+
                         //Align by whole ints to full SIMD load boundary to avoid a perf penalty for unaligned loads
                         while ((ulong)dataPtr % (uint)Vector<byte>.Count != 0)
                         {
@@ -132,13 +135,11 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                                 *(Vector<byte>*)dataPtr ^= maskVector;
                                 dataPtr += Vector<byte>.Count;
                             }
-                            while (dataEndPtr - dataPtr >= Vector<byte>.Count);
+                            while (dataPtr <= fullVectorReadPtr);
                         }
                     }
 
                     //Process remaining data (or all, if couldn't use SIMD) one int at a time.
-                    Debug.Assert((int)dataPtr % sizeof(int) == 0);
-
                     while (dataEndPtr - dataPtr >= sizeof(int))
                     {
                         *(int*)dataPtr ^= alignedMask;
