@@ -91,7 +91,7 @@ namespace Bedrock.Framework.Protocols
             if (_isCompleted)
             {
                 _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
-                return new ReadResult(_message, false, isCompleted: true);
+                return new ReadResult(_message, isCanceled: false, isCompleted: true);
             }
 
 
@@ -127,7 +127,7 @@ namespace Bedrock.Framework.Protocols
                 }
 
                 _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
-                readResult = new ReadResult(_message, false, isCompleted: true);
+                readResult = new ReadResult(_message, isCanceled: false, isCompleted: true);
                 return true;
             }
 
