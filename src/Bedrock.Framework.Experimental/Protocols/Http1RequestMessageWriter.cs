@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -36,6 +37,9 @@ namespace Bedrock.Framework.Protocols
 
         public void WriteMessage(HttpRequestMessage message, IBufferWriter<byte> output)
         {
+            Debug.Assert(message.Method != null);
+            Debug.Assert(message.RequestUri != null);
+
             var writer = new BufferWriter<IBufferWriter<byte>>(output);
             writer.WriteAsciiNoValidation(message.Method.Method);
             writer.Write(Space);
