@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bedrock.Framework.Experimental.Protocols.Tls.Interop.BCrypt;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using static Bedrock.Framework.Experimental.Protocols.Tls.Interop.BCrypt.BCrypt;
@@ -11,7 +12,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
         private readonly int _size;
         private readonly HashType _hashType;
 
-        public WindowsHash(SafeBCryptAlgorithmHandle algoHandle, int size, HashType hashType)
+        internal WindowsHash(SafeBCryptAlgorithmHandle algoHandle, int size, HashType hashType)
         {
             _hashType = hashType;
             _size = size;

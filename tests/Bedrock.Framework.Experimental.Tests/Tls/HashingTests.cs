@@ -8,7 +8,8 @@ namespace Bedrock.Framework.Experimental.Tests.Tls
 {
     public class HashingTests
     {
-        private static readonly OpenSslHashProvider _provider = new OpenSslHashProvider();
+        private static readonly OpenSslHashProvider _openSslProvider = new OpenSslHashProvider();
+        private static readonly WindowsHashProvider _windowsProvider = new WindowsHashProvider();
         private static readonly byte[] _data = GetRandomData();
 
         private static byte[] CoreFxHash(HashType hashType) => CoreFxHash(hashType, _data);
@@ -37,9 +38,17 @@ namespace Bedrock.Framework.Experimental.Tests.Tls
         [InlineData(HashType.SHA256)]
         [InlineData(HashType.SHA384)]
         [InlineData(HashType.SHA512)]
-        public void OpenSslBlockHashing(HashType hashType)
+        public void OpenSslBlockHashing(HashType hashType) => BlockHashing(hashType, _openSslProvider);
+
+        [Theory()]
+        [InlineData(HashType.SHA256)]
+        [InlineData(HashType.SHA384)]
+        [InlineData(HashType.SHA512)]
+        public void WindowsBlockHashing(HashType hashType) => BlockHashing(hashType, _windowsProvider);
+
+        private void BlockHashing(HashType hashType, HashProvider hashProvider)
         {
-            using var hash = _provider.GetHash(hashType);
+            using var hash = hashProvider.GetHash(hashType);
             var result = new byte[hash.HashSize];
             hash.HashData(_data);
             hash.Finish(result);
@@ -51,9 +60,17 @@ namespace Bedrock.Framework.Experimental.Tests.Tls
         [InlineData(HashType.SHA256)]
         [InlineData(HashType.SHA384)]
         [InlineData(HashType.SHA512)]
-        public void OpenSslStreamHashing(HashType hashType)
+        public void OpenSslStreamHashing(HashType hashType) => StreamHashing(hashType, _openSslProvider);
+
+        [Theory()]
+        [InlineData(HashType.SHA256)]
+        [InlineData(HashType.SHA384)]
+        [InlineData(HashType.SHA512)]
+        public void WindowsStreamHashing(HashType hashType) => StreamHashing(hashType, _windowsProvider);
+
+        private void StreamHashing(HashType hashType, HashProvider hashProvider)
         {
-            using var hash = _provider.GetHash(hashType);
+            using var hash = hashProvider.GetHash(hashType);
             var dataSpan = _data.AsSpan();
             hash.HashData(dataSpan.Slice(0, 200));
             hash.HashData(dataSpan.Slice(200));
@@ -68,9 +85,17 @@ namespace Bedrock.Framework.Experimental.Tests.Tls
         [InlineData(HashType.SHA256)]
         [InlineData(HashType.SHA384)]
         [InlineData(HashType.SHA512)]
-        public void OpenSslInterimHashing(HashType hashType)
+        public void OpenSslInterimHashing(HashType hashType) => InterimHashing(hashType, _openSslProvider);
+
+        [Theory()]
+        [InlineData(HashType.SHA256)]
+        [InlineData(HashType.SHA384)]
+        [InlineData(HashType.SHA512)]
+        public void WindowsInterimHashing(HashType hashType) => InterimHashing(hashType, _windowsProvider);
+
+        private void InterimHashing(HashType hashType, HashProvider hashProvider)
         {
-            using var hash = _provider.GetHash(hashType);
+            using var hash = hashProvider.GetHash(hashType);
             var dataSpan = _data.AsSpan();
 
             var block1 = dataSpan.Slice(0, 100);
