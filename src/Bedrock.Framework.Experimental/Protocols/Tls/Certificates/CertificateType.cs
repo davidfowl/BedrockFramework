@@ -8,9 +8,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.Certificates
     //TLS SignatureAlgorithm Registry
     internal enum CertificateType
     {
-        anonymous = 0,
-        rsa = 1,
-        dsa = 2,
-        ecdsa = 3,
+        Anonymous = 0,
+        Rsa = 1,
+        Dsa = 2,
+        Ecdsa = 3,
     }
 }
