@@ -21,15 +21,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)payload.Length
-            });
-
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payload.Length, maskingKey));
             var sequence = new ReadOnlySequence<byte>(payload);
 
             SequencePosition pos = default;
@@ -45,16 +37,8 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = "This is a test payload.";
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)sequence.Length
-            });
-
             SequencePosition pos = default;
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.ToArray()));
@@ -73,16 +57,8 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var sequence = new ReadOnlySequence<byte>(left, 0, right, right.Memory.Length);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)sequence.Length
-            });
-
             SequencePosition pos = default;
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.ToArray()));
@@ -95,16 +71,8 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 250));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)sequence.Length
-            });
-
             SequencePosition pos = default;
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.ToArray()));
@@ -117,16 +85,8 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 25000));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)sequence.Length
-            });
-
             SequencePosition pos = default;
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.ToArray()));
@@ -136,13 +96,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void EmptySequenceReturnsFalse()
         {
             var sequence = new ReadOnlySequence<byte>(new byte[0]);
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = false,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = 1
-            });
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, 1, default));
 
             SequencePosition pos = default;
             var success = encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
@@ -157,14 +111,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)payload.Length
-            });
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payload.Length, maskingKey));
 
             var first = new TestSequenceSegment(payload);
             var last = first.AddSegment(new byte[64]);
@@ -184,15 +131,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)payload.Length
-            });
-
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payload.Length, maskingKey));
             var sequence = new ReadOnlySequence<byte>(payload, 0, payload.Length - 9);
 
             SequencePosition pos = default;
@@ -209,15 +148,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 250));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
-            var encoder = new WebSocketPayloadReader(new WebSocketHeader
-            {
-                Fin = true,
-                Masked = true,
-                MaskingKey = maskingKey,
-                Opcode = WebSocketOpcode.Binary,
-                PayloadLength = (ulong)sequence.Length
-            });
-
+            var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             var resultData = new byte[0];
             SequencePosition pos = default;
 

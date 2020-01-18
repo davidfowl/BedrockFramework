@@ -72,10 +72,8 @@ namespace Bedrock.Framework.Protocols
                     return;
                 }
 
-                var enumerator = protocolMessages.GetEnumerator();
                 foreach(var protocolMessage in protocolMessages)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     writer.WriteMessage(protocolMessage, _writer);
                 }
 

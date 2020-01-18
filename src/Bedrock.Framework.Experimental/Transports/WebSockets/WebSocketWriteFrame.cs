@@ -25,5 +25,16 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// for delivery, if necessary.
         /// </summary>
         internal bool MaskingComplete;
+
+        /// <summary>
+        /// Creates an instance of a WebSocketWriteFrame.
+        /// </summary>
+        /// <param name="header">The header of the WebSocket frame.</param>
+        /// <param name="payload">The payload of the WebSocket frame.</param>
+        public WebSocketWriteFrame(WebSocketHeader header, ReadOnlySequence<byte> payload)
+        {
+            Header = header;
+            Payload = payload;
+        }
     }
 }

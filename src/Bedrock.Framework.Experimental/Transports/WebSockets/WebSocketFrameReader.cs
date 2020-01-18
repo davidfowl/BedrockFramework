@@ -34,12 +34,12 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             reader.TryRead(out var maskLengthByte);
 
             var masked = (maskLengthByte & 0b1000_0000) != 0;
-            ulong payloadLength = (ulong)(maskLengthByte & 0b0111_1111);
+            ulong initialPayloadLength = (ulong)(maskLengthByte & 0b0111_1111);
 
             var maskSize = masked ? 4 : 0;
             var extendedPayloadLengthSize = 0;
 
-            switch (payloadLength)
+            switch (initialPayloadLength)
             {
                 case 126:
                     extendedPayloadLengthSize = 2;
@@ -54,41 +54,38 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
                 message = default;
                 return false;
             }
+            
+            var fin = (finOpcodeByte & 0b1000_0000) != 0;
+            var opcode = (WebSocketOpcode)(finOpcodeByte & 0b0000_1111);
 
-            var header = new WebSocketHeader();
-            header.Fin = (finOpcodeByte & 0b1000_0000) != 0;
-            header.Opcode = (WebSocketOpcode)(finOpcodeByte & 0b0000_1111);
-
+            ulong payloadLength = 0;
             if (extendedPayloadLengthSize == 2)
             {
                 short length;
 
                 reader.TryReadBigEndian(out length);
-                header.PayloadLength = (ulong)length;
+                payloadLength = (ulong)length;
             }
             else if (extendedPayloadLengthSize == 8)
             {
                 long length;
 
                 reader.TryReadBigEndian(out length);
-                header.PayloadLength = (ulong)length;
+                payloadLength = (ulong)length;
             }
             else
             {
-                header.PayloadLength = payloadLength;
+                payloadLength = initialPayloadLength;
             }
 
+            int maskingKey = 0;
             if (masked)
             {
-                reader.TryReadBigEndian(out header.MaskingKey);
-                header.Masked = true;
+                reader.TryReadBigEndian(out maskingKey);
             }
 
-            message = new WebSocketReadFrame
-            {
-                Header = header,
-                Payload = new WebSocketPayloadReader(header)
-            };
+            var header = new WebSocketHeader(fin, opcode, masked, payloadLength, maskingKey);
+            message = new WebSocketReadFrame(header, new WebSocketPayloadReader(header));
 
             consumed = input.GetPosition(2 + extendedPayloadLengthSize + maskSize);
             examined = consumed;
