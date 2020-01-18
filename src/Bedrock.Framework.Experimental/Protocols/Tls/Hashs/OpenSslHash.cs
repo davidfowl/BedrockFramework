@@ -43,12 +43,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             _ctx.Free();
-            GC.SuppressFinalize(this);
         }
-
-        ~OpenSslHash() => Dispose();
     }
 }

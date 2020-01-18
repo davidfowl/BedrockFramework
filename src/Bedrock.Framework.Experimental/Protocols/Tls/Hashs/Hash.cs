@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
 {
-    public abstract class Hash
+    public abstract class Hash : IDisposable
     {
         public abstract void HashData(ReadOnlySpan<byte> data);
         public abstract int HashSize { get; }
@@ -23,5 +23,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Tls.Hashs
         }
 
         public void HashData(ReadOnlySequence<byte> sequence) => HashData(new SequenceReader<byte>(sequence));
+
+        protected abstract void Dispose(bool disposing);
+
+        ~Hash() => Dispose(false);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
     }
 }
