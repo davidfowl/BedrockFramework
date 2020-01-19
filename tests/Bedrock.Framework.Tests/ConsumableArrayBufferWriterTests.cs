@@ -32,6 +32,15 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
+        public void ThrowsIfConsumePlusConsumedWouldOverflow()
+        {
+            var output = new ConsumableArrayBufferWriter<T>(256);
+            WriteData(output, 100);
+            output.Consume(50);
+            Assert.Throws<InvalidOperationException>(() => output.Consume(int.MaxValue));
+        }
+
+        [Fact]
         public void IfConsumedEqualsWrittenFreeCapacityIsReset()
         {
             var output = new ConsumableArrayBufferWriter<T>(256);

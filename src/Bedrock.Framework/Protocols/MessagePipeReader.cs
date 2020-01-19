@@ -21,7 +21,6 @@ namespace Bedrock.Framework.Protocols
         private readonly ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
         private bool _allExamined;
         private bool _advanced = true;
-
         public MessagePipeReader(PipeReader reader, IMessageReader<ReadOnlySequence<byte>> messageReader)
         {
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
@@ -65,9 +64,8 @@ namespace Bedrock.Framework.Protocols
             {
                 // REVIEW: Use the correct value for examined
                 _reader.AdvanceTo(_consumed, _examined);
+                _advanced = true;
             }
-
-            _advanced = true;
         }
 
         public override void CancelPendingRead()
@@ -77,8 +75,12 @@ namespace Bedrock.Framework.Protocols
 
         public override void Complete(Exception exception = null)
         {
+            if (!_advanced)
+            {
+                _reader.AdvanceTo(_consumed, _examined);
+            }
             _isThisCompleted = true;
-            _reader.Complete();
+            _backlog.Clear();
         }
 
         public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
@@ -92,12 +94,6 @@ namespace Bedrock.Framework.Protocols
             {
                 _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
                 return new ReadResult(_message, isCanceled: false, isCompleted: true);
-            }
-
-
-            if (!_advanced)
-            {
-                AdvanceTo(_message.Start);
             }
 
             while (true)
@@ -129,11 +125,6 @@ namespace Bedrock.Framework.Protocols
                 _message = new ReadOnlySequence<byte>(_backlog.WrittenMemory);
                 readResult = new ReadResult(_message, isCanceled: false, isCompleted: true);
                 return true;
-            }
-
-            if (!_advanced)
-            {
-                AdvanceTo(_message.Start);
             }
 
             if (_reader.TryRead(out var result))
@@ -178,10 +169,6 @@ namespace Bedrock.Framework.Protocols
                     // The message is empty, so there's no need for the underlying reader to hold on to the bytes.
                     AdvanceTo(_consumed, _examined);
                     _isCompleted = true;
-                }
-                else
-                {
-                    _allExamined = false;
                 }
 
                 if (_backlog.UnconsumedWrittenCount > 0)

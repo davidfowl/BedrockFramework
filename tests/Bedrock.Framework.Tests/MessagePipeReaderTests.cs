@@ -475,7 +475,6 @@ namespace Bedrock.Framework.Tests
         public async Task ConsumePartialBufferWorks()
         {
             var protocol = new TestProtocol();
-            // We're using the pipe here as a way to pump bytes into the reader asynchronously
             var pipe = new Pipe();
             var reader = new MessagePipeReader(PipeReader.Create(pipe.Reader.AsStream()), protocol);
 
@@ -682,31 +681,6 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task DoesNotWriteTheSameMessageTwiceIfAdvanceNotCalledInBetweenCallsToReadAsync()
-        {
-            var reader = CreateReader(out var writeFunc);
-            await writeFunc(new byte[100]).ConfigureAwait(false);
-            await writeFunc(new byte[100]).ConfigureAwait(false);
-
-            var readResult = await reader.ReadAsync();
-            var buffer = readResult.Buffer;
-
-            Assert.Equal(100, buffer.Length);
-
-            reader.AdvanceTo(buffer.GetPosition(50));
-
-            readResult = await reader.ReadAsync();
-            buffer = readResult.Buffer;
-
-            Assert.Equal(150, buffer.Length);
-
-            readResult = await reader.ReadAsync();
-            buffer = readResult.Buffer;
-
-            Assert.Equal(150, buffer.Length);
-        }
-
-        [Fact]
         public async Task EmptyMessageCausesResultToBeCompleted()
         {
             var reader = CreateReader(out var writeFunc);
@@ -720,12 +694,14 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(100, buffer.Length);
             Assert.False(readResult.IsCompleted);
 
+            reader.AdvanceTo(buffer.Start);
             readResult = await reader.ReadAsync();
             buffer = readResult.Buffer;
 
             Assert.Equal(100, buffer.Length);
             Assert.True(readResult.IsCompleted);
 
+            reader.AdvanceTo(buffer.Start);
             readResult = await reader.ReadAsync();
             buffer = readResult.Buffer;
 
@@ -760,12 +736,14 @@ namespace Bedrock.Framework.Tests
             Assert.Equal(100, buffer.Length);
             Assert.False(readResult.IsCompleted);
 
+            reader.AdvanceTo(buffer.Start);
             readResult = await reader.ReadAsync();
             buffer = readResult.Buffer;
 
             Assert.Equal(200, buffer.Length);
             Assert.False(readResult.IsCompleted);
 
+            reader.AdvanceTo(buffer.Start);
             readResult = await reader.ReadAsync();
             buffer = readResult.Buffer;
 
@@ -774,6 +752,31 @@ namespace Bedrock.Framework.Tests
 
             reader.Complete();
         }
+
+        [Fact]
+        public async Task CanUseMultipleMessageReadersOnSameUnderlyingReader()
+        {
+            var protocol = new TestProtocol();
+            var pipe = new Pipe();
+            var underlyingReader = PipeReader.Create(pipe.Reader.AsStream());
+
+            var reader = new MessagePipeReader(underlyingReader, protocol);
+
+            protocol.WriteMessage(Encoding.ASCII.GetBytes("Hello"), pipe.Writer);
+            protocol.WriteMessage(Encoding.ASCII.GetBytes("World"), pipe.Writer);
+            await pipe.Writer.FlushAsync();
+
+            var readResult = await reader.ReadAsync();
+            Assert.Equal("Hello", Encoding.ASCII.GetString(readResult.Buffer.ToArray()));
+            reader.Complete();
+
+            reader = new MessagePipeReader(underlyingReader, protocol);
+            readResult = await reader.ReadAsync();
+            Assert.Equal("World", Encoding.ASCII.GetString(readResult.Buffer.ToArray()));
+
+            reader.Complete();
+        }
+
 
         [Fact]
         public async Task ReadMessagesAsynchronouslyWorks()
@@ -813,11 +816,11 @@ namespace Bedrock.Framework.Tests
                     }
 
                     Assert.Equal(Enumerable.Repeat(data, 3).SelectMany(a => a).ToArray(), buffer.ToArray());
-
-                    if (result.IsCompleted)
-                    {
-                        break;
-                    }
+                    
+                    reader.AdvanceTo(buffer.End);
+                    result = await reader.ReadAsync().ConfigureAwait(false);
+                    Assert.True(result.IsCompleted);
+                    break;
                 }
 
                 await reader.CompleteAsync();

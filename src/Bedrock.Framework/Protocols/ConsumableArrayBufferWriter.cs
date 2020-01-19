@@ -124,10 +124,10 @@ namespace Bedrock.Framework.Protocols
             if (count < 0)
                 throw new ArgumentException(nameof(count));
 
-            var newConsumedCount = _consumedCount + count;
-            if (newConsumedCount > _index)
+            if (_consumedCount > _index - count)
                 throw new InvalidOperationException($"More data consumed from BufferWriter than was written.");
 
+            var newConsumedCount = _consumedCount + count;
             if (newConsumedCount == _index)
             {
                 _index = 0;
