@@ -614,16 +614,6 @@ namespace Bedrock.Framework.Tests
         #endregion
 
         [Fact]
-        public void CompletingTheReadingDisposesUnderlying()
-        {
-            var underlying = new ObserveCompletePipeReader();
-            PipeReader reader = new MessagePipeReader(underlying, new TestProtocol());
-            reader.Complete();
-
-            Assert.True(underlying.Completed);
-        }
-
-        [Fact]
         public void OnWriterCompletedNoops()
         {
             var fired = false;
