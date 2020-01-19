@@ -150,7 +150,7 @@ namespace Bedrock.Framework.Protocols
         {
             var buffer = underlyingReadResult.Buffer;
             _isCanceled = underlyingReadResult.IsCanceled;
-            _isCompleted = underlyingReadResult.Buffer.IsEmpty && !_isCanceled;
+            _isCompleted = underlyingReadResult.IsCompleted && underlyingReadResult.Buffer.IsEmpty && !_isCanceled;
 
             if (_isCanceled)
             {
