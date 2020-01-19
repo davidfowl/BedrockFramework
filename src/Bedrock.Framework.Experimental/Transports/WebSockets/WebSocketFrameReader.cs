@@ -61,16 +61,12 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             ulong payloadLength = 0;
             if (extendedPayloadLengthSize == 2)
             {
-                short length;
-
-                reader.TryReadBigEndian(out length);
-                payloadLength = (ulong)length;
+                reader.TryReadBigEndian(out short length);
+                payloadLength = (ushort)length;
             }
             else if (extendedPayloadLengthSize == 8)
             {
-                long length;
-
-                reader.TryReadBigEndian(out length);
+                reader.TryReadBigEndian(out long length);
                 payloadLength = (ulong)length;
             }
             else

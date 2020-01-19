@@ -4,9 +4,13 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO.Pipelines;
+using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Bedrock.Framework.Experimental.Tests.Transports
@@ -114,9 +118,144 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             Assert.Equal(header, message.Header);
         }
 
-        public int GetMaskingKey() => BitConverter.ToInt32(new byte[] { 1, 2, 3, 4 });
+        [Fact]
+        public void FinMaskedNoExtendedLengthHeaderWorks()
+        {
+            var reader = new WebSocketFrameReader();
+            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, 64 + 1, GetMaskingKey());
+            var headerBytes = GetHeaderBytes(header);
 
-        public Memory<byte> GetHeaderBytes(WebSocketHeader header)
+            var sequence = new ReadOnlySequence<byte>(headerBytes);
+            SequencePosition pos = default;
+
+            var success = reader.TryParseMessage(sequence, ref pos, ref pos, out var message);
+
+            Assert.True(success);
+            Assert.Equal(sequence.GetPosition(headerBytes.Length), pos);
+            Assert.Equal(header, message.Header);
+        }
+
+        [Fact]
+        public void FinMaskedShortLengthHeaderWorks()
+        {
+            var reader = new WebSocketFrameReader();
+            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, 256, GetMaskingKey());
+            var headerBytes = GetHeaderBytes(header);
+
+            var sequence = new ReadOnlySequence<byte>(headerBytes);
+            SequencePosition pos = default;
+
+            var success = reader.TryParseMessage(sequence, ref pos, ref pos, out var message);
+
+            Assert.True(success);
+            Assert.Equal(sequence.GetPosition(headerBytes.Length), pos);
+            Assert.Equal(header, message.Header);
+        }
+
+        [Fact]
+        public void FinMaskedExtendedLengthHeaderWorks()
+        {
+            var reader = new WebSocketFrameReader();
+            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, ushort.MaxValue + 1, GetMaskingKey());
+            var headerBytes = GetHeaderBytes(header);
+
+            var sequence = new ReadOnlySequence<byte>(headerBytes);
+            SequencePosition pos = default;
+
+            var success = reader.TryParseMessage(sequence, ref pos, ref pos, out var message);
+
+            Assert.True(success);
+            Assert.Equal(sequence.GetPosition(headerBytes.Length), pos);
+            Assert.Equal(header, message.Header);
+        }
+
+        [Fact]
+        public async Task FinUnmaskedNoExtendedLengthViaManagedWebsocketWorks()
+        {
+            var pipe = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(pipe.Transport.Input, pipe.Transport.Output), true, null, TimeSpan.FromSeconds(30));
+
+            await webSocket.SendAsync(new ReadOnlyMemory<byte>(new byte[16]), WebSocketMessageType.Binary, true, CancellationToken.None);
+            var result = await pipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketFrameReader();
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
+
+            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, 16, 0), frame.Header);
+        }
+
+        [Fact]
+        public async Task FinMaskedNoExtendedLengthViaManagedWebsocketWorks()
+        {
+            var pipe = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(pipe.Transport.Input, pipe.Transport.Output), false, null, TimeSpan.FromSeconds(30));
+
+            await webSocket.SendAsync(new ReadOnlyMemory<byte>(new byte[16]), WebSocketMessageType.Binary, true, CancellationToken.None);
+            var result = await pipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketFrameReader();
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
+
+            var maskingKey = ReadMaskingKey(result.Buffer, 2);
+            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, true, 16, maskingKey), frame.Header);
+        }
+
+        [Fact]
+        public async Task FinMaskedShortLengthViaManagedWebsocketWorks()
+        {
+            var pipe = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(pipe.Transport.Input, pipe.Transport.Output), false, null, TimeSpan.FromSeconds(30));
+
+            await webSocket.SendAsync(new ReadOnlyMemory<byte>(new byte[126]), WebSocketMessageType.Binary, true, CancellationToken.None);
+            var result = await pipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketFrameReader();
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
+
+            var maskingKey = ReadMaskingKey(result.Buffer, 4);
+            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, true, 126, maskingKey), frame.Header);
+        }
+
+        [Fact]
+        public async Task FinUnmaskedShortLengthViaManagedWebsocketWorks()
+        {
+            var pipe = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(pipe.Transport.Input, pipe.Transport.Output), true, null, TimeSpan.FromSeconds(30));
+
+            await webSocket.SendAsync(new ReadOnlyMemory<byte>(new byte[126]), WebSocketMessageType.Binary, true, CancellationToken.None);
+            var result = await pipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketFrameReader();
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
+
+            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, 126, 0), frame.Header);
+        }
+
+        [Fact]
+        public async Task FinUnmaskedExtendedLengthViaManagedWebsocketWorks()
+        {
+            var pipe = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(pipe.Transport.Input, pipe.Transport.Output), true, null, TimeSpan.FromSeconds(30));
+
+            await webSocket.SendAsync(new ReadOnlyMemory<byte>(new byte[ushort.MaxValue + 1]), WebSocketMessageType.Binary, true, new CancellationTokenSource(TimeSpan.FromSeconds(5)).Token);
+            var result = await pipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketFrameReader();
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
+
+            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, ushort.MaxValue + 1, 0), frame.Header);
+        }
+
+        private int GetMaskingKey() => BitConverter.ToInt32(new byte[] { 1, 2, 3, 4 });
+
+        private int ReadMaskingKey(ReadOnlySequence<byte> seq, int pos) => BinaryPrimitives.ReadInt32BigEndian(seq.FirstSpan.Slice(pos));
+
+        private Memory<byte> GetHeaderBytes(WebSocketHeader header)
         {
             var buffer = new Span<byte>(new byte[14]);
 
@@ -163,7 +302,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             if(header.Masked)
             {
                 var intSpan = MemoryMarshal.Cast<byte, int>(buffer.Slice(maskPos, 4));
-                intSpan[0] = header.MaskingKey;
+                intSpan[0] = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(header.MaskingKey) : header.MaskingKey;
             }
 
             return new Memory<byte>(buffer.Slice(0, 2 + payloadLengthSize + (header.Masked ? 4 : 0)).ToArray());

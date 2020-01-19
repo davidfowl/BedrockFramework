@@ -79,7 +79,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// Checks to see if a WebSocketHeader value is equal to this value.	
         /// </summary>	
         /// <param name="obj">The WebSocketHeader value to check against.</param>	
-        /// <returns>True if equal, false otherwise.</returns>	
+        /// <returns>True if equal, false otherwise.</returns>
         public override bool Equals(object obj) =>
             obj is object
             && obj is WebSocketHeader
@@ -95,19 +95,8 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <summary>	
         /// Gets the hashcode of the WebSocketHeader value.	
         /// </summary>	
-        /// <returns>The value hashcode.</returns>	
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return 17
-                    * (23 + Fin.GetHashCode())
-                    * (23 + Opcode.GetHashCode())
-                    * (23 + Masked.GetHashCode())
-                    * (23 + PayloadLength.GetHashCode())
-                    * (23 + MaskingKey.GetHashCode());
-            }
-        }
+        /// <returns>The value hashcode.</returns>
+        public override int GetHashCode() => HashCode.Combine(Fin, Opcode, Masked, PayloadLength, MaskingKey);
 
         /// <summary>
         /// Creates a string representation of the WebSocketHeader.

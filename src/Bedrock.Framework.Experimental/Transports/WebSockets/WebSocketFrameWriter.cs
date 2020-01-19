@@ -2,6 +2,7 @@
 using Bedrock.Framework.Protocols;
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Numerics;
 using System.Security.Cryptography;
 
@@ -63,17 +64,11 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             {
                 case 2:
                     headerSpan[1] = 126;
-                    headerSpan[2] = (byte)(message.Header.PayloadLength >> 8);
-                    headerSpan[3] = unchecked((byte)message.Header.PayloadLength);
+                    BinaryPrimitives.WriteUInt16BigEndian(headerSpan.Slice(2), (ushort)message.Header.PayloadLength);
                     break;
                 case 8:
                     headerSpan[1] = 127;
-                    ulong length = message.Header.PayloadLength;
-                    for (int i = 9; i >= 2; i--)
-                    {
-                        headerSpan[i] = unchecked((byte)length);
-                        length = length >> 8;
-                    }
+                    BinaryPrimitives.WriteUInt64BigEndian(headerSpan.Slice(2), message.Header.PayloadLength);
                     break;
                 default:
                     headerSpan[1] = (byte)message.Header.PayloadLength;
@@ -83,10 +78,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             if (message.Header.Masked)
             {
                 headerSpan[1] |= 0b1000_0000;
-                headerSpan[maskPosition] = (byte)message.Header.MaskingKey;
-                headerSpan[maskPosition + 1] = (byte)(message.Header.MaskingKey >> 8);
-                headerSpan[maskPosition + 2] = (byte)(message.Header.MaskingKey >> 16);
-                headerSpan[maskPosition + 3] = (byte)(message.Header.MaskingKey >> 24);
+                BinaryPrimitives.WriteInt32BigEndian(headerSpan, message.Header.MaskingKey);
 
                 if (!message.MaskingComplete)
                 {
