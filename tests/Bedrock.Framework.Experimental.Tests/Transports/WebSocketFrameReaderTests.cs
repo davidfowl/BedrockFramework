@@ -32,7 +32,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void SequenceLessThanMinimumPlusMaskReturnsFalse()
         {
             var reader = new WebSocketFrameReader();
-            var headerBytes = GetHeaderBytes(new WebSocketHeader(true, default, true, 64, GetMaskingKey()));
+            var headerBytes = GetHeaderBytes(WebSocketHeader.CreateMasked(true, default, 64));
 
             var sequence = new ReadOnlySequence<byte>(headerBytes.Slice(0, 2));
             SequencePosition pos = default;
@@ -45,7 +45,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void SequenceLessThanMinimumPlusShortExtendedLengthReturnsFalse()
         {
             var reader = new WebSocketFrameReader();
-            var headerBytes = GetHeaderBytes(new WebSocketHeader(true, default, true, 126, GetMaskingKey()));
+            var headerBytes = GetHeaderBytes(WebSocketHeader.CreateMasked(true, default, 126));
 
             var sequence = new ReadOnlySequence<byte>(headerBytes.Slice(0, 2));
             SequencePosition pos = default;
@@ -58,7 +58,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void SequenceLessThanMinimumPlusLongExtendedLengthReturnsFalse()
         {
             var reader = new WebSocketFrameReader();
-            var headerBytes = GetHeaderBytes(new WebSocketHeader(true, default, true, ushort.MaxValue + 1, GetMaskingKey()));
+            var headerBytes = GetHeaderBytes(WebSocketHeader.CreateMasked(true, default, ushort.MaxValue + 1));
 
             var sequence = new ReadOnlySequence<byte>(headerBytes.Slice(0, 4));
             SequencePosition pos = default;
@@ -71,7 +71,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinUnmaskedNoExtendedLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, 64, 0);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, 64);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -88,7 +88,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinUnmaskedShortLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, 126, 0);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, 126);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -105,7 +105,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinUnmaskedExtendedLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, ushort.MaxValue + 1, 0);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, ushort.MaxValue + 1);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -122,7 +122,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinMaskedNoExtendedLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, 64 + 1, GetMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, 64);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -139,7 +139,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinMaskedShortLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, 256, GetMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, 256);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -156,7 +156,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         public void FinMaskedExtendedLengthHeaderWorks()
         {
             var reader = new WebSocketFrameReader();
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, ushort.MaxValue + 1, GetMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, ushort.MaxValue + 1);
             var headerBytes = GetHeaderBytes(header);
 
             var sequence = new ReadOnlySequence<byte>(headerBytes);
@@ -182,7 +182,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             SequencePosition pos = default;
             reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
 
-            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, 16, 0), frame.Header);
+            Assert.Equal(WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, 16), frame.Header);
         }
 
         [Fact]
@@ -232,7 +232,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             SequencePosition pos = default;
             reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var frame);
 
-            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, 126, 0), frame.Header);
+            Assert.Equal(WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, 126), frame.Header);
         }
 
         [Fact]
@@ -252,7 +252,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             pipe.Application.Input.AdvanceTo(result.Buffer.End);
             await sendTask;
 
-            Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, false, ushort.MaxValue + 1, 0), frame.Header);
+            Assert.Equal(WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, ushort.MaxValue + 1), frame.Header);
         }
 
         [Fact]
@@ -277,11 +277,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             Assert.Equal(new WebSocketHeader(true, WebSocketOpcode.Binary, true, ushort.MaxValue + 1, maskingKey), frame.Header);
         }
 
-        private int GetMaskingKey() => BitConverter.ToInt32(new byte[] { 1, 2, 3, 4 });
-
-        private int ReadMaskingKey(ReadOnlySequence<byte> seq, int pos) => BitConverter.IsLittleEndian
-            ? BinaryPrimitives.ReadInt32LittleEndian(seq.FirstSpan.Slice(pos))
-            : BinaryPrimitives.ReadInt32BigEndian(seq.FirstSpan.Slice(pos));
+        private int ReadMaskingKey(ReadOnlySequence<byte> seq, int pos) => BitConverter.ToInt32(seq.FirstSpan.Slice(pos));
 
         private Memory<byte> GetHeaderBytes(WebSocketHeader header)
         {
@@ -329,8 +325,8 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             if(header.Masked)
             {
-                var intSpan = MemoryMarshal.Cast<byte, int>(buffer.Slice(maskPos, 4));
-                intSpan[0] = BitConverter.IsLittleEndian ? header.MaskingKey : BinaryPrimitives.ReverseEndianness(header.MaskingKey);
+                var maskingKey = header.MaskingKey;
+                MemoryMarshal.Write(buffer.Slice(maskPos, 4), ref maskingKey);
             }
 
             return new Memory<byte>(buffer.Slice(0, 2 + payloadLengthSize + (header.Masked ? 4 : 0)).ToArray());

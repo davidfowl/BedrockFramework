@@ -21,7 +21,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void SingleSegmentSequenceWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
@@ -37,7 +37,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void MultiSegmentSequenceWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = "This is a test payload.";
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
@@ -51,7 +51,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void MultiSegmentWithZeroLengthSegmentsSequenceWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = "This is a test payload.";
             var masked = GenerateMaskedPayload(payloadString, maskingKey);
 
@@ -71,7 +71,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void LargeSequenceWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 250));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
@@ -85,7 +85,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void HugeSequenceWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 25000));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
@@ -111,7 +111,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void SequenceLongerThanPayloadLengthWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
@@ -131,7 +131,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void SequenceShorterThanPayloadLengthWorks()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = "This is a test payload.";
             var payload = GenerateMaskedPayload(payloadString, maskingKey);
 
@@ -148,7 +148,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
         [Fact]
         public void MaskingWorksAcrossMultipleParseCalls()
         {
-            var maskingKey = GenerateMaskingKey();
+            var maskingKey = WebSocketHeader.GenerateMaskingKey();
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 250));
             var sequence = SegmentArray(GenerateMaskedPayload(payloadString, maskingKey), 4);
 
@@ -264,14 +264,6 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             }
 
             return bytes;
-        }
-
-        private int GenerateMaskingKey()
-        {
-            var maskBytes = new byte[4];
-            _rng.GetBytes(maskBytes);
-
-            return BitConverter.ToInt32(maskBytes, 0);
         }
 
         private ReadOnlySequence<byte> SegmentArray(byte[] data, int numSegments)

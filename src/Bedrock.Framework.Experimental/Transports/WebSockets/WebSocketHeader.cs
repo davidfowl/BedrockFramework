@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 
 namespace Bedrock.Framework.Experimental.Transports.WebSockets
 {
@@ -7,6 +10,11 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
     /// </summary>
     public readonly struct WebSocketHeader : IEquatable<WebSocketHeader>
     {
+        /// <summary>
+        /// An instance of a thread-safe and cryptographically sound random number generator.
+        /// </summary>
+        private readonly static RandomNumberGenerator _rng = new RNGCryptoServiceProvider();
+
         /// <summary>
         /// Whether or not this is the final frame in the message.
         /// </summary>
@@ -39,7 +47,7 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <param name="opcode">The opcode of the frame.</param>
         /// <param name="masked">Whether the frame payload is masked.</param>
         /// <param name="payloadLength">The length of the frame payload.</param>
-        /// <param name="maskingKey">The masking key used to unmask the payload, if masked.</param>
+        /// <param name="maskingKey">The masking key used to unmask the payload, if masked. This mask must be a cryptographically random value.</param>
         public WebSocketHeader(bool fin, WebSocketOpcode opcode, bool masked, ulong payloadLength, int maskingKey)
         {
             Fin = fin;
@@ -47,6 +55,45 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             Masked = masked;
             PayloadLength = payloadLength;
             MaskingKey = maskingKey;
+        }
+
+        /// <summary>
+        /// Generates a random masking key.
+        /// </summary>
+        /// <returns>A random four byte masking key, as an int.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GenerateMaskingKey()
+        {
+            Span<byte> keyBytes = stackalloc byte[4];
+            _rng.GetBytes(keyBytes);
+
+            return BitConverter.ToInt32(keyBytes);
+        }
+
+        /// <summary>
+        /// Creates a WebSocketHeader with a random masking key that indicates a masked payload.
+        /// </summary>
+        /// <param name="fin">Whether or not this is the final frame in the message.</param>
+        /// <param name="opcode">The opcode of the frame.</param>
+        /// <param name="payloadLength">The length of the frame payload.</param>
+        /// <returns>A new WebSocketHeader.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static WebSocketHeader CreateMasked(bool fin, WebSocketOpcode opcode, ulong payloadLength)
+        {
+            return new WebSocketHeader(fin, opcode, true, payloadLength, GenerateMaskingKey());
+        }
+
+        /// <summary>
+        /// Creates a WebSocketHeader that indicates no payload masking.
+        /// </summary>
+        /// <param name="fin">Whether or not this is the final frame in the message.</param>
+        /// <param name="opcode">The opcode of the frame.</param>
+        /// <param name="payloadLength">The length of the frame payload.</param>
+        /// <returns>A new WebSocketHeader.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static WebSocketHeader CreateUnmasked(bool fin, WebSocketOpcode opcode, ulong payloadLength)
+        {
+            return new WebSocketHeader(fin, opcode, false, payloadLength, default);
         }
 
         /// <summary>	
@@ -102,6 +149,6 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// Creates a string representation of the WebSocketHeader.
         /// </summary>
         /// <returns>A string representation of the WebSocketHeader.</returns>
-        public override string ToString() => $"Fin: {Fin} | Opcode: {Opcode} | Masked: {Masked} | Payload Length: {PayloadLength} | Masking Key: {MaskingKey}";
+        public override string ToString() => $"Fin: {Fin} | Opcode: {Opcode} | Masked: {Masked} | Payload Length: {PayloadLength} | Masking Key: {MaskingKey:X8}";
     }
 }

@@ -16,8 +16,6 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 {
     public class WebSocketFrameWriterTests
     {
-        private RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
-
         [Fact]
         public async Task NoExtendedLengthUnmaskedWorksViaManagedWebSocket()
         {
@@ -29,7 +27,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             
             var payloadString = "This is a test payload.";
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, (ulong)payloadBuffer.Length, default);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             await protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -51,7 +49,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var payloadString = "This is a test payload.";
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payloadBuffer.Length, GenerateMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             await protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -73,7 +71,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 25));
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, (ulong)payloadBuffer.Length, default);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             await protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -95,7 +93,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 25));
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payloadBuffer.Length, GenerateMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             await protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -117,7 +115,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 2500));
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, false, (ulong)payloadBuffer.Length, default);
+            var header = WebSocketHeader.CreateUnmasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             var writeTask = protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -140,7 +138,7 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 2500));
             var payloadBuffer = new ReadOnlySequence<byte>(Encoding.UTF8.GetBytes(payloadString));
-            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)payloadBuffer.Length, GenerateMaskingKey());
+            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, (ulong)payloadBuffer.Length);
 
             var protocolWriter = new ProtocolWriter(duplexPipe.Transport.Output);
             var writeTask = protocolWriter.WriteAsync(writer, new WebSocketWriteFrame(header, payloadBuffer));
@@ -150,14 +148,6 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
             await writeTask;
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(receiveBuffer.ToArray()));
-        }
-
-        private int GenerateMaskingKey()
-        {
-            var maskBytes = new byte[4];
-            _rng.GetBytes(maskBytes);
-
-            return BitConverter.ToInt32(maskBytes, 0);
         }
     }
 }

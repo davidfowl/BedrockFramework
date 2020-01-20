@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace Bedrock.Framework.Experimental.Transports.WebSockets
@@ -79,16 +80,8 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             {
                 headerSpan[1] |= 0b1000_0000;
 
-                //An int is used for storage, but the key is used in byte order and has
-                //no intrinsic endianness, so write in local endian order.
-                if (BitConverter.IsLittleEndian)
-                {
-                    BinaryPrimitives.WriteInt32LittleEndian(headerSpan.Slice(maskPosition), message.Header.MaskingKey);
-                }
-                else
-                {
-                    BinaryPrimitives.WriteInt32BigEndian(headerSpan.Slice(maskPosition), message.Header.MaskingKey);
-                }
+                var maskingKey = message.Header.MaskingKey;               
+                MemoryMarshal.Write(headerSpan.Slice(maskPosition), ref maskingKey);
 
                 if (!message.MaskingComplete)
                 {
