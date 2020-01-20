@@ -115,7 +115,6 @@ namespace Bedrock.Framework.Tests
         {
             var buffer = new ConsumableArrayBufferWriter<T>();
             buffer.Dispose();
-            Assert.Throws<NullReferenceException>(() => buffer.Clear());
             Assert.Throws<NullReferenceException>(() => buffer.GetMemory());
             Assert.Throws<NullReferenceException>(() => buffer.GetSpan());
         }
