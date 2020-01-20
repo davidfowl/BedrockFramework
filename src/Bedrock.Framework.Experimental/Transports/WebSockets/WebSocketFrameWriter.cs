@@ -78,12 +78,23 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             if (message.Header.Masked)
             {
                 headerSpan[1] |= 0b1000_0000;
-                BinaryPrimitives.WriteInt32BigEndian(headerSpan, message.Header.MaskingKey);
+
+                //An int is used for storage, but the key is used in byte order and has
+                //no intrinsic endianness, so write in local endian order.
+                if (BitConverter.IsLittleEndian)
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(headerSpan.Slice(maskPosition), message.Header.MaskingKey);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteInt32BigEndian(headerSpan.Slice(maskPosition), message.Header.MaskingKey);
+                }
 
                 if (!message.MaskingComplete)
                 {
                     var encoder = new WebSocketPayloadEncoder(message.Header.MaskingKey);
                     encoder.MaskUnmaskPayload(message.Payload, message.Header.PayloadLength, out var _);
+                    message.MaskingComplete = true;
                 }
             }
 

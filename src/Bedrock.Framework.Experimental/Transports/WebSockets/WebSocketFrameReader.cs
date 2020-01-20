@@ -77,7 +77,16 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
             int maskingKey = 0;
             if (masked)
             {
-                reader.TryReadBigEndian(out maskingKey);
+                //An int is used for storage, but the key is used in byte order and has
+                //no intrinsic endianness, so read in local endian order.
+                if (BitConverter.IsLittleEndian)
+                {
+                    reader.TryReadLittleEndian(out maskingKey);
+                }
+                else
+                {
+                    reader.TryReadBigEndian(out maskingKey);
+                }
             }
 
             var header = new WebSocketHeader(fin, opcode, masked, payloadLength, maskingKey);

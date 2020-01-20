@@ -13,18 +13,18 @@ namespace Bedrock.Framework.Experimental.Transports.WebSockets
         /// <summary>
         /// The header of the WebSocket frame.
         /// </summary>
-        public WebSocketHeader Header { get; set; }
+        public WebSocketHeader Header { get; }
 
         /// <summary>
         /// The payload of the WebSocket frame.
         /// </summary>
-        public ReadOnlySequence<byte> Payload { get; set; }
+        public ReadOnlySequence<byte> Payload { get; }
 
         /// <summary>
         /// Whether or not the payload sequence has already been masked
         /// for delivery, if necessary.
         /// </summary>
-        internal bool MaskingComplete;
+        internal bool MaskingComplete { get; set; }
 
         /// <summary>
         /// Creates an instance of a WebSocketWriteFrame.

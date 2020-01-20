@@ -2,10 +2,14 @@
 using Bedrock.Framework.Experimental.Transports.WebSockets;
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.IO.Pipelines;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Bedrock.Framework.Experimental.Tests.Transports
@@ -167,6 +171,87 @@ namespace Bedrock.Framework.Experimental.Tests.Transports
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(resultData));
         }
+
+        [Fact]
+        public async Task ShortMaskedViaManagedWebsocketWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var duplexPipe = DuplexPipe.CreateConnectionPair(options, options);
+
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(duplexPipe.Transport.Input, duplexPipe.Transport.Output), false, null, TimeSpan.FromSeconds(30));
+            var data = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("This is a test payload."));
+
+            await webSocket.SendAsync(data, WebSocketMessageType.Binary, true, default);
+            var result = await duplexPipe.Application.Input.ReadAsync();
+
+            var maskingKey = ReadMaskingKey(result.Buffer, 2);
+            duplexPipe.Application.Input.AdvanceTo(result.Buffer.GetPosition(6));
+            result = await duplexPipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, 23, maskingKey));
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var message);
+
+            var resultString = Encoding.UTF8.GetString(result.Buffer.ToArray());
+            Assert.Equal("This is a test payload.", resultString);
+        }
+
+        [Fact]
+        public async Task MediumMaskedViaManagedWebsocketWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var duplexPipe = DuplexPipe.CreateConnectionPair(options, options);
+
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(duplexPipe.Transport.Input, duplexPipe.Transport.Output), false, null, TimeSpan.FromSeconds(30));
+            var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 25));
+            var data = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(payloadString));
+
+            await webSocket.SendAsync(data, WebSocketMessageType.Binary, true, default);
+            var result = await duplexPipe.Application.Input.ReadAsync();
+
+            var maskingKey = ReadMaskingKey(result.Buffer, 4);
+            duplexPipe.Application.Input.AdvanceTo(result.Buffer.GetPosition(8));
+            result = await duplexPipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)data.Length, maskingKey));
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var message);
+
+            var resultString = Encoding.UTF8.GetString(result.Buffer.ToArray());
+            Assert.Equal(payloadString, resultString);
+        }
+
+        [Fact]
+        public async Task LongMaskedViaManagedWebsocketWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var duplexPipe = DuplexPipe.CreateConnectionPair(options, options);
+
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(duplexPipe.Transport.Input, duplexPipe.Transport.Output), false, null, TimeSpan.FromSeconds(30));
+            var payloadString = String.Join(String.Empty, Enumerable.Repeat("This is a test payload.", 2500));
+            var data = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(payloadString));
+
+            var writeTask = webSocket.SendAsync(data, WebSocketMessageType.Binary, true, default);
+            var result = await duplexPipe.Application.Input.ReadAsync();
+
+            var maskingKey = ReadMaskingKey(result.Buffer, 4);
+            duplexPipe.Application.Input.AdvanceTo(result.Buffer.GetPosition(8));
+            result = await duplexPipe.Application.Input.ReadAsync();
+
+            var reader = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)data.Length, maskingKey));
+            SequencePosition pos = default;
+            reader.TryParseMessage(result.Buffer, ref pos, ref pos, out var message);
+
+            var resultString = Encoding.UTF8.GetString(result.Buffer.ToArray());
+            duplexPipe.Application.Input.AdvanceTo(result.Buffer.End);
+            await writeTask;
+
+            Assert.Equal(payloadString, resultString);
+        }
+
+        private int ReadMaskingKey(ReadOnlySequence<byte> seq, int pos) => BitConverter.IsLittleEndian
+            ? BinaryPrimitives.ReadInt32LittleEndian(seq.FirstSpan.Slice(pos))
+            : BinaryPrimitives.ReadInt32BigEndian(seq.FirstSpan.Slice(pos));
 
         private byte[] GenerateMaskedPayload(string payload, int mask)
         {
