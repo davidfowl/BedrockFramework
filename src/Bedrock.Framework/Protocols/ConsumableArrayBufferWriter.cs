@@ -4,11 +4,7 @@ using System.Diagnostics;
 
 namespace Bedrock.Framework.Protocols
 {
-    /// <summary>
-    /// This should be replaced with the framework version if https://github.com/dotnet/runtime/issues/1248 is implemented
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    internal class ConsumableArrayBufferWriter<T> : IBufferWriter<T>
+    internal class ConsumableArrayBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         private T[] _buffer;
         private int _index;
@@ -40,7 +36,7 @@ namespace Bedrock.Framework.Protocols
             if (initialCapacity <= 0)
                 throw new ArgumentException(nameof(initialCapacity));
 
-            _buffer = new T[initialCapacity];
+            _buffer = ArrayPool<T>.Shared.Rent(initialCapacity);
             _index = 0;
             _consumedCount = 0;
         }
@@ -216,8 +212,9 @@ namespace Bedrock.Framework.Protocols
                     }
 
                     var newSize = checked(_buffer.Length + growBy);
-                    var destinationArray = new T[newSize];
+                    var destinationArray = ArrayPool<T>.Shared.Rent(newSize);
                     Array.Copy(_buffer, _consumedCount, destinationArray, 0, countUnconsumed);
+                    ArrayPool<T>.Shared.Return(_buffer);
                     _buffer = destinationArray;
                 }
                 _index = countUnconsumed;
@@ -225,6 +222,12 @@ namespace Bedrock.Framework.Protocols
             }
 
             Debug.Assert(FreeCapacity > 0 && FreeCapacity >= sizeHint);
+        }
+
+        public void Dispose()
+        {
+            ArrayPool<T>.Shared.Return(_buffer);
+            _buffer = null; // This will cause a NRE if we use after dispose rather than writing data into a random array
         }
     }
 }
