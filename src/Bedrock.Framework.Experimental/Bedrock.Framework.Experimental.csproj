@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Protocols\Kafka\Models\FetchTopic.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 

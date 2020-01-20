@@ -1,4 +1,4 @@
-﻿namespace Bedrock.Framework.Experimental
+﻿namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public enum KafkaErrorCode : short
     {

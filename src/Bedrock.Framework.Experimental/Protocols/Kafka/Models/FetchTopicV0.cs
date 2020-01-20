@@ -4,12 +4,12 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
-    public readonly struct FetchTopic
+    public readonly struct FetchTopicV0
     {
         public readonly string Topic;
-        public readonly FetchTopicPartition[] Partitions { get; }
+        public readonly FetchTopicPartitionV0[] Partitions { get; }
 
-        public FetchTopic(string topic, FetchTopicPartition[] partitions)
+        public FetchTopicV0(string topic, FetchTopicPartitionV0[] partitions)
         {
             this.Topic = topic;
             this.Partitions = partitions;
@@ -17,7 +17,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 
         private const int constantPayloadSize =
             sizeof(short) // topic name length
-            + sizeof(int); // size of partition array
+            + sizeof(int); // partition array length
 
         public int GetSize()
         {
@@ -28,12 +28,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is FetchTopic))
+            if (obj == null || !(obj is FetchTopicV0))
             {
                 return false;
             }
 
-            var that = (FetchTopic)obj;
+            var that = (FetchTopicV0)obj;
 
             return this.Topic.Equals(that.Topic)
                 && this.Partitions.Equals(that.Partitions);
@@ -46,14 +46,28 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
                 this.Partitions);
         }
 
-        public static bool operator ==(FetchTopic left, FetchTopic right)
+        public static bool operator ==(FetchTopicV0 left, FetchTopicV0 right)
         {
             return left.Equals(right);
         }
 
-        public static bool operator !=(FetchTopic left, FetchTopic right)
+        public static bool operator !=(FetchTopicV0 left, FetchTopicV0 right)
         {
             return !(left == right);
         }
     }
 }
+
+// https://kafka.apache.org/protocol#The_Messages_Fetch
+/*
+Fetch Request (Version: 0) => replica_id max_wait_time min_bytes [topics] 
+  replica_id => INT32
+  max_wait_time => INT32
+  min_bytes => INT32
+  topics => topic [partitions] 
+    topic => STRING
+    partitions => partition fetch_offset partition_max_bytes 
+      partition => INT32
+      fetch_offset => INT64
+      partition_max_bytes => INT32
+*/

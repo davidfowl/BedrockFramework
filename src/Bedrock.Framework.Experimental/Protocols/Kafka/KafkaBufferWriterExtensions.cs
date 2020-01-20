@@ -5,7 +5,6 @@ using Bedrock.Framework.Infrastructure;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Buffers.Text;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -28,28 +27,51 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         internal static void WriteBoolean<T>(ref this BufferWriter<T> buffer, bool value)
             where T : IBufferWriter<byte>
         {
-            if (value)
+            buffer.Write(value
+                ? True
+                : False);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void WriteByte<T>(ref this BufferWriter<T> buffer, byte value)
+            where T : IBufferWriter<byte>
+        {
+            buffer.Span[0] = value;
+            buffer.Advance(1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int WriteBytes<T>(ref this BufferWriter<T> buffer, ref byte[]? bytes)
+            where T : IBufferWriter<byte>
+        {
+            var length = bytes?.Length ?? -1;
+
+            return WriteBytes(ref buffer, ref bytes, length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int WriteBytes<T>(ref this BufferWriter<T> buffer, ref byte[]? bytes, int? length)
+            where T : IBufferWriter<byte>
+        {
+            buffer.WriteInt32BigEndian(length ?? -1);
+
+            if (bytes != null && length.HasValue)
             {
-                buffer.Write(True);
+                var readOnlyBytes = new ReadOnlySpan<byte>(bytes, 0, length.Value);
+                buffer.Write(readOnlyBytes);
             }
-            else
-            {
-                buffer.Write(False);
-            }
+
+            return sizeof(int)
+                + length ?? 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void WriteArrayPreamble<T>(ref this BufferWriter<T> buffer, int? count)
             where T : IBufferWriter<byte>
         {
-            if (count.HasValue)
-            {
-                buffer.WriteInt32BigEndian(count.Value);
-            }
-            else
-            {
-                buffer.WriteInt32BigEndian(-1);
-            }
+            buffer.WriteInt32BigEndian(count.HasValue
+                ? count.Value
+                : -1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,6 +80,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             BinaryPrimitives.WriteInt32BigEndian(buffer.Span, number);
             buffer.Advance(4);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void WriteInt64BigEndian<T>(ref this BufferWriter<T> buffer, long number)
+            where T : IBufferWriter<byte>
+        {
+            BinaryPrimitives.WriteInt64BigEndian(buffer.Span, number);
+            buffer.Advance(8);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,5 +111,3 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
     }
 }
-
-#nullable restore

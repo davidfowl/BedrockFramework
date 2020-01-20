@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
+using System;
 using System.Buffers;
 
-namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages
+namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses
 {
     public abstract class KafkaResponse
     {
@@ -13,6 +14,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages
             }
         }
 
-        public abstract void ReadResponse(in ReadOnlySequence<byte> response);
+        public abstract void FillResponse(in ReadOnlySequence<byte> payload);
     }
 }

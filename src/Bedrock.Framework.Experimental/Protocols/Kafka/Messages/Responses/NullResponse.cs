@@ -1,5 +1,4 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses
 {
@@ -7,7 +6,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses
     {
         internal static NullResponse Instance = new NullResponse();
 
-        public override void ReadResponse(in ReadOnlySequence<byte> response)
+        public override void FillResponse(in ReadOnlySequence<byte> response)
         {
         }
     }

@@ -14,6 +14,7 @@ using Bedrock.Framework;
 using Bedrock.Framework.Experimental.Protocols.Kafka;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
+using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
@@ -28,11 +29,13 @@ namespace ClientApplication
     {
         static async Task Main(string[] args)
         {
-            var serviceProvider = new ServiceCollection().AddLogging(builder =>
-            {
-                builder.SetMinimumLevel(LogLevel.Debug);
-                builder.AddConsole();
-            })
+            var serviceProvider = new ServiceCollection()
+                .AddKafkaProtocol()
+                .AddLogging(builder =>
+                {
+                    builder.SetMinimumLevel(LogLevel.Debug);
+                    builder.AddConsole();
+                })
             .BuildServiceProvider();
 
             Console.WriteLine("Samples: ");
@@ -42,8 +45,7 @@ namespace ClientApplication
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
             Console.WriteLine("6. Length prefixed custom binary protocol");
-            Console.WriteLine("7. Kafka Producer");
-            Console.WriteLine("8. Kafka Consumer");
+            Console.WriteLine("7. Kafka Consumer");
 
             await KafkaConsumer(serviceProvider);
 
@@ -82,11 +84,6 @@ namespace ClientApplication
                     await CustomProtocol(serviceProvider);
                 }
                 else if (keyInfo.Key == ConsoleKey.D7)
-                {
-                    Console.WriteLine("Kafka Producer");
-                    await KafkaProducer(serviceProvider);
-                }
-                else if (keyInfo.Key == ConsoleKey.D8)
                 {
                     Console.WriteLine("Kafka Consumer");
                     await KafkaConsumer(serviceProvider);
@@ -248,46 +245,6 @@ namespace ClientApplication
             await server.StopAsync();
         }
 
-        private static async Task KafkaProducer(IServiceProvider serviceProvider)
-        {
-            var client = new ClientBuilder(serviceProvider)
-                .UseSockets()
-                .UseConnectionLogging()
-                .Build();
-
-            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 9092));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
-
-            var kafkaProtocol = new KafkaProtocol("bedrock-producer-1", connection);
-            var apiVersionsResponse = (ApiVersionsResponse)await kafkaProtocol.SendAsync(new ApiVersionsRequest());
-            if (!apiVersionsResponse.SupportedApis.Any())
-            {
-            }
-
-            var metadataResponse = (MetadataResponse)await kafkaProtocol.SendAsync(new MetadataRequest
-            {
-                AllowAutoTopicCreation = true,
-                IncludeClusterAuthorizedOperations = true,
-                IncludeTopicAuthorizedOperations = true,
-            });
-
-            if (!metadataResponse.Brokers.Any())
-            {
-
-            }
-
-            while (true)
-            {
-                Console.Write("kafka> ");
-                var message = Console.ReadLine();
-                //var response = await kafkaProtocol.SendAsync();
-
-                //await response.Content.CopyToAsync(Console.OpenStandardOutput());
-
-                Console.WriteLine();
-            }
-        }
-
         private static async Task KafkaConsumer(IServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
@@ -306,41 +263,35 @@ namespace ClientApplication
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
             Console.WriteLine();
 
-            // Console.Write("What Topic should be consumed from?: ");
-            // var topic = Console.ReadLine();
+            Console.Write("What Topic should be consumed from?: ");
+            var topic = "test";// Console.ReadLine();
 
-            var clientId = "bedrock-consumer-1";
-            var kafkaProtocol = new KafkaProtocol(clientId, connection);
+            var clientId = "console-producer";
 
-            var fetch = (FetchResponse)await kafkaProtocol.SendAsync(new FetchRequest
-            {
-                ReplicaId = 1,
-                MaxWaitTime = 2,
-                MinBytes = 3,
-                MaxBytes = 4,
-            });
+            using var kafkaProtocol = serviceProvider.GetRequiredService<KafkaProtocol>();
 
-            var apiVersionsResponse = (ApiVersionsResponse)await kafkaProtocol.SendAsync(new ApiVersionsRequest());
-            Debug.Assert(apiVersionsResponse.SupportedApis.Any());
+            // Can't find a way of getting ConnectionContexts injected...
+            await kafkaProtocol.SetClientConnectionAsync(connection, clientId: clientId);
 
-            var metadataResponse = (MetadataResponse)await kafkaProtocol.SendAsync(new MetadataRequest
-            {
-                // Topics = new List<string> { topic },
-                AllowAutoTopicCreation = false,
-            });
+            var prompt = $"{clientId}:{topic}>";
 
-            Debug.Assert(metadataResponse.Brokers.Any());
-            Debug.Assert(metadataResponse.Topics.Any());
+            // Only support 1 topic and partition 0. So we can cache this.
+            var topar = new TopicPartition(topic, new Partition(0));
 
             while (!cts.IsCancellationRequested)
             {
-                Console.Write($"{clientId}>");
+                Console.Write(prompt);
                 var message = Console.ReadLine();
-                //var response = await kafkaProtocol.SendAsync();
 
-                //await response.Content.CopyToAsync(Console.OpenStandardOutput());
+                var bytes = Encoding.UTF8.GetBytes(message);
 
-                Console.WriteLine();
+                var produceRequest = new ProduceRequestV0(
+                    new ProducePayload(
+                        ref topar,
+                        key: null,
+                        value: bytes));
+
+                var produceResponse = await kafkaProtocol.SendAsync<ProduceRequestV0, ProduceResponseV0>(connection, produceRequest);
             }
         }
 

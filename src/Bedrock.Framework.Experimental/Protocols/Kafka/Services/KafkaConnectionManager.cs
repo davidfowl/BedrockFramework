@@ -1,29 +1,41 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
-using Bedrock.Framework.Experimental.Protocols.Kafka.Primitives;
-using Bedrock.Framework.Infrastructure;
+﻿using Microsoft.AspNetCore.Connections;
 using System;
-using System.Buffers;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
+namespace Bedrock.Framework.Experimental.Protocols.Kafka.Services
 {
-    public abstract class KafkaRequest : IDisposable
+    public class KafkaConnectionManager : IKafkaConnectionManager
     {
-        protected KafkaRequest(KafkaApiKeys apiKey, short apiVersion)
+        private readonly List<ConnectionContext> connections = new List<ConnectionContext>();
+        public IEnumerable<ConnectionContext> Connections => this.connections;
+
+        public bool TryAddConnection(ConnectionContext connection)
         {
-            this.ApiKey = apiKey;
-            this.ApiVersion = apiVersion;
+            this.connections.Add(connection);
+
+            return true;
         }
 
-        public KafkaApiKeys ApiKey { get; }
-        public short ApiVersion { get; }
+        public async ValueTask<bool> TryRemoveConnectionAsync(ConnectionContext connection)
+        {
+            if (connection == null)
+            {
+                return true;
+            }
 
-        public NullableString ClientId { get; set; }
+            if (!this.connections.Contains(connection))
+            {
+                return false;
+            }
 
-        public abstract void WriteRequest(ref BufferWriter<IBufferWriter<byte>> output);
+            await connection.DisposeAsync();
 
-        public abstract int GetPayloadSize();
+            return this.connections.Remove(connection);
+        }
 
         private bool disposedValue = false; // To detect redundant calls
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -41,7 +53,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         }
 
         // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~KafkaRequest()
+        // ~KafkaConnectionManager()
         // {
         //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
         //   Dispose(false);

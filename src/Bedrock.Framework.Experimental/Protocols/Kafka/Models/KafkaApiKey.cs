@@ -1,4 +1,5 @@
 ﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Messages;
+using System;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
@@ -17,5 +18,37 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 
         public override string ToString()
             => $"{this.ApiKey} - {this.MinimumVersion}:{this.MaximumVersion}";
+
+        public override bool Equals(object obj)
+        {
+            if(obj == null || !(obj is KafkaApiKey))
+            {
+                return false;
+            }
+
+            var that = (KafkaApiKey)obj;
+
+            return this.ApiKey.Equals(that.ApiKey)
+                && this.MaximumVersion.Equals(that.MaximumVersion)
+                && this.MinimumVersion.Equals(that.MinimumVersion);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(
+                this.ApiKey,
+                this.MaximumVersion,
+                this.MinimumVersion);
+        }
+
+        public static bool operator ==(KafkaApiKey left, KafkaApiKey right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(KafkaApiKey left, KafkaApiKey right)
+        {
+            return !(left == right);
+        }
     }
 }

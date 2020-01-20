@@ -4,34 +4,31 @@ using System;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
-    public readonly struct Broker
+    public readonly struct MetadataBrokerV0
     {
         public readonly int NodeId;
         public readonly string Host;
         public readonly int Port;
-        public readonly string? Rack;
 
-        public Broker(int nodeId, string host, int port, string? rack)
+        public MetadataBrokerV0(int nodeId, string host, int port)
         {
             this.NodeId = nodeId;
             this.Host = host;
             this.Port = port;
-            this.Rack = rack;
         }
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is Broker))
+            if (obj == null || !(obj is MetadataBrokerV0))
             {
                 return false;
             }
 
-            var that = (Broker)obj;
+            var that = (MetadataBrokerV0)obj;
 
             return this.NodeId.Equals(that.NodeId)
                 && this.Host.Equals(that.Host)
-                && this.Port.Equals(that.Port)
-                && this.Rack == that.Rack;
+                && this.Port.Equals(that.Port);
         }
 
         public override int GetHashCode()
@@ -39,16 +36,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             return HashCode.Combine(
                 this.NodeId,
                 this.Host,
-                this.Port,
-                this.Rack);
+                this.Port);
         }
 
-        public static bool operator ==(Broker left, Broker right)
+        public static bool operator ==(MetadataBrokerV0 left, MetadataBrokerV0 right)
         {
             return left.Equals(right);
         }
 
-        public static bool operator !=(Broker left, Broker right)
+        public static bool operator !=(MetadataBrokerV0 left, MetadataBrokerV0 right)
         {
             return !(left == right);
         }

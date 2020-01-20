@@ -1,37 +1,35 @@
-﻿#nullable enable
-
-using System.Collections.Generic;
-
-namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
+﻿namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public readonly struct Partition
     {
-        public readonly KafkaErrorCode ErrorCode;
-        public readonly int PartitionIndex;
-        public readonly int LeaderId;
-        public readonly int LeaderEpoch;
-        public readonly IEnumerable<int> ReplicaNodes;
-        public readonly IEnumerable<int> IsrNodes;
-        public readonly IEnumerable<int> OfflineReplicas;
+        public readonly int Index;
 
-        public Partition(
-            KafkaErrorCode errorCode,
-            int partitionIndex,
-            int leaderId,
-            int leaderEpoch,
-            IEnumerable<int> replicaNodes,
-            IEnumerable<int> isrNodes,
-            IEnumerable<int> offlineReplicas)
+        public Partition(int value)
+            => this.Index = value;
+
+        public override bool Equals(object obj)
         {
-            this.ErrorCode = errorCode;
-            this.PartitionIndex = partitionIndex;
-            this.LeaderId = leaderId;
-            this.LeaderEpoch = leaderEpoch;
-            this.ReplicaNodes = replicaNodes;
-            this.IsrNodes = isrNodes;
-            this.OfflineReplicas = offlineReplicas;
+            if (obj == null)
+            {
+                return false;
+            }
+
+            return this.Index.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Index.GetHashCode();
+        }
+
+        public static bool operator ==(Partition left, Partition right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Partition left, Partition right)
+        {
+            return !(left == right);
         }
     }
 }
-
-#nullable restore

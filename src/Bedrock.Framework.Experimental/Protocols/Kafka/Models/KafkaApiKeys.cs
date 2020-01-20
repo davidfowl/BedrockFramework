@@ -1,4 +1,4 @@
-﻿namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages
+﻿namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public enum KafkaApiKeys : short
     {
