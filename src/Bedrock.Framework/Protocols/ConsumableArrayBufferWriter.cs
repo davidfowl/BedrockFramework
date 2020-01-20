@@ -214,7 +214,7 @@ namespace Bedrock.Framework.Protocols
                     var newSize = checked(_buffer.Length + growBy);
                     var destinationArray = ArrayPool<T>.Shared.Rent(newSize);
                     Array.Copy(_buffer, _consumedCount, destinationArray, 0, countUnconsumed);
-                    ArrayPool<T>.Shared.Return(_buffer);
+                    ReturnBuffer();
                     _buffer = destinationArray;
                 }
                 _index = countUnconsumed;
@@ -226,8 +226,16 @@ namespace Bedrock.Framework.Protocols
 
         public void Dispose()
         {
-            ArrayPool<T>.Shared.Return(_buffer);
+            ReturnBuffer();
             _buffer = null; // This will cause a NRE if we use after dispose rather than writing data into a random array
+        }
+
+        private void ReturnBuffer()
+        {
+            // We only need to clear the array if the type can contain any reference types.
+            // For now we only actually use this with byte, so we'll special case it.
+            // Since the JIT will remove this check, if we make this public we can add as many value types as we want.
+            ArrayPool<T>.Shared.Return(_buffer, clearArray: typeof(T) != typeof(byte));
         }
     }
 }

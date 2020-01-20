@@ -354,11 +354,6 @@ namespace Bedrock.Framework.Tests
                 Assert.True(span.Length > 0);
                 Assert.True(memorySpan.Length > 0);
                 Assert.Equal(span.Length, memorySpan.Length);
-                for (var i = 0; i < span.Length; i++)
-                {
-                    Assert.Equal(default, span[i]);
-                    Assert.Equal(default, memorySpan[i]);
-                }
             }
 
             {
@@ -367,34 +362,22 @@ namespace Bedrock.Framework.Tests
                 var writtenSoFarMemory = output.WrittenMemory;
                 var writtenSoFar = output.WrittenSpan;
                 Assert.True(writtenSoFarMemory.Span.SequenceEqual(writtenSoFar));
-                var previousAvailable = output.FreeCapacity;
                 var span = output.GetSpan(500);
                 Assert.True(span.Length >= 500);
                 Assert.True(output.FreeCapacity >= 500);
-                Assert.True(output.FreeCapacity > previousAvailable);
 
                 Assert.Equal(writtenSoFar.Length, output.UnconsumedWrittenCount);
-                Assert.False(writtenSoFar.SequenceEqual(span.Slice(0, output.UnconsumedWrittenCount)));
 
                 var memory = output.GetMemory();
                 var memorySpan = memory.Span;
                 Assert.True(span.Length >= 500);
                 Assert.True(memorySpan.Length >= 500);
                 Assert.Equal(span.Length, memorySpan.Length);
-                for (var i = 0; i < span.Length; i++)
-                {
-                    Assert.Equal(default, span[i]);
-                    Assert.Equal(default, memorySpan[i]);
-                }
 
                 memory = output.GetMemory(500);
                 memorySpan = memory.Span;
                 Assert.True(memorySpan.Length >= 500);
                 Assert.Equal(span.Length, memorySpan.Length);
-                for (var i = 0; i < memorySpan.Length; i++)
-                {
-                    Assert.Equal(default, memorySpan[i]);
-                }
             }
         }
 
