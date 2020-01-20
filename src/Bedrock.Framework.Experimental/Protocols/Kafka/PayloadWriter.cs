@@ -5,7 +5,9 @@ using System.IO.Pipelines;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
+#pragma warning disable CA1815 // Override equals and operator equals on value types
     public ref struct PayloadWriter
+#pragma warning restore CA1815 // Override equals and operator equals on value types
     {
         private readonly static PipeOptions pipeOptions = new PipeOptions();
 
