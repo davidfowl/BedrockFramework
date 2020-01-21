@@ -2,18 +2,16 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using Xunit;
 
 namespace Bedrock.Framework.Tests
 {
-    public abstract class ConsumableArrayBufferWriterTests<T> where T : IEquatable<T>
+    public class ConsumableArrayBufferWriterTests
     {
         [Fact]
         public void ThrowsIfConsumeIsLessThanZero()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             WriteData(output, 1);
             Assert.Throws<ArgumentException>(() => output.Consume(-1));
         }
@@ -21,7 +19,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void ThrowsIfTotalConsumedIsGreaterThanWritten()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             Assert.Throws<InvalidOperationException>(() => output.Consume(1));
             WriteData(output, 2);
             output.Consume(1);
@@ -34,7 +32,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void ThrowsIfConsumePlusConsumedWouldOverflow()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             WriteData(output, 100);
             output.Consume(50);
             Assert.Throws<InvalidOperationException>(() => output.Consume(int.MaxValue));
@@ -43,7 +41,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void IfConsumedEqualsWrittenFreeCapacityIsReset()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             Assert.Equal(256, output.FreeCapacity);
             WriteData(output, 128);
             Assert.Equal(128, output.FreeCapacity);
@@ -56,7 +54,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void ConsumeReducesUnconsumedWrittenCount()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             WriteData(output, 2);
             Assert.Equal(2, output.UnconsumedWrittenCount);
             output.Consume(1);
@@ -66,7 +64,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void ConsumeIsNotIncludedInWrittenSpanOrMemory()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             WriteData(output, 2);
             var oldSpan = output.WrittenSpan;
             var oldMemory = output.WrittenMemory;
@@ -84,7 +82,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void CapacityDoesNotIncreaseIfThereIsPlentyOfConsumedSpace()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             var capacity = output.Capacity;
             WriteData(output, capacity);
             output.Consume(capacity - 100);
@@ -99,7 +97,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void CapacityDoesIncreaseIfThereIsOnlyMinimalConsumedSpace()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             var capacity = output.Capacity;
             WriteData(output, capacity);
             output.Consume(100);
@@ -113,7 +111,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void ThrowsIfUsedAfterDisposed()
         {
-            var buffer = new ConsumableArrayBufferWriter<T>();
+            var buffer = new ConsumableArrayBufferWriter();
             buffer.Dispose();
             Assert.Throws<NullReferenceException>(() => buffer.GetMemory());
             Assert.Throws<NullReferenceException>(() => buffer.GetSpan());
@@ -124,25 +122,25 @@ namespace Bedrock.Framework.Tests
         public void ArrayBufferWriter_Ctor()
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 Assert.Equal(0, output.FreeCapacity);
                 Assert.Equal(0, output.Capacity);
                 Assert.Equal(0, output.UnconsumedWrittenCount);
-                Assert.True(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
-                Assert.True(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenSpan));
+                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>(200);
+                var output = new ConsumableArrayBufferWriter(200);
                 Assert.True(output.FreeCapacity >= 200);
                 Assert.True(output.Capacity >= 200);
                 Assert.Equal(0, output.UnconsumedWrittenCount);
-                Assert.True(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
-                Assert.True(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+                Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenSpan));
+                Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
             }
 
             {
-                ConsumableArrayBufferWriter<T> output = default;
+                ConsumableArrayBufferWriter output = default;
                 Assert.Null(output);
             }
         }
@@ -150,26 +148,26 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void Invalid_Ctor()
         {
-            Assert.Throws<ArgumentException>(() => new ConsumableArrayBufferWriter<T>(0));
-            Assert.Throws<ArgumentException>(() => new ConsumableArrayBufferWriter<T>(-1));
-            Assert.Throws<OutOfMemoryException>(() => new ConsumableArrayBufferWriter<T>(int.MaxValue));
+            Assert.Throws<ArgumentException>(() => new ConsumableArrayBufferWriter(0));
+            Assert.Throws<ArgumentException>(() => new ConsumableArrayBufferWriter(-1));
+            Assert.Throws<OutOfMemoryException>(() => new ConsumableArrayBufferWriter(int.MaxValue));
         }
 
         [Fact]
         public void Clear()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             var previousAvailable = output.FreeCapacity;
             WriteData(output, 2);
             Assert.True(output.FreeCapacity < previousAvailable);
             Assert.True(output.UnconsumedWrittenCount > 0);
-            Assert.False(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
-            Assert.False(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+            Assert.False(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenSpan));
+            Assert.False(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
             Assert.True(output.WrittenSpan.SequenceEqual(output.WrittenMemory.Span));
             output.Clear();
             Assert.Equal(0, output.UnconsumedWrittenCount);
-            Assert.True(ReadOnlySpan<T>.Empty.SequenceEqual(output.WrittenSpan));
-            Assert.True(ReadOnlyMemory<T>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
+            Assert.True(ReadOnlySpan<byte>.Empty.SequenceEqual(output.WrittenSpan));
+            Assert.True(ReadOnlyMemory<byte>.Empty.Span.SequenceEqual(output.WrittenMemory.Span));
             Assert.Equal(previousAvailable, output.FreeCapacity);
             Assert.Equal(0, output.UnconsumedWrittenCount);
         }
@@ -178,7 +176,7 @@ namespace Bedrock.Framework.Tests
         public void Advance()
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 var capacity = output.Capacity;
                 Assert.Equal(capacity, output.FreeCapacity);
                 output.Advance(output.FreeCapacity);
@@ -187,7 +185,7 @@ namespace Bedrock.Framework.Tests
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 output.Advance(output.Capacity);
                 Assert.Equal(output.Capacity, output.UnconsumedWrittenCount);
                 Assert.Equal(0, output.FreeCapacity);
@@ -197,7 +195,7 @@ namespace Bedrock.Framework.Tests
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>(256);
+                var output = new ConsumableArrayBufferWriter(256);
                 WriteData(output, 2);
                 var previousMemory = output.WrittenMemory;
                 var previousSpan = output.WrittenSpan;
@@ -209,7 +207,7 @@ namespace Bedrock.Framework.Tests
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 _ = output.GetSpan(20);
                 WriteData(output, 10);
                 var previousMemory = output.WrittenMemory;
@@ -226,7 +224,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void AdvanceZero()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             WriteData(output, 2);
             Assert.Equal(2, output.UnconsumedWrittenCount);
             var previousMemory = output.WrittenMemory;
@@ -243,13 +241,13 @@ namespace Bedrock.Framework.Tests
         public void InvalidAdvance()
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 Assert.Throws<ArgumentException>(() => output.Advance(-1));
                 Assert.Throws<InvalidOperationException>(() => output.Advance(output.Capacity + 1));
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 WriteData(output, 100);
                 Assert.Throws<InvalidOperationException>(() => output.Advance(output.FreeCapacity + 1));
             }
@@ -258,7 +256,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void GetSpan_DefaultCtor()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             var span = output.GetSpan();
             Assert.Equal(256, span.Length);
         }
@@ -267,7 +265,7 @@ namespace Bedrock.Framework.Tests
         [MemberData(nameof(SizeHints))]
         public void GetSpanWithSizeHint_DefaultCtor(int sizeHint)
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             var span = output.GetSpan(sizeHint);
             Assert.InRange(span.Length, sizeHint, int.MaxValue);
         }
@@ -275,7 +273,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void GetSpan_InitSizeCtor()
         {
-            var output = new ConsumableArrayBufferWriter<T>(100);
+            var output = new ConsumableArrayBufferWriter(100);
             var span = output.GetSpan();
             Assert.InRange(span.Length, 100, int.MaxValue);
         }
@@ -285,13 +283,13 @@ namespace Bedrock.Framework.Tests
         public void GetSpanWithSizeHint_InitSizeCtor(int sizeHint)
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>(256);
+                var output = new ConsumableArrayBufferWriter(256);
                 var span = output.GetSpan(sizeHint);
                 Assert.InRange(span.Length, sizeHint, int.MaxValue);
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>(1000);
+                var output = new ConsumableArrayBufferWriter(1000);
                 var span = output.GetSpan(sizeHint);
                 Assert.InRange(span.Length, sizeHint <= 1000 ? 1000 : sizeHint + 1000, int.MaxValue);
             }
@@ -300,7 +298,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void GetMemory_DefaultCtor()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             var memory = output.GetMemory();
             Assert.Equal(256, memory.Length);
         }
@@ -309,7 +307,7 @@ namespace Bedrock.Framework.Tests
         [MemberData(nameof(SizeHints))]
         public void GetMemoryWithSizeHint_DefaultCtor(int sizeHint)
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             var memory = output.GetMemory(sizeHint);
             Assert.InRange(memory.Length, sizeHint, int.MaxValue);
         }
@@ -317,7 +315,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void GetMemory_InitSizeCtor()
         {
-            var output = new ConsumableArrayBufferWriter<T>(100);
+            var output = new ConsumableArrayBufferWriter(100);
             var memory = output.GetMemory();
             Assert.InRange(memory.Length, 100, int.MaxValue);
         }
@@ -327,13 +325,13 @@ namespace Bedrock.Framework.Tests
         public void GetMemoryWithSizeHint_InitSizeCtor(int sizeHint)
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>(256);
+                var output = new ConsumableArrayBufferWriter(256);
                 var memory = output.GetMemory(sizeHint);
                 Assert.InRange(memory.Length, sizeHint, int.MaxValue);
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>(1000);
+                var output = new ConsumableArrayBufferWriter(1000);
                 var memory = output.GetMemory(sizeHint);
                 Assert.InRange(memory.Length, sizeHint <= 1000 ? 1000 : sizeHint + 1000, int.MaxValue);
             }
@@ -345,7 +343,7 @@ namespace Bedrock.Framework.Tests
         public void GetMemoryAndSpan()
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 WriteData(output, 2);
                 var span = output.GetSpan();
                 var memory = output.GetMemory();
@@ -356,7 +354,7 @@ namespace Bedrock.Framework.Tests
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 WriteData(output, 2);
                 var writtenSoFarMemory = output.WrittenMemory;
                 var writtenSoFar = output.WrittenSpan;
@@ -383,7 +381,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void GetSpanShouldAtleastDoubleWhenGrowing()
         {
-            var output = new ConsumableArrayBufferWriter<T>(256);
+            var output = new ConsumableArrayBufferWriter(256);
             WriteData(output, 100);
             var previousAvailable = output.FreeCapacity;
 
@@ -398,7 +396,7 @@ namespace Bedrock.Framework.Tests
         public void GetSpanOnlyGrowsAboveThreshold()
         {
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 _ = output.GetSpan();
                 var previousAvailable = output.FreeCapacity;
 
@@ -410,7 +408,7 @@ namespace Bedrock.Framework.Tests
             }
 
             {
-                var output = new ConsumableArrayBufferWriter<T>();
+                var output = new ConsumableArrayBufferWriter();
                 _ = output.GetSpan(10);
                 var previousAvailable = output.FreeCapacity;
 
@@ -425,13 +423,11 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public void InvalidGetMemoryAndSpan()
         {
-            var output = new ConsumableArrayBufferWriter<T>();
+            var output = new ConsumableArrayBufferWriter();
             WriteData(output, 2);
             Assert.Throws<ArgumentException>(() => output.GetSpan(-1));
             Assert.Throws<ArgumentException>(() => output.GetMemory(-1));
         }
-
-        protected abstract void WriteData(IBufferWriter<T> bufferWriter, int numBytes);
 
         public static IEnumerable<object[]> SizeHints
         {
@@ -455,11 +451,8 @@ namespace Bedrock.Framework.Tests
             }
         }
         #endregion
-    }
 
-    public class ConsumableArrayBufferWriterTests_Byte : ConsumableArrayBufferWriterTests<byte>
-    {
-        protected override void WriteData(IBufferWriter<byte> bufferWriter, int numBytes)
+        private void WriteData(IBufferWriter<byte> bufferWriter, int numBytes)
         {
             var outputSpan = bufferWriter.GetSpan(numBytes);
             Assert.True(outputSpan.Length >= numBytes);
@@ -470,37 +463,6 @@ namespace Bedrock.Framework.Tests
             data.CopyTo(outputSpan);
 
             bufferWriter.Advance(numBytes);
-        }
-    }
-
-    public class ConsumableArrayBufferWriterTests_String : ConsumableArrayBufferWriterTests<string>
-    {
-        protected override void WriteData(IBufferWriter<string> bufferWriter, int numStrings)
-        {
-            var outputSpan = bufferWriter.GetSpan(numStrings);
-            Debug.Assert(outputSpan.Length >= numStrings);
-            var random = new Random(42);
-
-            var data = new string[numStrings];
-
-            for (var i = 0; i < numStrings; i++)
-            {
-                var length = random.Next(5, 10);
-                data[i] = GetRandomString(random, length, 32, 127);
-            }
-
-            data.CopyTo(outputSpan);
-
-            bufferWriter.Advance(numStrings);
-        }
-        private static string GetRandomString(Random r, int length, int minCodePoint, int maxCodePoint)
-        {
-            var sb = new StringBuilder(length);
-            while (length-- != 0)
-            {
-                sb.Append((char)r.Next(minCodePoint, maxCodePoint));
-            }
-            return sb.ToString();
         }
     }
 }

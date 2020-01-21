@@ -18,7 +18,7 @@ namespace Bedrock.Framework.Protocols
         private bool _isThisCompleted;
         private bool _isCanceled;
         private bool _isCompleted;
-        private readonly ConsumableArrayBufferWriter<byte> _backlog = new ConsumableArrayBufferWriter<byte>();
+        private readonly ConsumableArrayBufferWriter _backlog = new ConsumableArrayBufferWriter();
         private bool _allExamined;
         private bool _advanced = true;
         public MessagePipeReader(PipeReader reader, IMessageReader<ReadOnlySequence<byte>> messageReader)
