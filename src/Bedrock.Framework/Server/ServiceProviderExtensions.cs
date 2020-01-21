@@ -10,7 +10,7 @@ namespace Bedrock.Framework
     {
         internal static ILoggerFactory GetLoggerFactory(this IServiceProvider serviceProvider)
         {
-            return (ILoggerFactory)serviceProvider?.GetService(typeof(ILoggerFactory)) ?? NullLoggerFactory.Instance;
+            return (ILoggerFactory?)serviceProvider?.GetService(typeof(ILoggerFactory)) ?? NullLoggerFactory.Instance;
         }
     }
 }

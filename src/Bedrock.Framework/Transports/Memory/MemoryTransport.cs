@@ -56,11 +56,11 @@ namespace Bedrock.Framework.Transports.Memory
 
         private class MemoryConnectionListener : IConnectionListener
         {
-            public EndPoint EndPoint { get; set; }
+            public EndPoint EndPoint { get; set; } = null!; // We should initialize this in the constructor
 
             internal Channel<ConnectionContext> AcceptQueue { get; } = Channel.CreateUnbounded<ConnectionContext>();
 
-            public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+            public async ValueTask<ConnectionContext?> AcceptAsync(CancellationToken cancellationToken = default)
             {
                 if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
                 {

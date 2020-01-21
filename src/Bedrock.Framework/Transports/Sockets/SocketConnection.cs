@@ -17,7 +17,7 @@ namespace Bedrock.Framework
         private readonly Socket _socket;
         private volatile bool _aborted;
         private readonly EndPoint _endPoint;
-        private IDuplexPipe _application;
+        private IDuplexPipe _application = null!;
         private readonly SocketSender _sender;
         private readonly SocketReceiver _receiver;
 
@@ -34,7 +34,7 @@ namespace Bedrock.Framework
             Features.Set<IConnectionInherentKeepAliveFeature>(this);
         }
 
-        public override IDuplexPipe Transport { get; set; }
+        public override IDuplexPipe? Transport { get; set; }
 
         public override IFeatureCollection Features { get; } = new FeatureCollection();
         public override string ConnectionId { get; set; } = Guid.NewGuid().ToString();
@@ -73,7 +73,7 @@ namespace Bedrock.Framework
 
         private async Task ExecuteAsync()
         {
-            Exception sendError = null;
+            Exception? sendError = null;
             try
             {
                 // Spawn send and receive logic
@@ -109,7 +109,7 @@ namespace Bedrock.Framework
 
         private async Task DoReceive()
         {
-            Exception error = null;
+            Exception? error = null;
 
             try
             {
@@ -189,9 +189,9 @@ namespace Bedrock.Framework
             }
         }
 
-        private async Task<Exception> DoSend()
+        private async Task<Exception?> DoSend()
         {
-            Exception error = null;
+            Exception? error = null;
 
             try
             {

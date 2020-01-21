@@ -28,7 +28,7 @@ namespace Bedrock.Framework
         /// <returns>
         /// The <see cref="ListenOptions"/>.
         /// </returns>
-        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string loggerName) where TBuilder : IConnectionBuilder
+        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string? loggerName) where TBuilder : IConnectionBuilder
         {
             var loggerFactory = builder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerName == null ? loggerFactory.CreateLogger<LoggingConnectionMiddleware>() : loggerFactory.CreateLogger(loggerName);

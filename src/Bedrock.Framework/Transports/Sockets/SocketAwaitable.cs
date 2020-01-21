@@ -16,7 +16,7 @@ namespace Bedrock.Framework
 
         private readonly PipeScheduler _ioScheduler;
 
-        private Action _callback;
+        private Action? _callback;
         private int _bytesTransferred;
         private SocketError _error;
 

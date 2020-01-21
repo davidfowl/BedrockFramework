@@ -174,7 +174,7 @@ namespace Bedrock.Framework.Infrastructure
         }
 
         // The below APM methods call the underlying Read/WriteAsync methods which will still be logged.
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             return TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
         }
@@ -184,7 +184,7 @@ namespace Bedrock.Framework.Infrastructure
             return TaskToApm.End<int>(asyncResult);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             return TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
         }

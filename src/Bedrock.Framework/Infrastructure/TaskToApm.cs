@@ -12,7 +12,6 @@
 //     public int EndFoo(IAsyncResult asyncResult) =>
 //         TaskToApm.End<int>(asyncResult);
 
-#nullable enable
 using System.Diagnostics;
 
 namespace System.Threading.Tasks

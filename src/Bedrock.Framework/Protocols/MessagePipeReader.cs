@@ -73,14 +73,14 @@ namespace Bedrock.Framework.Protocols
             _reader.CancelPendingRead();
         }
 
-        public override void Complete(Exception exception = null)
+        public override void Complete(Exception? exception = null)
         {
             if (!_advanced)
             {
                 _reader.AdvanceTo(_consumed, _examined);
             }
             _isThisCompleted = true;
-            _backlog = null;
+            _backlog = null!;
         }
 
         public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)

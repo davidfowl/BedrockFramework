@@ -28,8 +28,8 @@ namespace Bedrock.Framework
         {
             var exceptions = new List<Exception>();
 
-            IConnectionListener ipv6Listener = null;
-            IConnectionListener ipv4Listener = null;
+            IConnectionListener? ipv6Listener = null;
+            IConnectionListener? ipv4Listener = null;
 
             try
             {

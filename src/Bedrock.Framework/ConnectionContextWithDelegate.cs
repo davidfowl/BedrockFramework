@@ -12,8 +12,8 @@ namespace Bedrock.Framework
     internal class ConnectionContextWithDelegate : ConnectionContext
     {
         private readonly ConnectionContext _connection;
-        private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private Task _middlewareTask;
+        private readonly TaskCompletionSource<object?> _executionTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private Task? _middlewareTask;
         private ConnectionDelegate _connectionDelegate;
 
         public ConnectionContextWithDelegate(ConnectionContext connection, ConnectionDelegate connectionDelegate)
@@ -100,7 +100,7 @@ namespace Bedrock.Framework
 
             _executionTcs.TrySetResult(null);
 
-            await _middlewareTask.ConfigureAwait(false);
+            await _middlewareTask!.ConfigureAwait(false);
         }
     }
 }

@@ -35,7 +35,7 @@ namespace Bedrock.Framework.Middleware.Tls
         /// If the certificate has an Extended Key Usage extension, the usages must include Server Authentication (OID 1.3.6.1.5.5.7.3.1).
         /// </para>
         /// </summary>
-        public X509Certificate2 LocalCertificate { get; set; }
+        public X509Certificate2? LocalCertificate { get; set; }
 
         /// <summary>
         /// <para>
@@ -46,7 +46,7 @@ namespace Bedrock.Framework.Middleware.Tls
         /// If the certificate has an Extended Key Usage extension, the usages must include Server Authentication (OID 1.3.6.1.5.5.7.3.1).
         /// </para>
         /// </summary>
-        public Func<ConnectionContext, string, X509Certificate2> LocalServerCertificateSelector { get; set; }
+        public Func<ConnectionContext, string, X509Certificate2>? LocalServerCertificateSelector { get; set; }
 
         /// <summary>
         /// Specifies the remote endpoint certificate requirements for a TLS connection. Defaults to <see cref="RemoteCertificateMode.RequireCertificate"/>.
@@ -57,7 +57,7 @@ namespace Bedrock.Framework.Middleware.Tls
         /// Specifies a callback for additional remote certificate validation that will be invoked during authentication. This will be ignored
         /// if <see cref="AllowAnyRemoteCertificate"/> is called after this callback is set.
         /// </summary>
-        public RemoteCertificateValidator RemoteCertificateValidation { get; set; }
+        public RemoteCertificateValidator? RemoteCertificateValidation { get; set; }
 
         /// <summary>
         /// Specifies allowable SSL protocols. Defaults to <see cref="SslProtocols.Tls12" /> and <see cref="SslProtocols.Tls11"/>.
@@ -81,13 +81,13 @@ namespace Bedrock.Framework.Middleware.Tls
         /// Provides direct configuration of the <see cref="SslServerAuthenticationOptions"/> on a per-connection basis.
         /// This is called after all of the other settings have already been applied.
         /// </summary>
-        public Action<ConnectionContext, SslServerAuthenticationOptions> OnAuthenticateAsServer { get; set; }
+        public Action<ConnectionContext, SslServerAuthenticationOptions>? OnAuthenticateAsServer { get; set; }
 
         /// <summary>
         /// Provides direct configuration of the <see cref="SslClientAuthenticationOptions"/> on a per-connection basis.
         /// This is called after all of the other settings have already been applied.
         /// </summary>
-        public Action<ConnectionContext, SslClientAuthenticationOptions> OnAuthenticateAsClient { get; set; }
+        public Action<ConnectionContext, SslClientAuthenticationOptions>? OnAuthenticateAsClient { get; set; }
 
         /// <summary>
         /// Specifies the maximum amount of time allowed for the TLS/SSL handshake. This must be positive and finite.

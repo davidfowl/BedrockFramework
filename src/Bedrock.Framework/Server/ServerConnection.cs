@@ -13,12 +13,12 @@ namespace Bedrock.Framework
 {
     internal class ServerConnection : IConnectionHeartbeatFeature, IConnectionCompleteFeature, IConnectionLifetimeNotificationFeature, IConnectionEndPointFeature, IReadOnlyList<KeyValuePair<string, object>>
     {
-        private List<(Action<object> handler, object state)> _heartbeatHandlers;
+        private List<(Action<object> handler, object state)>? _heartbeatHandlers;
         private readonly object _heartbeatLock = new object();
 
-        private Stack<KeyValuePair<Func<object, Task>, object>> _onCompleted;
+        private Stack<KeyValuePair<Func<object, Task>, object>>? _onCompleted;
         private bool _completed;
-        private string _cachedToString;
+        private string? _cachedToString;
         private readonly CancellationTokenSource _connectionClosingCts = new CancellationTokenSource();
 
         public ServerConnection(long id, ConnectionContext connectionContext, ILogger logger)

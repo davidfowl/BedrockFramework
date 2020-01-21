@@ -26,7 +26,7 @@ namespace Bedrock.Framework
             yield return await ConnectionListenerFactory.BindAsync(EndPoint, cancellationToken);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return EndPoint?.ToString();
         }

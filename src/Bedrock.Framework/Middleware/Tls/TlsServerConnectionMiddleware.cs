@@ -19,9 +19,9 @@ namespace Bedrock.Framework.Middleware.Tls
     {
         private readonly ConnectionDelegate _next;
         private readonly TlsOptions _options;
-        private readonly ILogger _logger;
-        private readonly X509Certificate2 _certificate;
-        private readonly Func<ConnectionContext, string, X509Certificate2> _certificateSelector;
+        private readonly ILogger? _logger;
+        private readonly X509Certificate2? _certificate;
+        private readonly Func<ConnectionContext, string, X509Certificate2>? _certificateSelector;
 
         public TlsServerConnectionMiddleware(ConnectionDelegate next, TlsOptions options, ILoggerFactory loggerFactory)
         {
@@ -48,7 +48,8 @@ namespace Bedrock.Framework.Middleware.Tls
             }
             else
             {
-                EnsureCertificateIsAllowedForServerAuth(_certificate);
+                // _certificate can't be null because _certifiacteSelector is not
+                EnsureCertificateIsAllowedForServerAuth(_certificate!);
             }
 
             _options = options;
@@ -83,7 +84,7 @@ namespace Bedrock.Framework.Middleware.Tls
                 leaveOpen: true
             );
 
-            SslDuplexPipe sslDuplexPipe = null;
+            SslDuplexPipe? sslDuplexPipe = null;
 
             if (_options.RemoteCertificateMode == RemoteCertificateMode.NoCertificate)
             {
@@ -137,7 +138,7 @@ namespace Bedrock.Framework.Middleware.Tls
                 try
                 {
                     // Adapt to the SslStream signature
-                    ServerCertificateSelectionCallback selector = null;
+                    ServerCertificateSelectionCallback? selector = null;
                     if (_certificateSelector != null)
                     {
                         selector = (sender, name) =>
@@ -222,7 +223,7 @@ namespace Bedrock.Framework.Middleware.Tls
             }
         }
 
-        private static X509Certificate2 ConvertToX509Certificate2(X509Certificate certificate)
+        private static X509Certificate2? ConvertToX509Certificate2(X509Certificate certificate)
         {
             if (certificate is null)
             {

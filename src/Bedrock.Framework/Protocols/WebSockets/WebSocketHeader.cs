@@ -127,7 +127,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </summary>	
         /// <param name="obj">The WebSocketHeader value to check against.</param>	
         /// <returns>True if equal, false otherwise.</returns>
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is object
             && obj is WebSocketHeader
             && (WebSocketHeader)obj == this;

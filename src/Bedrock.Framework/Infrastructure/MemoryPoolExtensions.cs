@@ -12,7 +12,7 @@ namespace Bedrock.Framework.Infrastructure
         /// </summary>
         /// <param name="pool"></param>
         /// <returns></returns>
-        public static int GetMinimumSegmentSize(this MemoryPool<byte> pool)
+        public static int GetMinimumSegmentSize(this MemoryPool<byte>? pool)
         {
             if (pool == null)
             {
@@ -22,7 +22,7 @@ namespace Bedrock.Framework.Infrastructure
             return Math.Min(4096, pool.MaxBufferSize);
         }
 
-        public static int GetMinimumAllocSize(this MemoryPool<byte> pool)
+        public static int GetMinimumAllocSize(this MemoryPool<byte>? pool)
         {
             // 1/2 of a segment
             return pool.GetMinimumSegmentSize() / 2;

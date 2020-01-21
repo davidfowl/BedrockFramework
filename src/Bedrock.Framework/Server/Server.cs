@@ -14,7 +14,7 @@ namespace Bedrock.Framework
         private readonly ServerBuilder _builder;
         private readonly ILogger<Server> _logger;
         private readonly List<RunningListener> _listeners = new List<RunningListener>();
-        private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _shutdownTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TimerAwaitable _timerAwaitable;
         private Task _timerTask = Task.CompletedTask;
 
@@ -92,7 +92,7 @@ namespace Bedrock.Framework
 
             for (int i = 0; i < _listeners.Count; i++)
             {
-                tasks[i] = _listeners[i].ExecutionTask;
+                tasks[i] = _listeners[i].ExecutionTask!;
             }
 
             var shutdownTask = Task.WhenAll(tasks);
@@ -133,7 +133,7 @@ namespace Bedrock.Framework
             }
 
             public IConnectionListener Listener { get; }
-            public Task ExecutionTask { get; private set; }
+            public Task? ExecutionTask { get; private set; }
 
             public void TickHeartbeat()
             {
@@ -242,7 +242,7 @@ namespace Bedrock.Framework
             }
 
 
-            private IDisposable BeginConnectionScope(ServerConnection connection)
+            private IDisposable? BeginConnectionScope(ServerConnection connection)
             {
                 if (_server._logger.IsEnabled(LogLevel.Critical))
                 {

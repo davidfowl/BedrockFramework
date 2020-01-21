@@ -9,7 +9,7 @@ namespace Bedrock.Framework
 {
     public class SocketsServerBuilder
     {
-        private List<(EndPoint EndPoint, int Port, Action<IConnectionBuilder> Application)> _bindings = new List<(EndPoint, int, Action<IConnectionBuilder>)>();
+        private List<(EndPoint? EndPoint, int Port, Action<IConnectionBuilder> Application)> _bindings = new List<(EndPoint?, int, Action<IConnectionBuilder>)>();
 
         public SocketTransportOptions Options { get; } = new SocketTransportOptions();
 

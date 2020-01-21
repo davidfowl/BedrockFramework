@@ -15,7 +15,7 @@ namespace Bedrock.Framework
         private readonly SocketAsyncEventArgs _eventArgs = new SocketAsyncEventArgs();
         private readonly SocketAwaitable _awaitable;
 
-        private List<ArraySegment<byte>> _bufferList;
+        private List<ArraySegment<byte>>? _bufferList;
 
         public SocketSender(Socket socket, PipeScheduler scheduler)
         {

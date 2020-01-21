@@ -10,12 +10,12 @@ namespace Bedrock.Framework
     {
         public static async Task<bool> WithCancellation(this Task task, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             // This disposes the registration as soon as one of the tasks trigger
             using (cancellationToken.Register(state =>
             {
-                ((TaskCompletionSource<object>)state).TrySetResult(null);
+                ((TaskCompletionSource<object?>)state!).TrySetResult(null);
             },
             tcs))
             {

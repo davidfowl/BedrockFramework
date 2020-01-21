@@ -19,8 +19,8 @@ namespace Bedrock.Framework.Middleware.Tls
     {
         private readonly ConnectionDelegate _next;
         private readonly TlsOptions _options;
-        private readonly ILogger _logger;
-        private readonly X509Certificate2 _certificate;
+        private readonly ILogger? _logger;
+        private readonly X509Certificate2? _certificate;
 
         public TlsClientConnectionMiddleware(ConnectionDelegate next, TlsOptions options, ILoggerFactory loggerFactory)
         {
@@ -67,7 +67,7 @@ namespace Bedrock.Framework.Middleware.Tls
                 leaveOpen: true
             );
 
-            SslDuplexPipe sslDuplexPipe = null;
+            SslDuplexPipe? sslDuplexPipe = null;
 
             if (_options.RemoteCertificateMode == RemoteCertificateMode.NoCertificate)
             {
@@ -185,7 +185,7 @@ namespace Bedrock.Framework.Middleware.Tls
             }
         }
 
-        private static X509Certificate2 ConvertToX509Certificate2(X509Certificate certificate)
+        private static X509Certificate2? ConvertToX509Certificate2(X509Certificate certificate)
         {
             if (certificate is null)
             {

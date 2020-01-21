@@ -10,8 +10,8 @@ namespace Bedrock.Framework
 {
     internal class TimerAwaitable : IDisposable, ICriticalNotifyCompletion
     {
-        private Timer _timer;
-        private Action _callback;
+        private Timer? _timer;
+        private Action? _callback;
         private static readonly Action _callbackCompleted = () => { };
 
         private readonly TimeSpan _period;
@@ -40,7 +40,7 @@ namespace Bedrock.Framework
 
                     if (_timer == null)
                     {
-                        _timer = new Timer(state => ((TimerAwaitable)state).Tick(), this, _dueTime, _period);
+                        _timer = new Timer(state => ((TimerAwaitable)state!).Tick(), this, _dueTime, _period);
                     }
                 }
             }
