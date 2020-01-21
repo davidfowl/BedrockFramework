@@ -23,7 +23,7 @@ namespace Bedrock.Framework.Transports.Memory
             }
 
             MemoryConnectionListener listener;
-            _listeners[endpoint] = listener = new MemoryConnectionListener() { EndPoint = endpoint };
+            _listeners[endpoint] = listener = new MemoryConnectionListener(endpoint);
             return new ValueTask<IConnectionListener>(listener);
         }
 
@@ -56,7 +56,12 @@ namespace Bedrock.Framework.Transports.Memory
 
         private class MemoryConnectionListener : IConnectionListener
         {
-            public EndPoint EndPoint { get; set; } = null!; // We should initialize this in the constructor
+            public MemoryConnectionListener(EndPoint endPoint)
+            {
+                EndPoint = endPoint;
+            }
+
+            public EndPoint EndPoint { get; }
 
             internal Channel<ConnectionContext> AcceptQueue { get; } = Channel.CreateUnbounded<ConnectionContext>();
 

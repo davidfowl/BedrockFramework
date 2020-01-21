@@ -7,7 +7,7 @@ namespace Bedrock.Framework
 {
     public abstract class ServerBinding
     {
-        public virtual ConnectionDelegate Application { get; } = null!; // We should probably make this abstract - both implementations override it.
+        public abstract ConnectionDelegate Application { get; }
 
         public abstract IAsyncEnumerable<IConnectionListener> BindAsync(CancellationToken cancellationToken = default);
     }

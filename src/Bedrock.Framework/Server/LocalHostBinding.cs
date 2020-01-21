@@ -10,19 +10,17 @@ namespace Bedrock.Framework
 {
     public class LocalHostBinding : ServerBinding
     {
-        private readonly ConnectionDelegate _application;
-
         public LocalHostBinding(int port, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory)
         {
             Port = port;
-            _application = application;
+            Application = application;
             ConnectionListenerFactory = connectionListenerFactory;
         }
 
         private int Port { get; }
         private IConnectionListenerFactory ConnectionListenerFactory { get; }
 
-        public override ConnectionDelegate Application => _application;
+        public override ConnectionDelegate Application { get; }
 
         public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken = default)
         {
