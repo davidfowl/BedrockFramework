@@ -16,9 +16,6 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> Colon => new byte[] { (byte)':' };
         private ReadOnlySpan<byte> Host => new byte[] { (byte)'H', (byte)'o', (byte)'s', (byte)'t' };
 
-        private const int DefaultHttpPort = 80;
-        private const int DefaultHttpsPort = 443;
-
         private readonly string _host;
         private readonly int _port;
         private readonly byte[] _hostHeaderValueBytes;
