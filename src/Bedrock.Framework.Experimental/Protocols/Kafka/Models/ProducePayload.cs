@@ -7,19 +7,19 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public ref struct ProducePayload
     {
-        public readonly TopicPartition TopicPartition;
+        public readonly TopicPartitions[] TopicPartitions;
         public readonly ReadOnlySpan<byte> Key;
         public readonly ReadOnlySpan<byte> Value;
 
-        public ProducePayload(ref TopicPartition topicPartition, ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
+        public ProducePayload(ref TopicPartitions topicPartitions, ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
         {
-            this.TopicPartition = topicPartition;
+            this.TopicPartitions = new[] { topicPartitions };
             this.Key = key;
             this.Value = value;
         }
 
-        public ProducePayload(ref TopicPartition topicPartition, ref byte[] key, ref byte[] value)
-            : this(ref topicPartition, new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(value))
+        public ProducePayload(ref TopicPartitions topicPartitions, ref byte[] key, ref byte[] value)
+            : this(ref topicPartitions, new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(value))
         {
         }
 
@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             return HashCode.Combine(
                 this.Key.Length,
                 this.Value.Length,
-                this.TopicPartition);
+                this.TopicPartitions);
         }
     }
 }

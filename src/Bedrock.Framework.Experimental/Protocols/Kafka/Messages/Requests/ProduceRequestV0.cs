@@ -2,6 +2,7 @@
 using Bedrock.Framework.Infrastructure;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         public ProduceRequestV0(in ProducePayload payload)
             : base(KafkaApiKeys.Produce, apiVersion: 0)
         {
-            this.Topic = payload.TopicPartition;
+            this.Topics = payload.TopicPartitions;
 
             if (payload.Key != null)
             {
@@ -37,7 +38,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         public int Timeout { get; set; } = 1500;
 
-        public TopicPartition Topic { get; set; }
+        public TopicPartitions[] Topics { get; set; } = Array.Empty<TopicPartitions>();
 
         public byte[] Key { get; set; }
         public byte[] Value { get; set; }
@@ -58,13 +59,23 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         public override int GetPayloadSize()
         {
             return constantPayloadsize
-                + this.Topic.TopicName.Length
+                + this.Topics.Sum(t => t.TopicName.Length)
                 + (this.keyLength ?? 0)
                 + (this.valueLength ?? 0);
         }
 
         public override void WriteRequest(ref BufferWriter<IBufferWriter<byte>> writer)
         {
+            var pw = new PayloadWriter(isBigEndian: true)
+                .Write(this.Acks)
+                .Write(this.Timeout)
+                .WriteArray(this.Topics, this.WriteTopic);
+
+            if (!pw.TryWritePayload(out var payload))
+            {
+                throw new InvalidOperationException($"{nameof(PayloadWriter)}: Unable to generate payload");
+            }
+
             writer.WriteInt16BigEndian(this.Acks);
             writer.WriteInt32BigEndian(this.Timeout);
 
@@ -72,17 +83,61 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
             writer.WriteArrayPreamble(1);
 
             // write topic string
-            writer.WriteString(this.Topic.TopicName);
+            // writer.WriteString(this.Topics.TopicName);
 
             // partition array - single partition
             writer.WriteArrayPreamble(1);
 
             //write partition id
-            writer.WriteInt32BigEndian(this.Topic.Partition.Index);
-            this.WriteMessageSet(ref writer);
+            // writer.WriteInt32BigEndian(this.Topics.Partition.Index);
+            //this.WriteMessageSet(ref writer);
         }
 
-        private void WriteMessageSet(ref BufferWriter<IBufferWriter<byte>> writer)
+        private void WriteTopic(TopicPartitions topic, PayloadWriterContext settings)
+        {
+            var pw = new PayloadWriter(ref settings)
+                .WriteString(topic.TopicName)
+                .WriteArray(topic.Partitions, this.WritePartition);
+        }
+
+        private void WritePartition(Partition partition, PayloadWriterContext settings)
+        {
+            var pw = new PayloadWriter(ref settings)
+                .Write(partition.Index)
+                .Write(this.WriteMessageSetV2);
+
+        }
+
+        private void WriteMessageSetV2(PayloadWriterContext settings)
+        {
+            var pw = new PayloadWriter(ref settings)
+                .StartCalculatingSize("messageSetSize")
+                .Write(this.WriteMessagesV2)
+                .EndSizeCalculation("messageSetSize");
+        }
+
+        private void WriteMessagesV2(PayloadWriterContext settings)
+        {
+            long offset = -1;
+            var pw = new PayloadWriter(ref settings)
+                .Write(offset)
+                .Write(this.WriteMessageV2);
+        }
+
+        private void WriteMessageV2(PayloadWriterContext settings)
+        {
+            var message = new MessageV0(
+                magic: 0,
+                attributes: 0,
+                this.keyLength,
+                this.Key,
+                this.valueLength,
+                this.Value);
+
+            message.WritePayload(ref settings);
+        }
+
+        private PayloadWriter WriteMessageSet(ref PayloadWriter payloadWriter, ref BufferWriter<IBufferWriter<byte>> writer)
         {
             // TODO: if I could get the buffer's current location, I should be able to
             // store where I am, accumulate the size, then write the size in the spot at
@@ -105,6 +160,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
             writer.Write(tempBufferSpan);
 
             ArrayPool<byte>.Shared.Return(temporaryBuffer);
+
+            return payloadWriter;
         }
 
         private int WriteMessages(ref BufferWriter<IBufferWriter<byte>> writer)

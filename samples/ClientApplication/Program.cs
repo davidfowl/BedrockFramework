@@ -249,7 +249,7 @@ namespace ClientApplication
         {
             var client = new ClientBuilder(serviceProvider)
                 .UseSockets()
-                .UseConnectionLogging()
+                //.UseConnectionLogging()
                 .Build();
 
             var cts = new CancellationTokenSource();
@@ -276,7 +276,7 @@ namespace ClientApplication
             var prompt = $"{clientId}:{topic}>";
 
             // Only support 1 topic and partition 0. So we can cache this.
-            var topar = new TopicPartition(topic, new Partition(0));
+            var topar = new TopicPartitions(topic, new Partition(0));
 
             while (!cts.IsCancellationRequested)
             {

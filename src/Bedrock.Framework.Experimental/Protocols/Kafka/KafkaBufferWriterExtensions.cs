@@ -69,9 +69,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         internal static void WriteArrayPreamble<T>(ref this BufferWriter<T> buffer, int? count)
             where T : IBufferWriter<byte>
         {
-            buffer.WriteInt32BigEndian(count.HasValue
-                ? count.Value
-                : -1);
+            buffer.WriteInt32BigEndian(count ?? -1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

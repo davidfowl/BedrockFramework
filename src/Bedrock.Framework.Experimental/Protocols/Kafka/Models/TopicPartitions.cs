@@ -5,12 +5,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public readonly struct TopicPartitions
     {
-        public readonly string Topic;
+        public readonly string TopicName;
         public readonly Partition[] Partitions;
 
         public TopicPartitions(string topic, Partition[] partitions)
         {
-            this.Topic = topic;
+            this.TopicName = topic;
 
             // TODO: Distinct these
             this.Partitions = partitions
@@ -32,13 +32,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             var that = (TopicPartitions)obj;
 
             return this.Partitions.Equals(that.Partitions)
-                && this.Topic.Equals(that.Topic);
+                && this.TopicName.Equals(that.TopicName);
         }
 
         public override int GetHashCode()
         {
             return HashCode.Combine(
-                this.Topic,
+                this.TopicName,
                 this.Partitions);
         }
 
