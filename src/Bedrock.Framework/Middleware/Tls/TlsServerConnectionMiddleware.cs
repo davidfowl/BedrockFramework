@@ -35,21 +35,19 @@ namespace Bedrock.Framework.Middleware.Tls
             // capture the certificate now so it can't be switched after validation
             _certificate = options.LocalCertificate;
             _certificateSelector = options.LocalServerCertificateSelector;
-            if (_certificate == null && _certificateSelector == null)
+            if (_certificateSelector == null)
             {
-                throw new ArgumentException("Server certificate is required", nameof(options));
-            }
-
-            // If a selector is provided then ignore the cert, it may be a default cert.
-            if (_certificateSelector != null)
-            {
-                // SslStream doesn't allow both.
-                _certificate = null;
+                if (_certificate == null)
+                {
+                    throw new ArgumentException("Server certificate is required", nameof(options));
+                }
+                EnsureCertificateIsAllowedForServerAuth(_certificate);
             }
             else
             {
-                // _certificate can't be null because _certifiacteSelector is not
-                EnsureCertificateIsAllowedForServerAuth(_certificate!);
+                // If a selector is provided then ignore the cert, it may be a default cert.
+                // SslStream doesn't allow both.
+                _certificate = null;
             }
 
             _options = options;
