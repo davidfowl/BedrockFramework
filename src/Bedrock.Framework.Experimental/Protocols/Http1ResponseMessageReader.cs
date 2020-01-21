@@ -27,62 +27,71 @@ namespace Bedrock.Framework.Protocols
             var sequenceReader = new SequenceReader<byte>(input);
             message = null;
 
-            if (_state == State.StartLine)
+            switch (_state)
             {
-                if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> version, (byte)' '))
-                {
-                    return false;
-                }
-
-                if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> statusCodeText, (byte)' '))
-                {
-                    return false;
-                }
-
-                if (!sequenceReader.TryReadTo(out ReadOnlySequence<byte> statusText, NewLine))
-                {
-                    return false;
-                }
-
-                Utf8Parser.TryParse(statusCodeText, out int statusCode, out _);
-
-                _httpResponseMessage.StatusCode = (HttpStatusCode)statusCode;
-                _httpResponseMessage.ReasonPhrase = Encoding.ASCII.GetString(statusText.IsSingleSegment ? statusText.FirstSpan : statusText.ToArray());
-                _httpResponseMessage.Version = new Version(1, 1); // TODO: Check
-
-                _state = State.Headers;
-
-                consumed = sequenceReader.Position;
-                examined = consumed;
-            }
-            else if (_state == State.Headers)
-            {
-                while (sequenceReader.TryReadTo(out var headerLine, NewLine))
-                {
-                    if (headerLine.Length == 0)
+                case State.StartLine:
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> version, (byte)' '))
                     {
-                        consumed = sequenceReader.Position;
-                        examined = consumed;
-
-                        message = _httpResponseMessage;
-
-                        // End of headers
-                        _state = State.Body;
-                        break;
+                        return false;
                     }
 
-                    // Parse the header
-                    Http1RequestMessageReader.ParseHeader(headerLine, out var headerName, out var headerValue);
-
-                    var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
-                    var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
-
-                    if(!_httpResponseMessage.Headers.TryAddWithoutValidation(key, value))
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> statusCodeText, (byte)' '))
                     {
-                        _httpResponseMessage.Content.Headers.TryAddWithoutValidation(key, value);
+                        return false;
                     }
+
+                    if (!sequenceReader.TryReadTo(out ReadOnlySequence<byte> statusText, NewLine))
+                    {
+                        return false;
+                    }
+
+                    Utf8Parser.TryParse(statusCodeText, out int statusCode, out _);
+
+                    _httpResponseMessage.StatusCode = (HttpStatusCode)statusCode;
+                    var reasonPhrase = Encoding.ASCII.GetString(statusText.IsSingleSegment ? statusText.FirstSpan : statusText.ToArray());
+                    _httpResponseMessage.ReasonPhrase = reasonPhrase;
+                    _httpResponseMessage.Version = new Version(1, 1); // TODO: Check
+
+                    _state = State.Headers;
+
                     consumed = sequenceReader.Position;
-                }
+                    examined = consumed;
+
+                    goto case State.Headers;
+
+                case State.Headers:
+                    while (sequenceReader.TryReadTo(out var headerLine, NewLine))
+                    {
+                        if (headerLine.Length == 0)
+                        {
+                            consumed = sequenceReader.Position;
+                            examined = consumed;
+
+                            message = _httpResponseMessage;
+
+                            // End of headers
+                            _state = State.Body;
+                            break;
+                        }
+
+                        // Parse the header
+                        Http1RequestMessageReader.ParseHeader(headerLine, out var headerName, out var headerValue);
+
+                        var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
+                        var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
+
+                        if (!_httpResponseMessage.Headers.TryAddWithoutValidation(key, value))
+                        {
+                            _httpResponseMessage.Content.Headers.TryAddWithoutValidation(key, value);
+                        }
+
+                        consumed = sequenceReader.Position;
+                    }
+
+                    examined = sequenceReader.Position;
+                    break;
+                default:
+                    break;
             }
 
             return _state == State.Body;

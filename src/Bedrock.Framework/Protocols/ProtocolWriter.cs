@@ -72,7 +72,7 @@ namespace Bedrock.Framework.Protocols
                     return;
                 }
 
-                foreach (var protocolMessage in protocolMessages)
+                foreach(var protocolMessage in protocolMessages)
                 {
                     writer.WriteMessage(protocolMessage, _writer);
                 }
