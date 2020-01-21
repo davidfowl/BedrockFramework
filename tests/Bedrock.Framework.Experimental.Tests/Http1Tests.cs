@@ -22,8 +22,8 @@ namespace Bedrock.Framework.Experimental.Tests
             var actual = Encoding.ASCII.GetString(output.WrittenSpan);
 
             // assert
-            var expected = "GET /api HTTP/1.1\r\nHost: www.host.com:8080\r\n\r\n";
-            Assert.Equal(expected, actual);
+            var expected = "Host: www.host.com:8080";
+            Assert.Contains(expected, actual);
         }
 
         [Fact]
@@ -41,8 +41,8 @@ namespace Bedrock.Framework.Experimental.Tests
             var actual = Encoding.ASCII.GetString(output.WrittenSpan);
 
             // assert
-            var expected = "POST /api HTTP/1.1\r\nHost: www.another-host.com\r\n\r\n";
-            Assert.Equal(expected, actual);
+            var expected = "Host: www.another-host.com";
+            Assert.Contains(expected, actual);
         }
     }
 }

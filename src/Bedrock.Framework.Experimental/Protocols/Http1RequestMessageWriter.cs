@@ -29,9 +29,7 @@ namespace Bedrock.Framework.Protocols
             _port = port;
 
             // Precalculate ASCII bytes for Host header
-            string hostHeader = _port != DefaultHttpPort && _port != DefaultHttpsPort
-                            ? $"{_host}:{_port}"
-                            : _host;
+            string hostHeader = $"{_host}:{_port}";
             _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
         }
 
