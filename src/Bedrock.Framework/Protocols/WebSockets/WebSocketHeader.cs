@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
-namespace Bedrock.Framework.Experimental.Transports.WebSockets
+namespace Bedrock.Framework.Protocols.WebSockets
 {
     /// <summary>
     /// A header for WebSocket frames.

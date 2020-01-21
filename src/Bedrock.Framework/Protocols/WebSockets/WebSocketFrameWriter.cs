@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Bedrock.Framework.Experimental.Transports.WebSockets
+namespace Bedrock.Framework.Protocols.WebSockets
 {
     /// <summary>
     /// Writes a WebSocket frame message to a buffer.

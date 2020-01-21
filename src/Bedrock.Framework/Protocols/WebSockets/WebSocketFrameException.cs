@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Transports.WebSockets
+namespace Bedrock.Framework.Protocols.WebSockets
 {
     /// <summary>
     /// An exception thrown when WebSocket frame data is in error.

@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Transports.WebSockets
+namespace Bedrock.Framework.Protocols.WebSockets
 {
     /// <summary>
     /// An implementation of IMessageReader that parses WebSocket message frames.

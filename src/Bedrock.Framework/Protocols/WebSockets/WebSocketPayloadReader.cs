@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Bedrock.Framework.Experimental.Transports.WebSockets
+namespace Bedrock.Framework.Protocols.WebSockets
 {
     /// <summary>
     /// Reads a WebSocket payload from a sequence.

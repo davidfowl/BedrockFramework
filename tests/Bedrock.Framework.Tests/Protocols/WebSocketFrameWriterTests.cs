@@ -1,18 +1,16 @@
-﻿using Bedrock.Framework.Experimental.Transports.WebSockets;
-using Bedrock.Framework.Protocols;
-using Microsoft.AspNetCore.Connections;
-using System;
+﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net.WebSockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Bedrock.Framework.Infrastructure;
+using Bedrock.Framework.Protocols;
+using Bedrock.Framework.Protocols.WebSockets;
 using Xunit;
 
-namespace Bedrock.Framework.Experimental.Tests.Transports
+namespace Bedrock.Framework.Protocols.WebSockets.Tests
 {
     public class WebSocketFrameWriterTests
     {

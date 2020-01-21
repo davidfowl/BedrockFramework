@@ -1,5 +1,5 @@
-﻿using Bedrock.Framework.Experimental.Transports.WebSockets;
-using Bedrock.Framework.Infrastructure;
+﻿using Bedrock.Framework.Infrastructure;
+using Bedrock.Framework.Protocols.WebSockets;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
@@ -13,7 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Bedrock.Framework.Experimental.Tests.Transports
+namespace Bedrock.Framework.Protocols.WebSockets.Tests
 {
     public class WebSocketFrameReaderTests
     {

@@ -1,18 +1,17 @@
-﻿using Bedrock.Framework.Experimental.Tests.Infrastructure;
-using Bedrock.Framework.Experimental.Transports.WebSockets;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Bedrock.Framework.Experimental.Tests.Infrastructure;
+using Bedrock.Framework.Infrastructure;
 using Xunit;
 
-namespace Bedrock.Framework.Experimental.Tests.Transports
+namespace Bedrock.Framework.Protocols.WebSockets.Tests
 {
     public class WebSocketPayloadReaderTests
     {
