@@ -33,7 +33,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var length = bytes?.Length ?? -1;
 
-            return writer.WriteBytes(ref bytes, length);
+            return writer.Write(bytes, length);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,7 +45,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter WriteBytes(ref this PayloadWriter writer, ref byte[]? bytes, int? length)
+        public static PayloadWriter Write(this PayloadWriter writer, byte[]? bytes, int? length)
         {
             writer.Write(length ?? -1);
 
@@ -94,7 +94,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             for (int i = 0; i < array.Length; i++)
             {
-                action(array[i], writer.Settings);
+                action(array[i], writer.Context);
             }
 
             return writer;

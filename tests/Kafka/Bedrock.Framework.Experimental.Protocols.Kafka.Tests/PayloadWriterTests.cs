@@ -78,7 +78,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var pw1 = new PayloadWriter(isBigEndian: true)
                 .Write(testInt1);
 
-            var pw2 = pw1.Settings.CreatePayloadWriter()
+            var pw2 = pw1.Context.CreatePayloadWriter()
                 .Write(testInt2);
 
             Assert.True(pw1.TryWritePayload(out var payload));
@@ -101,7 +101,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt2 = 7331;
 
             var pw1 = new PayloadWriter(isBigEndian: false).Write(testInt1);
-            var pw2 = pw1.Settings.CreatePayloadWriter().Write(testInt2);
+            var pw2 = pw1.Context.CreatePayloadWriter().Write(testInt2);
 
             Assert.True(pw1.TryWritePayload(out var payload));
             Assert.Equal(sizeof(int) * 2, payload.Length);
@@ -125,7 +125,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var pw1 = new PayloadWriter(isBigEndian: false)
                 .Write(testInt1);
 
-            var pw2 = pw1.Settings.CreatePayloadWriter()
+            var pw2 = pw1.Context.CreatePayloadWriter()
                 .Write(testInt2);
 
             Assert.True(pw2.TryWritePayload(out var payload));
@@ -151,10 +151,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var pw1 = new PayloadWriter(isBigEndian: true)
                 .Write(testInt1);
 
-            var pw2 = pw1.Settings.CreatePayloadWriter()
+            var pw2 = pw1.Context.CreatePayloadWriter()
                 .Write(testInt2);
 
-            var pw3 = pw2.Settings.CreatePayloadWriter()
+            var pw3 = pw2.Context.CreatePayloadWriter()
                 .Write(testInt3);
 
             Assert.True(pw1.TryWritePayload(out var payload));
@@ -181,8 +181,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt3 = 42;
 
             var pw1 = new PayloadWriter(isBigEndian: false).Write(testInt1);
-            var pw2 = pw1.Settings.CreatePayloadWriter().Write(testInt2);
-            var pw3 = pw2.Settings.CreatePayloadWriter().Write(testInt3);
+            var pw2 = pw1.Context.CreatePayloadWriter().Write(testInt2);
+            var pw3 = pw2.Context.CreatePayloadWriter().Write(testInt3);
 
             Assert.True(pw1.TryWritePayload(out var payload));
             Assert.Equal(sizeof(int) * 3, payload.Length);
@@ -362,7 +362,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
                 .StartCalculatingSize("testSize1")
                 .Write(testInt1);
 
-            var pw2 = pw1.Settings.CreatePayloadWriter()
+            var pw2 = pw1.Context.CreatePayloadWriter()
                 .Write(testLong2)
                 .EndSizeCalculation("testSize1");
 

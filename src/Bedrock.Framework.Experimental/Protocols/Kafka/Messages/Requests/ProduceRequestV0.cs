@@ -75,34 +75,18 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
             {
                 throw new InvalidOperationException($"{nameof(PayloadWriter)}: Unable to generate payload");
             }
-
-            writer.WriteInt16BigEndian(this.Acks);
-            writer.WriteInt32BigEndian(this.Timeout);
-
-            // Topic array - no batching for now, single topic
-            writer.WriteArrayPreamble(1);
-
-            // write topic string
-            // writer.WriteString(this.Topics.TopicName);
-
-            // partition array - single partition
-            writer.WriteArrayPreamble(1);
-
-            //write partition id
-            // writer.WriteInt32BigEndian(this.Topics.Partition.Index);
-            //this.WriteMessageSet(ref writer);
         }
 
         private void WriteTopic(TopicPartitions topic, PayloadWriterContext settings)
         {
-            var pw = new PayloadWriter(ref settings)
+            var pw = settings.CreatePayloadWriter()
                 .WriteString(topic.TopicName)
                 .WriteArray(topic.Partitions, this.WritePartition);
         }
 
         private void WritePartition(Partition partition, PayloadWriterContext settings)
         {
-            var pw = new PayloadWriter(ref settings)
+            var pw = settings.CreatePayloadWriter()
                 .Write(partition.Index)
                 .Write(this.WriteMessageSetV2);
 
@@ -110,7 +94,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         private void WriteMessageSetV2(PayloadWriterContext settings)
         {
-            var pw = new PayloadWriter(ref settings)
+            var pw = settings.CreatePayloadWriter()
                 .StartCalculatingSize("messageSetSize")
                 .Write(this.WriteMessagesV2)
                 .EndSizeCalculation("messageSetSize");
@@ -119,7 +103,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         private void WriteMessagesV2(PayloadWriterContext settings)
         {
             long offset = -1;
-            var pw = new PayloadWriter(ref settings)
+            var pw = settings.CreatePayloadWriter()
                 .Write(offset)
                 .Write(this.WriteMessageV2);
         }

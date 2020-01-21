@@ -1,12 +1,9 @@
 ﻿#nullable enable
 #pragma warning disable CA1815 // Override equals and operator equals on value types
 
-using Bedrock.Framework.Experimental.Protocols.Kafka;
-using Bedrock.Framework.Infrastructure;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.IO.Pipelines;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
@@ -17,7 +14,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         public readonly PipeReader FromChild;
         public readonly PipeWriter CurrentWriter;
 
-        public PayloadWriterContext Settings;
+        public PayloadWriterContext Context;
 
         /// <summary>
         /// Initializes a new child instance of the <see cref="PayloadWriter"/>,
@@ -26,12 +23,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// <param name="settings">The context of the parent writer.</param>
         public PayloadWriter(ref PayloadWriterContext settings)
         {
-            this.Settings = settings;
+            this.Context = settings;
 
-            this.ToParent = PipeWriter.Create(this.Settings.Pipe.Reader.AsStream());
-            this.FromChild = PipeReader.Create(this.Settings.Pipe.Writer.AsStream());
+            // Hook up the parent's pipe reader to this writer, and vice-versa.
+            this.ToParent = PipeWriter.Create(this.Context.Pipe.Reader.AsStream());
+            this.FromChild = PipeReader.Create(this.Context.Pipe.Writer.AsStream());
 
-            this.CurrentWriter = this.Settings.Pipe.Writer;
+            this.CurrentWriter = this.Context.Pipe.Writer;
         }
 
         /// <summary>
@@ -44,7 +42,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             this.ToParent = pipe.Writer;
             this.FromChild = pipe.Reader;
 
-            this.Settings = new PayloadWriterContext(
+            this.Context = new PayloadWriterContext(
                 isBigEndian,
                 pipe);
 
@@ -52,9 +50,16 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             this.CurrentWriter = this.ToParent;
         }
 
+        /// <summary>
+        /// Sets the location in a payload where a size will be calculated.
+        /// Calculated size is between <see cref="StartCalculatingSize(string)"/>
+        /// and a call to <see cref="EndSizeCalculation(string)"/> with the same name.
+        /// </summary>
+        /// <param name="name">The distinct name of a size calculation.</param>
+        /// <returns>The <see cref="PayloadWriter"/>.</returns>
         public PayloadWriter StartCalculatingSize(string name)
         {
-            if (this.Settings.SizeCalculations.ContainsKey(name))
+            if (this.Context.SizeCalculations.ContainsKey(name))
             {
                 throw new ArgumentException($"Unable to add another size calculation called: {name}", nameof(name));
             }
@@ -63,28 +68,28 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 .GetMemory(sizeof(int))
                 .Slice(0, sizeof(int));
 
-            this.Settings.SizeCalculations[name] = (this.Settings.BytesWritten, memory);
+            this.Context.SizeCalculations[name] = (this.Context.BytesWritten, memory);
 
-            this.Settings.Advance(sizeof(int));
+            this.Context.Advance(sizeof(int));
 
             return this;
         }
 
         public PayloadWriter EndSizeCalculation(string name)
         {
-            if (!this.Settings.SizeCalculations.TryGetValue(name, out var calculation))
+            if (!this.Context.SizeCalculations.TryGetValue(name, out var calculation))
             {
                 throw new ArgumentException($"Size calculation for {name} not found", nameof(name));
             }
 
-            this.Settings.SizeCalculations.Remove(name);
+            this.Context.SizeCalculations.Remove(name);
 
-            var currentPosition = this.Settings.BytesWritten;
+            var currentPosition = this.Context.BytesWritten;
             var size = (int)(currentPosition - calculation.position);
 
             var span = calculation.memory.Span;
 
-            if (this.Settings.IsBigEndian)
+            if (this.Context.IsBigEndian)
             {
                 BinaryPrimitives.WriteInt32BigEndian(span, size);
             }
@@ -98,14 +103,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
         public PayloadWriter Write(Action<PayloadWriterContext> action)
         {
-            action(this.Settings);
-
-            return this;
-        }
-
-        public PayloadWriter Write(byte[]? bytes, int? length)
-        {
-            //this.internalWriter.WriteBytes(ref bytes, length);
+            action(this.Context);
 
             return this;
         }
@@ -114,7 +112,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(short));
 
-            if (this.Settings.IsBigEndian)
+            if (this.Context.IsBigEndian)
             {
                 BinaryPrimitives.WriteInt16BigEndian(span, value);
             }
@@ -123,7 +121,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 BinaryPrimitives.WriteInt16LittleEndian(span, value);
             }
 
-            this.Settings.Advance(sizeof(short));
+            this.Context.Advance(sizeof(short));
 
             return this;
         }
@@ -133,7 +131,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             var span = this.CurrentWriter.GetSpan(sizeof(byte));
             span[0] = value;
 
-            this.Settings.Advance(sizeof(byte));
+            this.Context.Advance(sizeof(byte));
 
             return this;
         }
@@ -142,7 +140,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(long));
 
-            if (this.Settings.IsBigEndian)
+            if (this.Context.IsBigEndian)
             {
                 BinaryPrimitives.WriteInt64BigEndian(span, value);
             }
@@ -151,7 +149,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 BinaryPrimitives.WriteInt64LittleEndian(span, value);
             }
 
-            this.Settings.Advance(sizeof(long));
+            this.Context.Advance(sizeof(long));
 
             return this;
         }
@@ -160,7 +158,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(int));
 
-            if (this.Settings.IsBigEndian)
+            if (this.Context.IsBigEndian)
             {
                 BinaryPrimitives.WriteInt32BigEndian(span, value);
             }
@@ -169,7 +167,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 BinaryPrimitives.WriteInt32LittleEndian(span, value);
             }
 
-            this.Settings.Advance(sizeof(int));
+            this.Context.Advance(sizeof(int));
 
             return this;
         }
@@ -183,7 +181,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
         private bool WriteOutput(out ReadOnlySequence<byte> payload)
         {
-            while (this.Settings.Pipe.Reader.TryRead(out var result))
+            while (this.Context.Pipe.Reader.TryRead(out var result))
             {
                 if (!result.IsCompleted)
                 {
@@ -194,7 +192,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 result.Buffer.CopyTo(output);
                 payload = new ReadOnlySequence<byte>(output);
 
-                this.Settings.Pipe.Reader.Complete();
+                this.Context.Pipe.Reader.Complete();
 
                 return true;
             }

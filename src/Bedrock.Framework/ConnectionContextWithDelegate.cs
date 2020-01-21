@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
-    internal class ConnectionContextWithDelegate : ConnectionContext
+    public class ConnectionContextWithDelegate : ConnectionContext
     {
         private readonly ConnectionContext _connection;
         private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);

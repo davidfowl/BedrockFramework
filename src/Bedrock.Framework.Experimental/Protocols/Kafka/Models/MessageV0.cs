@@ -115,15 +115,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 
         public void WritePayload(ref PayloadWriterContext settings)
         {
-//            var pw = new PayloadWriter(ref settings)
-//                .StartCalculatingSize("message")
-//                    .StartCrc32Calculation()
-//                        .Write(this.Magic)
-//                        .Write(this.Attributes)
-//                        .Write(this.Key, this.KeyLength)
-//                        .Write(this.Value, this.ValueLength)
-//                    .EndCrc32Calculation()
-//                .EndSizeCalculation("message");
+            var pw = settings.CreatePayloadWriter()
+                .StartCalculatingSize("message")
+                    //.StartCrc32Calculation()
+                        .Write(this.Magic)
+                        .Write(this.Attributes)
+                        .Write(this.Key, this.KeyLength)
+                        .Write(this.Value, this.ValueLength)
+                    //.EndCrc32Calculation()
+                .EndSizeCalculation("message");
         }
     }
 }
