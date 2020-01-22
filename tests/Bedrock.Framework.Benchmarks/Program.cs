@@ -12,7 +12,8 @@ namespace Bedrock.Framework.Benchmarks
 
         private static readonly Type[] AllBenchmarks = new[]
         {
-            typeof(ProtocolReaderBenchmarks)
+            typeof(ProtocolReaderBenchmarks),
+            typeof(MessagePipeReaderBenchmarks),
         };
     }
 }
