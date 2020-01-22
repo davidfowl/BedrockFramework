@@ -39,16 +39,40 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public void IfConsumedEqualsWrittenFreeCapacityIsReset()
+        public void IfConsumedEqualsWritten_AndCapacityIsSmall_FreeCapacityIsReset()
         {
-            var output = new ConsumableArrayBufferWriter(256);
-            Assert.Equal(256, output.FreeCapacity);
+            ConsumableArrayBufferWriter output;
+            do
+            {
+                output = new ConsumableArrayBufferWriter(256);
+            }
+            while (output.Capacity >= 512);
+
+            var capacity = output.Capacity;
+            Assert.InRange(capacity, 256, 512);
+            Assert.Equal(capacity, output.FreeCapacity);
             WriteData(output, 128);
-            Assert.Equal(128, output.FreeCapacity);
+            Assert.Equal(capacity - 128, output.FreeCapacity);
             output.Consume(64);
-            Assert.Equal(128, output.FreeCapacity);
+            Assert.Equal(capacity - 128, output.FreeCapacity);
             output.Consume(64);
-            Assert.Equal(256, output.FreeCapacity);
+            Assert.Equal(capacity, output.FreeCapacity);
+        }
+
+        [Fact]
+        public void IfConsumedEqualsWritten_AndCapacityIsLarge_BackingArrayIsReturned()
+        {
+            var output = new ConsumableArrayBufferWriter(512);
+            var capacity = output.Capacity;
+            Assert.InRange(capacity, 512, int.MaxValue);
+            Assert.Equal(capacity, output.FreeCapacity);
+            WriteData(output, 128);
+            Assert.Equal(capacity - 128, output.FreeCapacity);
+            output.Consume(64);
+            Assert.Equal(capacity - 128, output.FreeCapacity);
+            output.Consume(64);
+            Assert.Equal(0, output.Capacity);
+            Assert.Equal(0, output.FreeCapacity);
         }
 
         [Fact]

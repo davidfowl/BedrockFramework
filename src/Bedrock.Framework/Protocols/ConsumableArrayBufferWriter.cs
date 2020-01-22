@@ -128,6 +128,12 @@ namespace Bedrock.Framework.Protocols
             {
                 _index = 0;
                 _consumedCount = 0;
+                if (Capacity >= DefaultInitialBufferSize * 2)
+                {
+                    // No point holding on to a large buffer
+                    ArrayPool<byte>.Shared.Return(_buffer);
+                    _buffer = Array.Empty<byte>();
+                }
             }
             else
             {
