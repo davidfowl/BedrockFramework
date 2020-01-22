@@ -4,7 +4,7 @@ using System.Text;
 using Bedrock.Framework.Protocols;
 using Xunit;
 
-namespace Bedrock.Framework.Experimental.Tests
+namespace Bedrock.Framework.Tests
 {
     public class Http1Tests
     {
