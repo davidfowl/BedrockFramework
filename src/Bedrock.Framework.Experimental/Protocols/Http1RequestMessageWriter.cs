@@ -16,17 +16,12 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> Colon => new byte[] { (byte)':' };
         private ReadOnlySpan<byte> Host => new byte[] { (byte)'H', (byte)'o', (byte)'s', (byte)'t' };
 
-        private readonly string _host;
-        private readonly int _port;
         private readonly byte[] _hostHeaderValueBytes;
 
         public Http1RequestMessageWriter(string host, int port)
         {
-            _host = host;
-            _port = port;
-
             // Precalculate ASCII bytes for Host header
-            string hostHeader = $"{_host}:{_port}";
+            string hostHeader = $"{host}:{port}";
             _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
         }
 
