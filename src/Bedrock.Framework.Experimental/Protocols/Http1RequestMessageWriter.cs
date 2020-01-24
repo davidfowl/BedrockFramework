@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Text;
 using Bedrock.Framework.Infrastructure;
 
 namespace Bedrock.Framework.Protocols
@@ -11,9 +13,23 @@ namespace Bedrock.Framework.Protocols
         private ReadOnlySpan<byte> Http11 => new byte[] { (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1' };
         private ReadOnlySpan<byte> NewLine => new byte[] { (byte)'\r', (byte)'\n' };
         private ReadOnlySpan<byte> Space => new byte[] { (byte)' ' };
+        private ReadOnlySpan<byte> Colon => new byte[] { (byte)':' };
+        private ReadOnlySpan<byte> Host => new byte[] { (byte)'H', (byte)'o', (byte)'s', (byte)'t' };
+
+        private readonly byte[] _hostHeaderValueBytes;
+
+        public Http1RequestMessageWriter(string host, int port)
+        {
+            // Precalculate ASCII bytes for Host header
+            string hostHeader = $"{host}:{port}";
+            _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
+        }
 
         public void WriteMessage(HttpRequestMessage message, IBufferWriter<byte> output)
         {
+            Debug.Assert(message.Method != null);
+            Debug.Assert(message.RequestUri != null);
+
             var writer = new BufferWriter<IBufferWriter<byte>>(output);
             writer.WriteAsciiNoValidation(message.Method.Method);
             writer.Write(Space);
@@ -23,14 +39,21 @@ namespace Bedrock.Framework.Protocols
             writer.Write(Http11);
             writer.Write(NewLine);
 
-            var colon = (byte)':';
+            if (message.Headers == null || message.Headers.Host == null)
+            {
+                writer.Write(Host);
+                writer.Write(Colon);
+                writer.Write(Space);
+                writer.Write(_hostHeaderValueBytes);
+                writer.Write(NewLine);
+            }
 
             foreach (var header in message.Headers)
             {
                 foreach (var value in header.Value)
                 {
                     writer.WriteAsciiNoValidation(header.Key);
-                    writer.Write(MemoryMarshal.CreateReadOnlySpan(ref colon, 1));
+                    writer.Write(Colon);
                     writer.Write(Space);
                     writer.WriteAsciiNoValidation(value);
                     writer.Write(NewLine);
@@ -44,7 +67,7 @@ namespace Bedrock.Framework.Protocols
                     foreach (var value in header.Value)
                     {
                         writer.WriteAsciiNoValidation(header.Key);
-                        writer.Write(MemoryMarshal.CreateReadOnlySpan(ref colon, 1));
+                        writer.Write(Colon);
                         writer.Write(Space);
                         writer.WriteAsciiNoValidation(value);
                         writer.Write(NewLine);
