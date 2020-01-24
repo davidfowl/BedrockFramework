@@ -1,10 +1,11 @@
 ﻿using Bedrock.Framework.Infrastructure;
 using System;
 using System.Buffers;
+using System.Text;
 
 namespace Bedrock.Framework.Protocols.Http.Http1
 {
-    public class Http1HeaderReader : IMessageReader<Http1Header>
+    public class Http1HeaderReader : IMessageReader<ParseResult<Http1Header>>
     {
         private const byte SP = (byte)' ';
         private const byte HT = (byte)'\t';
@@ -13,7 +14,7 @@ namespace Bedrock.Framework.Protocols.Http.Http1
         private const byte LF = (byte)'\n';
         public static byte[] ColonCr = new[] { COLON, CR };
         public static byte[] SpHt = new[] { SP, HT };
-        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out Http1Header message)
+        public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ParseResult<Http1Header> message)
         {
             message = default;
             var reader = new SequenceReader<byte>(input);
@@ -25,7 +26,11 @@ namespace Bedrock.Framework.Protocols.Http.Http1
 
             reader.TryRead(out var delimiter);
             if (delimiter == CR)
-                ThrowInvalidHeader(reader);
+            {
+                examined = reader.Position;
+                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                return true;
+            }
 
             reader.AdvancePastAny(SpHt);
 
@@ -43,7 +48,9 @@ namespace Bedrock.Framework.Protocols.Http.Http1
 
             if (final != LF)
             {
-                ThrowInvalidHeader(reader);
+                examined = reader.Position;
+                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                return true;
             }
 
             consumed = examined = reader.Position;
@@ -60,14 +67,14 @@ namespace Bedrock.Framework.Protocols.Http.Http1
                 }
                 break;
             }
-            message = new Http1Header(fieldName.ToMemory(), fieldValueMemory.Slice(0, i + 1));
+            message = new ParseResult<Http1Header>(new Http1Header(fieldName.ToMemory(), fieldValueMemory.Slice(0, i + 1)));
             return true;
         }
 
-        private static void ThrowInvalidHeader(SequenceReader<byte> reader)
+        public static BadHttpRequestException CreateException(RequestRejectionReason reason, ReadOnlySequence<byte> readOnlySequence, SequenceReader<byte> sequenceReader)
         {
-            //TODO: figure this out later
-            throw new Exception();
+            var line = Encoding.ASCII.GetString(readOnlySequence.Slice(readOnlySequence.Start, sequenceReader.Position).ToSpan());
+            return new BadHttpRequestException(reason, line);
         }
     }
 }

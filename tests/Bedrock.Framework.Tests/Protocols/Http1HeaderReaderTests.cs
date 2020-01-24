@@ -110,9 +110,10 @@ namespace Bedrock.Framework.Experimental.Tests
             var consumed = buffer.Start;
             var examined = buffer.Start;
 
-            Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var message));
-            Assert.Equal("Connection", Encoding.ASCII.GetString(message.Name));
-            Assert.Equal("keep-alive", Encoding.ASCII.GetString(message.Value));
+            Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var result));
+            Assert.True(result.TryGetValue(out var header));
+            Assert.Equal("Connection", Encoding.ASCII.GetString(header.Name));
+            Assert.Equal("keep-alive", Encoding.ASCII.GetString(header.Value));
             Assert.Equal(0, buffer.Slice(consumed).Length);
             Assert.Equal(0, buffer.Slice(examined).Length);
         }
@@ -127,11 +128,12 @@ namespace Bedrock.Framework.Experimental.Tests
             var consumed = buffer.Start;
             var examined = buffer.Start;
 
-            Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var headers));
+            Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var result));
+            Assert.True(result.TryGetValue(out var header));
+            Assert.Equal(headerName, Encoding.ASCII.GetString(header.Name));
+            Assert.Equal(expectedHeaderValue, Encoding.ASCII.GetString(header.Value));
             Assert.Equal(0, buffer.Slice(consumed).Length);
             Assert.Equal(0, buffer.Slice(examined).Length);
-            Assert.Equal(headerName, Encoding.ASCII.GetString(headers.Name));
-            Assert.Equal(expectedHeaderValue, Encoding.ASCII.GetString(headers.Value));
         }
 
         // Doesn't put empty blocks in between every byte
