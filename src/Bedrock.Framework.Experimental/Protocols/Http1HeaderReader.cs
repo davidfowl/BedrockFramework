@@ -12,32 +12,43 @@ namespace Bedrock.Framework.Protocols.Http.Http1
         private const byte COLON = (byte)':';
         private const byte CR = (byte)'\r';
         private const byte LF = (byte)'\n';
-        public static byte[] ColonCr = new[] { COLON, CR };
-        public static byte[] SpHt = new[] { SP, HT };
+
+        private static readonly byte[] _colonOrWhitespace = new[] { COLON, CR, SP, HT };
+        private static readonly byte[] _spHt = new[] { SP, HT };
+        private static readonly byte[] _crLf = new[] { CR, LF };
+
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ParseResult<Http1Header> message)
         {
             message = default;
             var reader = new SequenceReader<byte>(input);
-            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldName, ColonCr, advancePastDelimiter: false))
+            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldName, _colonOrWhitespace, advancePastDelimiter: false))
             {
                 examined = input.End;
                 return false;
             }
 
             reader.TryRead(out var delimiter);
-            if (delimiter == CR)
+            if (delimiter != COLON || fieldName.IsEmpty)
             {
                 examined = reader.Position;
                 message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
                 return true;
             }
 
-            reader.AdvancePastAny(SpHt);
+            reader.AdvancePastAny(_spHt);
 
-            if (!reader.TryReadTo(out ReadOnlySequence<byte> fieldValue, CR, advancePastDelimiter: true))
+            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldValue, _crLf, advancePastDelimiter: false))
             {
                 examined = input.End;
                 return false;
+            }
+
+            reader.TryRead(out delimiter);
+            if (delimiter != CR)
+            {
+                examined = reader.Position;
+                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                return true;
             }
 
             if (!reader.TryRead(out var final))

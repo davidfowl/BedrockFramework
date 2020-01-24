@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
-namespace Bedrock.Framework.Experimental.Tests
+namespace Bedrock.Framework.Tests.Protocols
 {
     public class Http1HeaderReaderTests
     {
@@ -116,6 +116,46 @@ namespace Bedrock.Framework.Experimental.Tests
             Assert.Equal("keep-alive", Encoding.ASCII.GetString(header.Value));
             Assert.Equal(0, buffer.Slice(consumed).Length);
             Assert.Equal(0, buffer.Slice(examined).Length);
+        }
+
+        [Theory]
+        // Missing CR
+        [InlineData("Header: value\n\r\n", 13)]
+        [InlineData("Header: value\n", 13)]
+        [InlineData("Header: val\nue", 11)]
+        // Whitespace in name
+        [InlineData(" Header: value\r\n", 0)]
+        [InlineData("Header : value\r\n", 6)]
+        [InlineData("Hea der: value\r\n", 3)]
+        [InlineData("\tHeader: value\r\n", 0)]
+        [InlineData("Header\t: value\r\n", 6)]
+        [InlineData("Hea\tder: value\r\n", 3)]
+        [InlineData("\rHeader: value\r\n", 0)]
+        [InlineData("Header\r: value\r\n", 6)]
+        [InlineData("Hea\rder: value\r\n", 3)]
+        // Empty name
+        [InlineData(": value\r\n", 0)]
+        // Missing LF
+        [InlineData("Header: value\r\r\n", 14)]
+        [InlineData("Header: val\rue", 12)]
+        // missing colon
+        [InlineData("Header value\r\n", 6)]
+        [InlineData("Headervalue\r\n", 11)]
+        public void ReturnsErrorForInvalidHeader(string invalidHeader, int errorPosition)
+        {
+            var reader = new Http1HeaderReader();
+            var buffer = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(invalidHeader));
+            var consumed = buffer.Start;
+            var examined = buffer.Start;
+
+            Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var result));
+            Assert.False(result.TryGetValue(out _));
+            Assert.True(result.TryGetError(out var error));
+            var exception = Assert.IsType<BadHttpRequestException>(error);
+            Assert.Equal(RequestRejectionReason.InvalidRequestHeader, exception.Reason);
+            Assert.Equal(invalidHeader.Substring(0, errorPosition + 1), exception.Line);
+            Assert.Equal(buffer.Start, consumed);
+            Assert.Equal(buffer.GetPosition(errorPosition + 1), examined);
         }
 
         private void VerifyHeader(
