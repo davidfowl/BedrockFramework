@@ -1,7 +1,8 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
+﻿#nullable enable
+
+using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses
 {

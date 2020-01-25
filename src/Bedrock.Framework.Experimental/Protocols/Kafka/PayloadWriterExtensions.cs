@@ -10,9 +10,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
     internal static class PayloadWriterExtensions
     {
-        private static ReadOnlySpan<byte> False => new byte[] { (byte)0 };
-        private static ReadOnlySpan<byte> True => new byte[] { (byte)1 };
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static PayloadWriter WriteString(this PayloadWriter writer, string? value)
         {
@@ -39,7 +36,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PayloadWriter WriteBytes(ref this PayloadWriter writer, ref ReadOnlySpan<byte> bytes)
         {
-            writer.ToParent.Write(bytes);
+            writer.CurrentWriter.Write(bytes);
 
             return writer;
         }
@@ -101,13 +98,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static PayloadWriter WriteNullableString(ref this PayloadWriter writer, ref NullableString value)
+        internal static PayloadWriter WriteNullableString(this PayloadWriter writer, ref NullableString value)
         {
-            // buffer.WriteInt16BigEndian(value.Length);
+            writer.Write(value.Length);
 
             if (value.Length != -1)
             {
-                // buffer.Write(value.Bytes.Span);
+                writer.Write(value.Bytes.Span);
             }
 
             return writer;

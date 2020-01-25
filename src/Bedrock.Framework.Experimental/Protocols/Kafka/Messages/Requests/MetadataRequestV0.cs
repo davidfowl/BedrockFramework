@@ -1,11 +1,7 @@
 ﻿#nullable enable
 
 using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
-using Bedrock.Framework.Infrastructure;
 using System;
-using System.Buffers;
-using System.Linq;
-using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 {
@@ -20,18 +16,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         public string[]? Topics { get; set; } = Array.Empty<string>();
 
-        private const int constantPayloadSize =
-            sizeof(int); // topic array length
-
-        public override int GetPayloadSize()
-        {
-            // Todo: speed this up, we'll traverse each string twice.
-            return constantPayloadSize
-                + (sizeof(short) * (this.Topics?.Length ?? 0)) // short for each topic saying how long each string is
-                + (this.Topics?.Sum(t => Encoding.UTF8.GetByteCount(t)) ?? 0);
-        }
-
-        public override void WriteRequest(ref BufferWriter<IBufferWriter<byte>> writer)
+        public override void WriteRequest(ref PayloadWriter writer)
         {
             if (this.Topics == null)
             {

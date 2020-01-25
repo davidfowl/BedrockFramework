@@ -1,4 +1,6 @@
-﻿namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
+﻿#nullable enable
+
+namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {
     public readonly struct Partition
     {

@@ -1,4 +1,6 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Services;
+﻿#nullable enable
+
+using Bedrock.Framework.Experimental.Protocols.Kafka.Services;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
 

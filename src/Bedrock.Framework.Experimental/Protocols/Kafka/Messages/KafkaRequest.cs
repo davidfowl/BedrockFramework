@@ -1,8 +1,8 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
+﻿#nullable enable
+
+using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Primitives;
-using Bedrock.Framework.Infrastructure;
 using System;
-using System.Buffers;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 {
@@ -19,9 +19,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         public NullableString ClientId { get; set; }
 
-        public abstract void WriteRequest(ref BufferWriter<IBufferWriter<byte>> output);
-
-        public abstract int GetPayloadSize();
+        public abstract void WriteRequest(ref PayloadWriter writer);
 
         private bool disposedValue = false; // To detect redundant calls
         protected virtual void Dispose(bool disposing)

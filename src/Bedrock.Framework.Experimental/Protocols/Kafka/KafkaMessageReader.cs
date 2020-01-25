@@ -1,6 +1,5 @@
 ﻿#nullable enable
 
-using Bedrock.Framework.Experimental.Protocols.Kafka.Messages;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Services;
 using Bedrock.Framework.Protocols;

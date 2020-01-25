@@ -101,6 +101,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             return this;
         }
 
+        public PayloadWriter Write(ReadOnlySpan<byte> bytes)
+        {
+            this.CurrentWriter.Write(bytes);
+            this.Context.Advance(bytes.Length);
+
+            return this;
+        }
+
         public PayloadWriter Write(Action<PayloadWriterContext> action)
         {
             action(this.Context);

@@ -11,6 +11,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -117,6 +118,18 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             // Store allowed api messages and their versions on the connection itself.
             connection.Items.Add(KafkaProtocol.Keys.ApiVersions, lowestApiLevels.SupportedApis);
 
+            this.logger.LogInformation($"{connection.ConnectionId}: Retrieved ApiKeys from {connection.RemoteEndPoint}");
+            if (this.logger.IsEnabled(LogLevel.Debug))
+            {
+                var sb = new StringBuilder();
+                foreach (var api in lowestApiLevels.SupportedApis)
+                {
+                    sb.AppendLine($"{connection.ConnectionId}: {api.ApiKey} Min: {api.MinimumVersion} Max: {api.MaximumVersion}");
+                }
+
+                this.logger.LogDebug(sb.ToString());
+            }
+
             var metadataResponse = await this.SendAsync<MetadataRequestV0, MetadataResponseV0>(
                 connection,
                 MetadataRequestV0.AllTopics)
@@ -124,6 +137,22 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             Debug.Assert(metadataResponse.Brokers.Any());
             Debug.Assert(metadataResponse.Topics.Any());
+
+            this.logger.LogInformation($"{connection.ConnectionId}: Retrieved Metadata from {connection.RemoteEndPoint}");
+            if (this.logger.IsEnabled(LogLevel.Debug))
+            {
+                var sb = new StringBuilder(capacity: metadataResponse.Brokers.Length + metadataResponse.Topics.Sum(t => t.Partitions.Length));
+                foreach (var broker in metadataResponse.Brokers)
+                {
+                    sb.AppendLine($"{connection.ConnectionId}: Broker: {broker.Host}:{broker.Port}: NodeId: {broker.NodeId}");
+                }
+
+                var indent = new string(' ', 4);
+                foreach (var topic in metadataResponse.Topics)
+                {
+                    sb.AppendLine($"{indent}{topic.Name}: Partitions: {topic.Partitions.Length}");
+                }
+            }
 
             // TODO: get all brokers, and establish connections for them.
         }

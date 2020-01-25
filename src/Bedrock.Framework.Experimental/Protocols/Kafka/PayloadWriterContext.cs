@@ -11,8 +11,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
     {
         public readonly Dictionary<string, (long position, Memory<byte> memory)> SizeCalculations;
         public readonly bool IsBigEndian;
-        public int BytesWritten;
         public readonly Pipe Pipe;
+        public int BytesWritten;
 
         public PayloadWriterContext(bool isBigEndian, Pipe pipe)
         {

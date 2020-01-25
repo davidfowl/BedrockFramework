@@ -32,15 +32,3 @@ services:
     ports:
       - 9092:9092
       - 9093:9093
-
-  kafkamanager:
-    image: kafkamanager/kafka-manager:latest
-    hostname: kafkamanager
-    environment:
-      - "ZK_HOSTS=zookeeper:2181/jmx"
-    restart: on-failure
-    depends_on:
-      - zookeeper
-      - kafka
-    ports:
-      - 9000:9000

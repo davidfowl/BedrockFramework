@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿#nullable enable
+
+using Microsoft.AspNetCore.Connections;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

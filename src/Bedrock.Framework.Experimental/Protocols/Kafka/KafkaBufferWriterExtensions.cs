@@ -8,12 +8,12 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Kafka
+namespace Bedrock.Framework.Experimental.Protocols.Kafka2
 {
     internal static class KafkaBufferWriterExtensions
     {
-        private static ReadOnlySpan<byte> False => new byte[] { (byte)0 };
-        private static ReadOnlySpan<byte> True => new byte[] { (byte)1 };
+        private static ReadOnlySpan<byte> False => new byte[] { 0 };
+        private static ReadOnlySpan<byte> True => new byte[] { 1 };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void WriteString<T>(ref this BufferWriter<T> buffer, string value)

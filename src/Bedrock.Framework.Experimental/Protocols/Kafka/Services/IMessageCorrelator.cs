@@ -1,4 +1,5 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Messages;
+﻿#nullable enable
+
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
 using System;

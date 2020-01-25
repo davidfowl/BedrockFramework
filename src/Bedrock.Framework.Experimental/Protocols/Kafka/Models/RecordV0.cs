@@ -1,4 +1,6 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 {

@@ -1,4 +1,5 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Messages;
+﻿#nullable enable
+
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests;
 using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,12 +22,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Services
 
                 // Returns broker and/or topic metadata
                 { typeof(MetadataRequestV0),    typeof(MetadataResponseV0) },
-
-                // Fetches data from Topics and partitions
-                { typeof(FetchRequestV0),       typeof(FetchResponseV0) },
-
-                // Writes data to a Topic+Partition
-                {typeof(ProduceRequestV0),      typeof(ProduceResponseV0) },
             };
 
         private int correlationId = 1;

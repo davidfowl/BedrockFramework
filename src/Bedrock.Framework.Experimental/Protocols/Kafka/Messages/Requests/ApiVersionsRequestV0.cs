@@ -1,6 +1,4 @@
 ﻿using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
-using Bedrock.Framework.Infrastructure;
-using System.Buffers;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 {
@@ -13,10 +11,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         {
         }
 
-        public override int GetPayloadSize()
-            => 0;
-
-        public override void WriteRequest(ref BufferWriter<IBufferWriter<byte>> output)
+        public override void WriteRequest(ref PayloadWriter writer)
         {
         }
     }

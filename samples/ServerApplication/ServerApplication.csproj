@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
+    <ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
 </Project>

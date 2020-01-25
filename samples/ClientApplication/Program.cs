@@ -255,50 +255,18 @@ namespace ClientApplication
         {
             var client = new ClientBuilder(serviceProvider)
                 .UseSockets()
-                //.UseConnectionLogging()
                 .Build();
 
-            var cts = new CancellationTokenSource();
-
-            Console.CancelKeyPress += (_, args) =>
-            {
-                cts.Cancel();
-            };
-
-            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 9092), cts.Token);
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 9092));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
             Console.WriteLine();
 
-            Console.Write("What Topic should be consumed from?: ");
-            var topic = "test";// Console.ReadLine();
-
-            var clientId = "console-producer";
+            var clientId = "bedrock-consumer";
 
             using var kafkaProtocol = serviceProvider.GetRequiredService<KafkaProtocol>();
 
             // Can't find a way of getting ConnectionContexts injected...
             await kafkaProtocol.SetClientConnectionAsync(connection, clientId: clientId);
-
-            var prompt = $"{clientId}:{topic}>";
-
-            // Only support 1 topic and partition 0. So we can cache this.
-            var topar = new TopicPartitions(topic, new Partition(0));
-
-            while (!cts.IsCancellationRequested)
-            {
-                Console.Write(prompt);
-                var message = Console.ReadLine();
-
-                var bytes = Encoding.UTF8.GetBytes(message);
-
-                var produceRequest = new ProduceRequestV0(
-                    new ProducePayload(
-                        ref topar,
-                        key: null,
-                        value: bytes));
-
-                var produceResponse = await kafkaProtocol.SendAsync<ProduceRequestV0, ProduceResponseV0>(connection, produceRequest);
-            }
         }
 
         private static async Task CustomProtocol(IServiceProvider serviceProvider)
