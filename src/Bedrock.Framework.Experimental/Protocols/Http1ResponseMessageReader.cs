@@ -40,7 +40,7 @@ namespace Bedrock.Framework.Protocols
                         return false;
                     }
 
-                    if (!sequenceReader.TryReadTo(out ReadOnlySequence<byte> statusText, NewLine))
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> statusText, NewLine))
                     {
                         return false;
                     }
@@ -48,14 +48,13 @@ namespace Bedrock.Framework.Protocols
                     Utf8Parser.TryParse(statusCodeText, out int statusCode, out _);
 
                     _httpResponseMessage.StatusCode = (HttpStatusCode)statusCode;
-                    var reasonPhrase = Encoding.ASCII.GetString(statusText.IsSingleSegment ? statusText.FirstSpan : statusText.ToArray());
+                    var reasonPhrase = Encoding.ASCII.GetString(statusText);
                     _httpResponseMessage.ReasonPhrase = reasonPhrase;
                     _httpResponseMessage.Version = new Version(1, 1); // TODO: Check
 
                     _state = State.Headers;
 
                     consumed = sequenceReader.Position;
-                    examined = consumed;
 
                     goto case State.Headers;
 
