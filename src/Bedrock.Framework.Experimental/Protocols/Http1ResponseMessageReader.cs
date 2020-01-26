@@ -87,8 +87,6 @@ namespace Bedrock.Framework.Protocols
 
                         consumed = sequenceReader.Position;
                     }
-
-                    examined = sequenceReader.Position;
                     break;
                 default:
                     break;
