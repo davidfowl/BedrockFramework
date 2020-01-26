@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Bedrock.Framework.Middleware;
 using Bedrock.Framework.Middleware.Tls;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,12 @@ namespace Bedrock.Framework
         public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder) where TBuilder : IConnectionBuilder
         {
             return builder.UseConnectionLogging(loggerName: null);
+        }
+
+        public static TBuilder UseSlowness<TBuilder>(this TBuilder builder) where TBuilder : IConnectionBuilder
+        {
+            builder.Use(next => new SlowConnectionMiddleware(next).OnConnectionAsync);
+            return builder;
         }
 
         /// <summary>

@@ -107,6 +107,7 @@ namespace ClientApplication
             var client = new ClientBuilder(serviceProvider)
                         .UseSockets()
                         .UseDnsCaching(TimeSpan.FromHours(1))
+                        .UseSlowness()
                         .UseConnectionLogging()
                         .Build();
 
@@ -117,28 +118,39 @@ namespace ClientApplication
 
             while (true)
             {
-                Console.Write("http1.1> ");
-                var path = Console.ReadLine();
-
-                if (path == null)
-                {
-                    break;
-                }
-
-                if (path == string.Empty)
-                {
-                    path = "/";
-                }
-
-                var request = new HttpRequestMessage(HttpMethod.Get, path);
+                var request = new HttpRequestMessage(HttpMethod.Get, "/");
                 request.Headers.Host = "localhost";
 
                 var response = await httpProtocol.SendAsync(request);
 
                 await response.Content.CopyToAsync(Console.OpenStandardOutput());
 
-                Console.WriteLine();
+                // Console.ReadLine();
             }
+            //while (true)
+            //{
+            //    Console.Write("http1.1> ");
+            //    var path = Console.ReadLine();
+
+            //    if (path == null)
+            //    {
+            //        break;
+            //    }
+
+            //    if (path == string.Empty)
+            //    {
+            //        path = "/";
+            //    }
+
+            //    var request = new HttpRequestMessage(HttpMethod.Get, path);
+            //    request.Headers.Host = "localhost";
+
+            //    var response = await httpProtocol.SendAsync(request);
+
+            //    await response.Content.CopyToAsync(Console.OpenStandardOutput());
+
+            //    Console.WriteLine();
+            //}
         }
 
         private static async Task SignalR()
