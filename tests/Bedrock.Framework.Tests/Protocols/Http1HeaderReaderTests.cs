@@ -2,6 +2,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -9,22 +10,14 @@ namespace Bedrock.Framework.Tests.Protocols
 {
     public class Http1HeaderReaderTests
     {
-        [Theory]
-        [InlineData("H")]
-        [InlineData("He")]
-        [InlineData("Hea")]
-        [InlineData("Head")]
-        [InlineData("Heade")]
-        [InlineData("Header")]
-        [InlineData("Header:")]
-        [InlineData("Header: ")]
-        [InlineData("Header: v")]
-        [InlineData("Header: va")]
-        [InlineData("Header: val")]
-        [InlineData("Header: valu")]
-        [InlineData("Header: value")]
-        [InlineData("Header: value\r")]
+        public static IEnumerable<object[]> IncompleteHeaders()
+        {
+            var header = "Header: value\r";
+            return Enumerable.Range(0, header.Length).Select(x => new[] { header.Substring(0, x) });
+        }
 
+        [Theory]
+        [MemberData(nameof(IncompleteHeaders))]
         public void ParseMessageReturnsFalseWhenGivenIncompleteHeaders(string rawHeaders)
         {
             var reader = new Http1HeaderReader();
@@ -35,7 +28,7 @@ namespace Bedrock.Framework.Tests.Protocols
             Assert.False(reader.TryParseMessage(buffer, ref consumed, ref examined, out var message));
             Assert.Equal(default, message);
             Assert.Equal(buffer.Start, consumed);
-            Assert.Equal(buffer.End, examined);
+            Assert.Equal(buffer.Start, examined);
         }
 
         [Fact]
@@ -151,9 +144,8 @@ namespace Bedrock.Framework.Tests.Protocols
             Assert.True(reader.TryParseMessage(buffer, ref consumed, ref examined, out var result));
             Assert.False(result.TryGetValue(out _));
             Assert.True(result.TryGetError(out var error));
-            var exception = Assert.IsType<BadHttpRequestException>(error);
-            Assert.Equal(RequestRejectionReason.InvalidRequestHeader, exception.Reason);
-            Assert.Equal(invalidHeader.Substring(0, errorPosition + 1), exception.Line);
+            Assert.Equal("Invalid Http Header", error.Reason);
+            Assert.Equal(invalidHeader.Substring(0, errorPosition + 1), error.Line);
             Assert.Equal(buffer.Start, consumed);
             Assert.Equal(buffer.GetPosition(errorPosition + 1), examined);
         }

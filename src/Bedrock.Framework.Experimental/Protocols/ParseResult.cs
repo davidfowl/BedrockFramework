@@ -1,19 +1,18 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Protocols.Http.Http1
 {
     public struct ParseResult<T>
     {
-        private T _value;
-        private Exception _error;
+        private readonly T _value;
+        private readonly ParseError _error;
 
         public ParseResult(T value) : this()
         {
             _value = value;
         }
 
-        public ParseResult(Exception error) : this()
+        public ParseResult(ParseError error) : this()
         {
             _error = error;
         }
@@ -25,10 +24,22 @@ namespace Bedrock.Framework.Protocols.Http.Http1
             return _error is null;
         }
 
-        public bool TryGetError(out Exception error)
+        public bool TryGetError(out ParseError error)
         {
             error = _error;
             return error is object;
         }
+    }
+
+    public class ParseError
+    {
+        public ParseError(string reason, string line)
+        {
+            Reason = reason;
+            Line = line;
+        }
+
+        public string Reason { get; }
+        public string Line { get; }
     }
 }

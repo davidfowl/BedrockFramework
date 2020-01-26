@@ -13,17 +13,16 @@ namespace Bedrock.Framework.Protocols.Http.Http1
         private const byte CR = (byte)'\r';
         private const byte LF = (byte)'\n';
 
-        private static readonly byte[] _colonOrWhitespace = new[] { COLON, CR, SP, HT };
-        private static readonly byte[] _spHt = new[] { SP, HT };
-        private static readonly byte[] _crLf = new[] { CR, LF };
+        private static ReadOnlySpan<byte> ColonOrWhitespace => new byte[] { COLON, CR, SP, HT };
+        private static ReadOnlySpan<byte> SpOrHt => new byte[] { SP, HT };
+        private static ReadOnlySpan<byte> CrOrLf => new byte[] { CR, LF };
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ParseResult<Http1Header> message)
         {
             message = default;
             var reader = new SequenceReader<byte>(input);
-            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldName, _colonOrWhitespace, advancePastDelimiter: false))
+            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldName, ColonOrWhitespace, advancePastDelimiter: false))
             {
-                examined = input.End;
                 return false;
             }
 
@@ -31,15 +30,14 @@ namespace Bedrock.Framework.Protocols.Http.Http1
             if (delimiter != COLON || fieldName.IsEmpty)
             {
                 examined = reader.Position;
-                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                message = new ParseResult<Http1Header>(CreateError(input, reader));
                 return true;
             }
 
-            reader.AdvancePastAny(_spHt);
+            reader.AdvancePastAny(SpOrHt);
 
-            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldValue, _crLf, advancePastDelimiter: false))
+            if (!reader.TryReadToAny(out ReadOnlySequence<byte> fieldValue, CrOrLf, advancePastDelimiter: false))
             {
-                examined = input.End;
                 return false;
             }
 
@@ -47,20 +45,19 @@ namespace Bedrock.Framework.Protocols.Http.Http1
             if (delimiter != CR)
             {
                 examined = reader.Position;
-                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                message = new ParseResult<Http1Header>(CreateError(input, reader));
                 return true;
             }
 
             if (!reader.TryRead(out var final))
             {
-                examined = input.End;
                 return false;
             }
 
             if (final != LF)
             {
                 examined = reader.Position;
-                message = new ParseResult<Http1Header>(CreateException(RequestRejectionReason.InvalidRequestHeader, input, reader));
+                message = new ParseResult<Http1Header>(CreateError(input, reader));
                 return true;
             }
 
@@ -82,10 +79,10 @@ namespace Bedrock.Framework.Protocols.Http.Http1
             return true;
         }
 
-        public static BadHttpRequestException CreateException(RequestRejectionReason reason, ReadOnlySequence<byte> readOnlySequence, SequenceReader<byte> sequenceReader)
+        public static ParseError CreateError(ReadOnlySequence<byte> readOnlySequence, SequenceReader<byte> sequenceReader)
         {
             var line = Encoding.ASCII.GetString(readOnlySequence.Slice(readOnlySequence.Start, sequenceReader.Position).ToSpan());
-            return new BadHttpRequestException(reason, line);
+            return new ParseError("Invalid Http Header", line);
         }
     }
 }
