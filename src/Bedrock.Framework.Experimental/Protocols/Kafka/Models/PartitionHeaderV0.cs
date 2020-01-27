@@ -18,7 +18,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             this.HighWatermark = reader.ReadInt64BigEndian();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is PartitionHeaderV0))
             {

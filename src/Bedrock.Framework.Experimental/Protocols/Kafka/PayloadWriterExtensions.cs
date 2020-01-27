@@ -8,10 +8,10 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    internal static class PayloadWriterExtensions
+    public static class PayloadWriterExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static PayloadWriter WriteString(this PayloadWriter writer, string? value)
+        public static PayloadWriter WriteString(this PayloadWriter writer, string? value)
         {
             var length = value?.Length ?? -1;
             writer.Write((short)length);
@@ -26,15 +26,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter WriteBytes(ref this PayloadWriter writer, ref byte[]? bytes)
+        public static PayloadWriter WriteBytes(this PayloadWriter writer, ref byte[]? bytes)
         {
             var length = bytes?.Length ?? -1;
 
             return writer.Write(bytes, length);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter WriteBytes(ref this PayloadWriter writer, ref ReadOnlySpan<byte> bytes)
+        public static PayloadWriter WriteBytes(this PayloadWriter writer, ref ReadOnlySpan<byte> bytes)
         {
             writer.CurrentWriter.Write(bytes);
 
@@ -56,7 +56,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static PayloadWriter WriteBoolean(ref this PayloadWriter writer, bool value)
+        public static PayloadWriter WriteBoolean(this PayloadWriter writer, bool value)
         {
             if (value)
             {
@@ -71,7 +71,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static PayloadWriter WriteArrayPreamble(ref this PayloadWriter writer, int? count)
+        public static PayloadWriter WriteArrayPreamble(this PayloadWriter writer, int? count)
         {
             if (count.HasValue)
             {
@@ -85,20 +85,22 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             return writer;
         }
 
-        internal static PayloadWriter WriteArray<T>(this PayloadWriter writer, T[] array, Action<T, PayloadWriterContext> action)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PayloadWriter WriteArray<T>(this PayloadWriter writer, T[]? array, Func<T, PayloadWriterContext, PayloadWriterContext> action)
         {
-            writer.Write(array.Length);
+            writer.Write(array?.Length ?? -1);
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array?.Length; i++)
             {
-                action(array[i], writer.Context);
+                var modifiedContext = action(array[i], writer.Context);
+                writer.Context = modifiedContext;
             }
 
             return writer;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static PayloadWriter WriteNullableString(this PayloadWriter writer, ref NullableString value)
+        public static PayloadWriter WriteNullableString(this PayloadWriter writer, ref NullableString value)
         {
             writer.Write(value.Length);
 
@@ -110,12 +112,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             return writer;
         }
 
-        internal static PayloadWriter StartCrc32Calculation(ref this PayloadWriter writer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PayloadWriter StartCrc32Calculation(this PayloadWriter writer)
         {
             return writer;
         }
 
-        internal static PayloadWriter EndCrc32Calculation(ref this PayloadWriter writer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PayloadWriter EndCrc32Calculation(this PayloadWriter writer)
         {
             return writer;
         }

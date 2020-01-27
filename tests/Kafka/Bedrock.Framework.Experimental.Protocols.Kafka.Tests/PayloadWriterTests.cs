@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using Xunit;
+using Bedrock.Framework.Experimental.Protocols.Kafka;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
 {
@@ -78,8 +79,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var pw1 = new PayloadWriter(isBigEndian: true)
                 .Write(testInt1);
 
+            Assert.Equal(4, pw1.Context.BytesWritten);
             pw1.Context.CreatePayloadWriter()
                 .Write(testInt2);
+
+            Assert.Equal(8, pw1.Context.BytesWritten);
 
             Assert.True(pw1.TryWritePayload(out var payload));
             Assert.Equal(sizeof(int) * 2, payload.Length);
@@ -274,6 +278,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             long testLong = long.MaxValue;
             int expectedTotalSize = sizeof(long) + sizeof(int);
 
+            int expectedSizeCalculation = sizeof(long);
+
             var pw = new PayloadWriter(isBigEndian: false)
                 .StartCalculatingSize("testSize1")
                     .Write(testLong)
@@ -285,8 +291,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var sr = new SequenceReader<byte>(payload);
             Assert.True(sr.Length == expectedTotalSize);
 
-            Assert.True(sr.TryReadLittleEndian(out int totalSize));
-            Assert.Equal(expectedTotalSize, totalSize);
+            Assert.True(sr.TryReadLittleEndian(out int totalCalculatedSize));
+            Assert.Equal(expectedSizeCalculation, totalCalculatedSize);
 
             Assert.True(sr.TryReadLittleEndian(out long value));
             Assert.Equal(testLong, value);
@@ -304,9 +310,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
                 + sizeof(int) // partial size int
                 + sizeof(int); // testInt2
 
-            int expectedPartialSize2 =
-                sizeof(int) // partial size int
-                + sizeof(int); // testInt2
+            int expectedTestSize1 =
+                sizeof(long)
+                + sizeof(int)
+                + sizeof(int);
+
+            int expectedTestSize2 =
+                sizeof(int); // testInt2
 
             var pw = new PayloadWriter(isBigEndian: true)
                 .StartCalculatingSize("testSize1")
@@ -323,19 +333,17 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             Assert.True(sr.Length == expectedTotalSize1);
 
             Assert.True(sr.TryReadBigEndian(out int totalSize1));
-            Assert.Equal(expectedTotalSize1, totalSize1);
+            Assert.Equal(expectedTestSize1, totalSize1);
 
             Assert.True(sr.TryReadBigEndian(out long long1));
             Assert.Equal(testLong1, long1);
 
             Assert.True(sr.TryReadBigEndian(out int partialSize2));
-            Assert.Equal(expectedPartialSize2, partialSize2);
+            Assert.Equal(expectedTestSize2, partialSize2);
 
             Assert.True(sr.TryReadBigEndian(out int int2));
             Assert.Equal(testInt2, int2);
         }
-
-        // 7_892_537_708_544
 
         [Fact]
         public void UniqueNamesOnlyForSize()
@@ -358,6 +366,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
                 + sizeof(int)
                 + sizeof(long);
 
+            var expectedCalculatedSize1 =
+                sizeof(int)
+                + sizeof(long);
+
             var pw1 = new PayloadWriter(isBigEndian: true)
                 .StartCalculatingSize("testSize1")
                 .Write(testInt1);
@@ -372,14 +384,113 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             var sr = new SequenceReader<byte>(payload);
             Assert.True(sr.Length == expectedTotalSize1);
 
-            Assert.True(sr.TryReadBigEndian(out int totalSize1));
-            Assert.Equal(expectedTotalSize1, totalSize1);
+            Assert.True(sr.TryReadBigEndian(out int calculatedSize1));
+            Assert.Equal(expectedCalculatedSize1, calculatedSize1);
 
             Assert.True(sr.TryReadBigEndian(out int int1));
             Assert.Equal(testInt1, int1);
 
             Assert.True(sr.TryReadBigEndian(out long long2));
             Assert.Equal(testLong2, long2);
+        }
+
+        [Fact]
+        public void AllSizeCalculationsMustBeClosed()
+        {
+            var pw1 = new PayloadWriter(isBigEndian: true)
+                .StartCalculatingSize("testSize1")
+                .Write(1);
+
+            var context = pw1.Context;
+
+            Assert.Throws<InvalidOperationException>(() => context.CreatePayloadWriter().TryWritePayload(out var _));
+        }
+
+        private class TestObject
+        {
+            public int testValue = -1;
+        }
+
+        [Fact]
+        public void ArraysCanBeWrittenNullAndSizeCalculationWorks()
+        {
+            TestObject[] testObjectArray = null;
+            // 8 = size value and the value itself
+            int expectedTotalSize1 = 8;
+
+            // 4 = just the value itself that the size calculation calculated.
+            int expectedCalculatedSize1 = 4;
+
+            var pw1 = new PayloadWriter(isBigEndian: true)
+                .StartCalculatingSize(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks))
+                    .WriteArray(testObjectArray, TestObjectWriter)
+                .EndSizeCalculation(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks));
+
+            Assert.True(pw1.TryWritePayload(out var payload));
+            Assert.Equal(expectedTotalSize1, payload.Length);
+
+            var sr = new SequenceReader<byte>(payload);
+            Assert.True(sr.Length == expectedTotalSize1);
+
+            Assert.True(sr.TryReadBigEndian(out int calculatedSize1));
+            Assert.Equal(expectedCalculatedSize1, calculatedSize1);
+
+            Assert.True(sr.TryReadBigEndian(out int nullArraySize));
+            Assert.Equal(-1, nullArraySize);
+        }
+
+        [Fact]
+        public void ArraysCanBeWrittenAndSizeCalculationWorks()
+        {
+            TestObject[] testObjectArray = new TestObject[]
+            {
+                new TestObject
+                {
+                    testValue = 1337,
+                },
+                new TestObject
+                {
+                    testValue = 7331,
+                },
+            };
+
+            // 8 = size value and the value itself
+            int expectedTotalSize1 = 16;
+
+            // 4 = just the value itself that the size calculation calculated.
+            int expectedCalculatedSize1 = 12;
+
+            var pw1 = new PayloadWriter(isBigEndian: true)
+                .StartCalculatingSize(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks))
+                    .WriteArray(testObjectArray, TestObjectWriter)
+                .EndSizeCalculation(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks));
+
+            Assert.True(pw1.TryWritePayload(out var payload));
+            Assert.Equal(expectedTotalSize1, payload.Length);
+
+            var sr = new SequenceReader<byte>(payload);
+            Assert.True(sr.Length == expectedTotalSize1);
+
+            Assert.True(sr.TryReadBigEndian(out int calculatedSize1));
+            Assert.Equal(expectedCalculatedSize1, calculatedSize1);
+
+            Assert.True(sr.TryReadBigEndian(out int arraySize));
+            Assert.Equal(testObjectArray.Length, arraySize);
+
+            Assert.True(sr.TryReadBigEndian(out int elementValue0));
+            Assert.Equal(testObjectArray[0].testValue, elementValue0);
+
+            Assert.True(sr.TryReadBigEndian(out int elementValue1));
+            Assert.Equal(testObjectArray[1].testValue, elementValue1);
+        }
+
+        private PayloadWriterContext TestObjectWriter(TestObject testObject, PayloadWriterContext context)
+        {
+            var pw = context.CreatePayloadWriter();
+
+            pw.Write(testObject.testValue);
+
+            return pw.Context;
         }
     }
 }

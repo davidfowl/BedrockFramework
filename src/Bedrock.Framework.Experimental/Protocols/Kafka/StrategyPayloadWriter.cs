@@ -10,22 +10,77 @@ using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    public ref struct PayloadWriter
+    public class BigEndianStrategy : IPayloadWriterStrategy
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteByte(Span<byte> destination, byte value)
+        {
+            destination[0] = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt16(Span<byte> destination, short value)
+        {
+            BinaryPrimitives.WriteInt16BigEndian(destination, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt32(Span<byte> destination, int value)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(destination, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt64(Span<byte> destination, long value)
+        {
+            BinaryPrimitives.WriteInt64BigEndian(destination, value);
+        }
+    }
+    public class LittleEndianStrategy : IPayloadWriterStrategy
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteByte(Span<byte> destination, byte value)
+        {
+            destination[0] = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt16(Span<byte> destination, short value)
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(destination, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt32(Span<byte> destination, int value)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(destination, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteInt64(Span<byte> destination, long value)
+        {
+            BinaryPrimitives.WriteInt64LittleEndian(destination, value);
+        }
+    }
+
+    public ref struct StrategyPayloadWriter
     {
         public readonly PipeWriter ToParent;
         public readonly PipeReader FromChild;
         public readonly PipeWriter CurrentWriter;
 
-        public PayloadWriterContext Context;
+        public StrategyPayloadWriterContext Context;
+        private readonly IPayloadWriterStrategy strategy;
 
         /// <summary>
-        /// Initializes a new child instance of the <see cref="PayloadWriter"/>,
-        /// from the context of another <see cref="PayloadWriter"/>.
+        /// Initializes a new child instance of the <see cref="StrategyPayloadWriter"/>,
+        /// from the context of another <see cref="StrategyPayloadWriter"/>.
         /// </summary>
         /// <param name="settings">The context of the parent writer.</param>
-        public PayloadWriter(ref PayloadWriterContext settings)
+        public StrategyPayloadWriter(ref StrategyPayloadWriterContext settings)
         {
             this.Context = settings;
+            this.strategy = this.Context.WritingStrategy;
 
             // Hook up the parent's pipe reader to this writer, and vice-versa.
             this.ToParent = PipeWriter.Create(this.Context.Pipe.Reader.AsStream());
@@ -38,15 +93,19 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// Creates a root instance of the <see cref="PayloadWriter"/> struct.
         /// </summary>
         /// <param name="isBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
-        public PayloadWriter(bool isBigEndian)
+        public StrategyPayloadWriter(bool isBigEndian)
         {
             var pipe = new Pipe();
             this.ToParent = pipe.Writer;
             this.FromChild = pipe.Reader;
 
-            this.Context = new PayloadWriterContext(
-                isBigEndian,
+            this.Context = new StrategyPayloadWriterContext(
+                isBigEndian
+                ? new BigEndianStrategy()
+                : (IPayloadWriterStrategy)new LittleEndianStrategy(),
                 pipe);
+
+            this.strategy = this.Context.WritingStrategy;
 
             // Root writer, so route writer to itself.
             this.CurrentWriter = this.ToParent;
@@ -60,7 +119,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// <param name="name">The distinct name of a size calculation.</param>
         /// <returns>The <see cref="PayloadWriter"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter StartCalculatingSize(string name)
+        public StrategyPayloadWriter StartCalculatingSize(string name)
         {
             if (this.Context.SizeCalculations.ContainsKey(name))
             {
@@ -81,7 +140,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter EndSizeCalculation(string name)
+        public StrategyPayloadWriter EndSizeCalculation(string name)
         {
             if (!this.Context.SizeCalculations.TryGetValue(name, out var calculation))
             {
@@ -94,20 +153,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             var span = calculation.memory.Span;
 
-            if (this.Context.IsBigEndian)
-            {
-                BinaryPrimitives.WriteInt32BigEndian(span, size);
-            }
-            else
-            {
-                BinaryPrimitives.WriteInt32LittleEndian(span, size);
-            }
+            this.strategy.WriteInt32(span, size);
 
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(ReadOnlySpan<byte> bytes)
+        public StrategyPayloadWriter Write(ReadOnlySpan<byte> bytes)
         {
             this.CurrentWriter.Write(bytes);
             this.Context.Advance(bytes.Length);
@@ -116,7 +168,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(Action<PayloadWriterContext> action)
+        public StrategyPayloadWriter Write(Action<StrategyPayloadWriterContext> action)
         {
             action(this.Context);
 
@@ -124,18 +176,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(short value)
+        public StrategyPayloadWriter Write(short value)
         {
             var span = this.CurrentWriter.GetSpan(sizeof(short));
 
-            if (this.Context.IsBigEndian)
-            {
-                BinaryPrimitives.WriteInt16BigEndian(span, value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteInt16LittleEndian(span, value);
-            }
+            this.strategy.WriteInt16(span, value);
 
             this.Context.Advance(sizeof(short));
 
@@ -143,10 +188,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(byte value)
+        public StrategyPayloadWriter Write(byte value)
         {
             var span = this.CurrentWriter.GetSpan(sizeof(byte));
-            span[0] = value;
+            this.strategy.WriteByte(span, value);
 
             this.Context.Advance(sizeof(byte));
 
@@ -154,37 +199,21 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(long value)
+        public StrategyPayloadWriter Write(long value)
         {
             var span = this.CurrentWriter.GetSpan(sizeof(long));
 
-            if (this.Context.IsBigEndian)
-            {
-                BinaryPrimitives.WriteInt64BigEndian(span, value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteInt64LittleEndian(span, value);
-            }
-
+            this.strategy.WriteInt64(span, value);
             this.Context.Advance(sizeof(long));
 
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter Write(int value)
+        public StrategyPayloadWriter Write(int value)
         {
             var span = this.CurrentWriter.GetSpan(sizeof(int));
-
-            if (this.Context.IsBigEndian)
-            {
-                BinaryPrimitives.WriteInt32BigEndian(span, value);
-            }
-            else
-            {
-                BinaryPrimitives.WriteInt32LittleEndian(span, value);
-            }
+            this.strategy.WriteInt32(span, value);
 
             this.Context.Advance(sizeof(int));
 
@@ -204,6 +233,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             return this.WriteOutput(out payload);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool WriteOutput(out ReadOnlySequence<byte> payload)
         {
             while (this.Context.Pipe.Reader.TryRead(out var result))
@@ -228,7 +258,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             return false;
         }
-
     }
 }
 

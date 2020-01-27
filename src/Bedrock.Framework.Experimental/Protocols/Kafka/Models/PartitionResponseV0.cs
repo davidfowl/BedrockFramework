@@ -50,8 +50,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
                 var magic = reader.ReadByte();
                 var attributes = reader.ReadByte();
 
-                byte[] key = reader.ReadBytes();
-                byte[] value = reader.ReadBytes();
+                byte[]? key = reader.ReadBytes();
+                byte[]? value = reader.ReadBytes();
 
                 var record = new RecordV0(
                     offset,
@@ -68,7 +68,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             return records.ToArray();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is PartitionResponseV0))
             {

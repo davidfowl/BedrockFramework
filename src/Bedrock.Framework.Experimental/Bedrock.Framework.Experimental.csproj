@@ -14,6 +14,9 @@
   
   <ItemGroup>
     <Compile Remove="Protocols\Kafka\Models\FetchTopic.cs" />
+    <Compile Remove="Protocols\Kafka\Models\FetchTopicPartitionV0.cs" />
+    <Compile Remove="Protocols\Kafka\Models\FetchTopicV0.cs" />
+    <Compile Remove="Protocols\Kafka\Models\MessageV0.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,7 +20,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
         public override string ToString()
             => $"{this.ApiKey} - {this.MinimumVersion}:{this.MaximumVersion}";
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if(obj == null || !(obj is KafkaApiKey))
             {

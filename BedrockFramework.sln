@@ -30,6 +30,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Kafka", "Kafka", "{23585417
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework.Experimental.Protocols.Kafka.Tests", "tests\Kafka\Bedrock.Framework.Experimental.Protocols.Kafka.Tests\Bedrock.Framework.Experimental.Protocols.Kafka.Tests.csproj", "{D6B104E2-7FDF-4180-B0BD-8CC10EECF060}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks", "tests\Kafka\Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks\Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks.csproj", "{AEC87307-8E4A-4418-B0A2-FC924A4CB61F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -64,6 +66,10 @@ Global
 		{D6B104E2-7FDF-4180-B0BD-8CC10EECF060}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6B104E2-7FDF-4180-B0BD-8CC10EECF060}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6B104E2-7FDF-4180-B0BD-8CC10EECF060}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEC87307-8E4A-4418-B0A2-FC924A4CB61F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEC87307-8E4A-4418-B0A2-FC924A4CB61F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEC87307-8E4A-4418-B0A2-FC924A4CB61F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEC87307-8E4A-4418-B0A2-FC924A4CB61F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,6 +83,7 @@ Global
 		{E4532856-96A9-47F1-9718-9FD596362493} = {1F47B42E-790F-48AA-8BFB-AD1986D05A67}
 		{23585417-6B3E-4282-84C4-04EE8544F083} = {1F47B42E-790F-48AA-8BFB-AD1986D05A67}
 		{D6B104E2-7FDF-4180-B0BD-8CC10EECF060} = {23585417-6B3E-4282-84C4-04EE8544F083}
+		{AEC87307-8E4A-4418-B0A2-FC924A4CB61F} = {23585417-6B3E-4282-84C4-04EE8544F083}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {05222274-E7CB-4ABA-9ADF-4A3DBB1D0417}

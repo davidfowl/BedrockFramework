@@ -8,27 +8,27 @@ using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    public class PayloadWriterContext
+    public class StrategyPayloadWriterContext
     {
         public readonly Dictionary<string, (long position, Memory<byte> memory)> SizeCalculations;
-        public readonly bool IsBigEndian;
+        public readonly IPayloadWriterStrategy WritingStrategy;
         public readonly Pipe Pipe;
         public int BytesWritten;
 
-        public PayloadWriterContext(bool isBigEndian, Pipe pipe)
+        public StrategyPayloadWriterContext(IPayloadWriterStrategy writingStrategy, Pipe pipe)
         {
             this.SizeCalculations = new Dictionary<string, (long, Memory<byte>)>();
-            this.IsBigEndian = isBigEndian;
+            this.WritingStrategy = writingStrategy;
             this.BytesWritten = 0;
             this.Pipe = pipe;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public PayloadWriter CreatePayloadWriter()
+        public StrategyPayloadWriter CreatePayloadWriter()
         {
             var context = this;
 
-            return new PayloadWriter(ref context);
+            return new StrategyPayloadWriter(ref context);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

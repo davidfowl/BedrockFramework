@@ -11,8 +11,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
         public readonly int Crc;
         public readonly byte Magic;
         public readonly byte Attributes;
-        public readonly byte[] Key;
-        public readonly byte[] Value;
+        public readonly byte[]? Key;
+        public readonly byte[]? Value;
 
         public RecordV0(
             long offset,
@@ -20,8 +20,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             int crc,
             byte magic,
             byte attributes,
-            byte[] key,
-            byte[] value)
+            byte[]? key,
+            byte[]? value)
         {
             this.Offset = offset;
             this.MessageSize = messageSize;
@@ -32,7 +32,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             this.Value = value;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is RecordV0))
             {

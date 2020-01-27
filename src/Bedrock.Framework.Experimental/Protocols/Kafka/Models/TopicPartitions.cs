@@ -12,9 +12,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
 
         public TopicPartitions(string topic, Partition[] partitions)
         {
-            this.TopicName = topic;
+            this.TopicName = topic ?? throw new ArgumentNullException(nameof(topic));
 
-            // TODO: Distinct these
             this.Partitions = partitions
                 .Distinct()
                 .ToArray();
@@ -24,7 +23,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
         {
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is TopicPartitions))
             {

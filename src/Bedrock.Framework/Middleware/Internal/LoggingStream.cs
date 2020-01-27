@@ -1,3 +1,5 @@
+#nullable enable
+
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
@@ -17,8 +19,8 @@ namespace Bedrock.Framework.Infrastructure
 
         public LoggingStream(Stream inner, ILogger logger)
         {
-            _inner = inner;
-            _logger = logger;
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public override bool CanRead
@@ -174,7 +176,7 @@ namespace Bedrock.Framework.Infrastructure
         }
 
         // The below APM methods call the underlying Read/WriteAsync methods which will still be logged.
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             return TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
         }
@@ -184,7 +186,7 @@ namespace Bedrock.Framework.Infrastructure
             return TaskToApm.End<int>(asyncResult);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
         {
             return TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
         }

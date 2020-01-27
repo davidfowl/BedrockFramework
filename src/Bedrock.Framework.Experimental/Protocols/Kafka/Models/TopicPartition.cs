@@ -15,7 +15,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             this.Partition = partition;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is TopicPartition))
             {

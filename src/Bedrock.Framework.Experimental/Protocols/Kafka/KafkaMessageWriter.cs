@@ -41,7 +41,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             message.WriteRequest(ref pw);
 
             pw.EndSizeCalculation("payloadSize");
-
+            
             if (!pw.TryWritePayload(out var payload))
             {
                 this.logger.LogError("Unable to retrive payload for {KafkaRequest}", message);

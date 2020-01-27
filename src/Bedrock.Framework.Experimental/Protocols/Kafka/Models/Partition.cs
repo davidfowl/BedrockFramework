@@ -9,7 +9,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
         public Partition(int value)
             => this.Index = value;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null)
             {

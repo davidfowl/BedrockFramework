@@ -49,7 +49,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             this.BaseSequence = reader.ReadInt32BigEndian();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is RecordSetHeader))
             {

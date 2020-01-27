@@ -14,25 +14,19 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
         {
         }
 
-        public string[]? Topics { get; set; } = Array.Empty<string>();
+        public string[]? Topics { get; set; }
 
         public override void WriteRequest(ref PayloadWriter writer)
         {
-            if (this.Topics == null)
-            {
-                writer.WriteArrayPreamble(null);
-            }
-            else
-            {
-                var topicCount = this.Topics.Length;
-                writer.WriteArrayPreamble(topicCount);
+            writer.WriteArray(this.Topics, this.WriteTopic);
+        }
 
-                for (int i = 0; i < topicCount; i++)
-                {
-                    var topic = this.Topics[i];
-                    writer.WriteString(topic);
-                }
-            }
+        private PayloadWriterContext WriteTopic(string topicName, PayloadWriterContext context)
+        {
+            var writer = context.CreatePayloadWriter();
+            writer.WriteString(topicName);
+
+            return writer.Context;
         }
     }
 }

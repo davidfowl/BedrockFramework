@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Models
             return constantPayloadSize;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null || !(obj is FetchTopicPartitionV0))
             {
