@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Bedrock.Framework\Infrastructure\DuplexPipe.cs" Link="Infrastructure\DuplexPipe.cs" />
     <Compile Include="..\Bedrock.Framework\Infrastructure\DuplexPipeStream.cs" Link="Infrastructure\DuplexPipeStream.cs" />
     <Compile Include="..\Bedrock.Framework\Infrastructure\TaskToApm.cs" Link="Infrastructure\TaskToApm.cs" />
   </ItemGroup>
