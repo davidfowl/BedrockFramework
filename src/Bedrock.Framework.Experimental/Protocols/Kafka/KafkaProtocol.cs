@@ -48,11 +48,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             KafkaMessageReader reader,
             KafkaMessageWriter writer)
         {
-            this.services = serviceProvider;
-            this.logger = logger;
+            this.services = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            this.connectionManager = connectionManager;
-            this.messageReader = reader;
+            this.connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            this.messageReader = reader ?? throw new ArgumentNullException(nameof(reader));
             this.messageWriter = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 

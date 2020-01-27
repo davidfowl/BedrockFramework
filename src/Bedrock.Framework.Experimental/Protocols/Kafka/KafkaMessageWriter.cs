@@ -44,7 +44,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             
             if (!pw.TryWritePayload(out var payload))
             {
-                this.logger.LogError("Unable to retrive payload for {KafkaRequest}", message);
+                this.logger.LogError("Unable to retrieve payload for {KafkaRequest}", message);
             }
 
             writer.Write(payload.ToSpan());
