@@ -1,20 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Pipelines;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Bedrock.Framework;
+﻿using Bedrock.Framework;
 using Bedrock.Framework.Experimental.Protocols.Kafka;
-using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests;
-using Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Responses;
-using Bedrock.Framework.Experimental.Protocols.Kafka.Models;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
@@ -22,6 +7,14 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
+using System;
+using System.IO;
+using System.IO.Pipelines;
+using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ClientApplication
 {
@@ -47,8 +40,6 @@ namespace ClientApplication
             Console.WriteLine("6. Length prefixed custom binary protocol");
             Console.WriteLine("7. Talk to local docker dameon");
             Console.WriteLine("8. Kafka Consumer");
-
-            await KafkaConsumer(serviceProvider);
 
             while (true)
             {
