@@ -53,7 +53,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             this.connectionManager = connectionManager;
             this.messageReader = reader;
-            this.messageWriter = writer;
+            this.messageWriter = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
         public async ValueTask<TResponse> SendAsync<TRequest, TResponse>(ConnectionContext connection, TRequest request, CancellationToken token = default)

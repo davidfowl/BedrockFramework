@@ -13,6 +13,7 @@
   </ItemGroup>
   
   <ItemGroup>
+    <Compile Remove="Protocols\Kafka\KafkaBufferWriterExtensions.cs" />
     <Compile Remove="Protocols\Kafka\Models\FetchTopic.cs" />
     <Compile Remove="Protocols\Kafka\Models\FetchTopicPartitionV0.cs" />
     <Compile Remove="Protocols\Kafka\Models\FetchTopicV0.cs" />
