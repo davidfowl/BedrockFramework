@@ -1,4 +1,6 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
@@ -8,12 +10,20 @@ namespace Bedrock.Framework.Protocols
     {
         private readonly ConnectionContext _connection;
         private readonly ProtocolReader _reader;
-        private readonly Http1RequestMessageWriter _messageWriter = new Http1RequestMessageWriter();
+        private readonly Http1RequestMessageWriter _messageWriter;
 
         public HttpClientProtocol(ConnectionContext connection)
         {
             _connection = connection;
             _reader = connection.CreateReader();
+
+            (string host, int port) = connection.RemoteEndPoint switch
+            {
+                UriEndPoint uriEndPoint => (uriEndPoint.Uri.Host, uriEndPoint.Uri.Port),
+                IPEndPoint ip => (ip.Address.ToString(), ip.Port),
+                _ => throw new NotSupportedException($"{connection.RemoteEndPoint} not supported")
+            };
+            _messageWriter = new Http1RequestMessageWriter(host, port);
         }
 
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead)

@@ -24,62 +24,64 @@ namespace Bedrock.Framework.Protocols
             var sequenceReader = new SequenceReader<byte>(input);
             message = null;
 
-            if (_state == State.StartLine)
+            switch (_state)
             {
-                if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> method, (byte)' '))
-                {
-                    return false;
-                }
-
-                if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> path, (byte)' '))
-                {
-                    return false;
-                }
-
-                if (!sequenceReader.TryReadTo(out ReadOnlySequence<byte> version, NewLine))
-                {
-                    return false;
-                }
-
-                _httpRequestMessage.Method = new HttpMethod(Encoding.ASCII.GetString(method));
-                _httpRequestMessage.RequestUri = new Uri(Encoding.ASCII.GetString(path), UriKind.Relative);
-                _httpRequestMessage.Version = new Version(1, 1);
-                // Version = Encoding.ASCII.GetString(version.IsSingleSegment ? version.FirstSpan : version.ToArray());
-
-                _state = State.Headers;
-
-                consumed = sequenceReader.Position;
-                examined = consumed;
-            }
-            else if (_state == State.Headers)
-            {
-                while (sequenceReader.TryReadTo(out var headerLine, NewLine))
-                {
-                    if (headerLine.Length == 0)
+                case State.StartLine:
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> method, (byte)' '))
                     {
-                        consumed = sequenceReader.Position;
-                        examined = consumed;
-
-                        message = _httpRequestMessage;
-
-                        // End of headers
-                        _state = State.Body;
-                        break;
+                        return false;
                     }
 
-                    // Parse the header
-                    ParseHeader(headerLine, out var headerName, out var headerValue);
-
-                    var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
-                    var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
-
-                    if (!_httpRequestMessage.Headers.TryAddWithoutValidation(key, value))
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> path, (byte)' '))
                     {
-                        _httpRequestMessage.Content.Headers.TryAddWithoutValidation(key, value);
+                        return false;
                     }
+
+                    if (!sequenceReader.TryReadTo(out ReadOnlySpan<byte> version, NewLine))
+                    {
+                        return false;
+                    }
+
+                    _httpRequestMessage.Method = new HttpMethod(Encoding.ASCII.GetString(method));
+                    _httpRequestMessage.RequestUri = new Uri(Encoding.ASCII.GetString(path), UriKind.Relative);
+                    _httpRequestMessage.Version = new Version(1, 1);
+                    // Version = Encoding.ASCII.GetString(version.IsSingleSegment ? version.FirstSpan : version.ToArray());
+
+                    _state = State.Headers;
 
                     consumed = sequenceReader.Position;
-                }
+
+                    goto case State.Headers;
+
+                case State.Headers:
+                    while (sequenceReader.TryReadTo(out var headerLine, NewLine))
+                    {
+                        if (headerLine.Length == 0)
+                        {
+                            consumed = sequenceReader.Position;
+                            examined = consumed;
+
+                            message = _httpRequestMessage;
+
+                            // End of headers
+                            _state = State.Body;
+                            break;
+                        }
+
+                        // Parse the header
+                        ParseHeader(headerLine, out var headerName, out var headerValue);
+
+                        var key = Encoding.ASCII.GetString(headerName.Trim(TrimChars));
+                        var value = Encoding.ASCII.GetString(headerValue.Trim(TrimChars));
+
+                        if (!_httpRequestMessage.Headers.TryAddWithoutValidation(key, value))
+                        {
+                            _httpRequestMessage.Content.Headers.TryAddWithoutValidation(key, value);
+                        }
+
+                        consumed = sequenceReader.Position;
+                    }
+                    break;
             }
 
             return _state == State.Body;
