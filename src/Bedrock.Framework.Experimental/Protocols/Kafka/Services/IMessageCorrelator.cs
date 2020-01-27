@@ -14,7 +14,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Services
         bool TryAdd(in int correlationId, in KafkaRequest kafkaRequest);
         bool TryCompleteCorrelation(in int correlationId);
 
-        KafkaResponse CreatedEmptyCorrelatedResponse(in KafkaRequest request);
-        KafkaResponse CreatedEmptyCorrelatedResponse(in int correlationId);
+        KafkaResponse CreateEmptyCorrelatedResponse(in KafkaRequest request);
+        KafkaResponse CreateEmptyCorrelatedResponse(in int correlationId);
     }
 }

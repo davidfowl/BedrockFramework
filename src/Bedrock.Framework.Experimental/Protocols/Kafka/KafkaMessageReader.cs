@@ -42,7 +42,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             var payload = reader.Sequence.Slice(reader.Position, reader.Remaining);
 
-            var response = this.correlations.CreatedEmptyCorrelatedResponse(correlationId);
+            var response = this.correlations.CreateEmptyCorrelatedResponse(correlationId);
 
             response.FillResponse(payload);
 

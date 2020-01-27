@@ -73,17 +73,17 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Services
             return false;
         }
 
-        public KafkaResponse CreatedEmptyCorrelatedResponse(in int correlationId)
+        public KafkaResponse CreateEmptyCorrelatedResponse(in int correlationId)
         {
             if (!this.correlations.ContainsKey(correlationId))
             {
                 throw new ArgumentException($"Unexpected correlationId: {correlationId}", nameof(correlationId));
             }
 
-            return this.CreatedEmptyCorrelatedResponse(this.correlations[correlationId]);
+            return this.CreateEmptyCorrelatedResponse(this.correlations[correlationId]);
         }
 
-        public KafkaResponse CreatedEmptyCorrelatedResponse(in KafkaRequest request)
+        public KafkaResponse CreateEmptyCorrelatedResponse(in KafkaRequest request)
         {
             var requestType = request.GetType();
             if (!this.requestResponseCorrelations.ContainsKey(requestType))

@@ -56,36 +56,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter WriteBoolean(this PayloadWriter writer, bool value)
-        {
-            if (value)
-            {
-                //buffer.Write(True);
-            }
-            else
-            {
-                //buffer.Write(False);
-            }
-
-            return writer;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter WriteArrayPreamble(this PayloadWriter writer, int? count)
-        {
-            if (count.HasValue)
-            {
-                // buffer.WriteInt32BigEndian(count.Value);
-            }
-            else
-            {
-                // buffer.WriteInt32BigEndian(-1);
-            }
-
-            return writer;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PayloadWriter WriteArray<T>(this PayloadWriter writer, T[]? array, Func<T, PayloadWriterContext, PayloadWriterContext> action)
         {
             writer.Write(array?.Length ?? -1);
@@ -109,18 +79,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 writer.Write(value.Bytes.Span);
             }
 
-            return writer;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter StartCrc32Calculation(this PayloadWriter writer)
-        {
-            return writer;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static PayloadWriter EndCrc32Calculation(this PayloadWriter writer)
-        {
             return writer;
         }
     }

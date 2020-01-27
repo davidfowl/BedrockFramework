@@ -228,7 +228,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             return false;
         }
-
     }
 }
 
