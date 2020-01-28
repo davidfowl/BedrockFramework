@@ -3,66 +3,12 @@
 
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.IO.Pipelines;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    public class BigEndianStrategy : IPayloadWriterStrategy
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteByte(Span<byte> destination, byte value)
-        {
-            destination[0] = value;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt16(Span<byte> destination, short value)
-        {
-            BinaryPrimitives.WriteInt16BigEndian(destination, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt32(Span<byte> destination, int value)
-        {
-            BinaryPrimitives.WriteInt32BigEndian(destination, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt64(Span<byte> destination, long value)
-        {
-            BinaryPrimitives.WriteInt64BigEndian(destination, value);
-        }
-    }
-    public class LittleEndianStrategy : IPayloadWriterStrategy
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteByte(Span<byte> destination, byte value)
-        {
-            destination[0] = value;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt16(Span<byte> destination, short value)
-        {
-            BinaryPrimitives.WriteInt16LittleEndian(destination, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt32(Span<byte> destination, int value)
-        {
-            BinaryPrimitives.WriteInt32LittleEndian(destination, value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt64(Span<byte> destination, long value)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(destination, value);
-        }
-    }
-
     public ref struct StrategyPayloadWriter
     {
         public readonly PipeWriter ToParent;
@@ -92,15 +38,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// <summary>
         /// Creates a root instance of the <see cref="PayloadWriter"/> struct.
         /// </summary>
-        /// <param name="isBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
-        public StrategyPayloadWriter(bool isBigEndian)
+        /// <param name="shouldWriteBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
+        public StrategyPayloadWriter(bool shouldWriteBigEndian)
         {
             var pipe = new Pipe();
             this.ToParent = pipe.Writer;
             this.FromChild = pipe.Reader;
 
             this.Context = new StrategyPayloadWriterContext(
-                isBigEndian
+                shouldWriteBigEndian
                 ? new BigEndianStrategy()
                 : (IPayloadWriterStrategy)new LittleEndianStrategy(),
                 pipe);

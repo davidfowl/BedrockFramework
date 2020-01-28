@@ -11,7 +11,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         public void CanWriteInt32BigEndianOnce()
         {
             int testInt = 1337;
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testInt);
 
             Assert.True(pw.TryWritePayload(out var payload));
@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt1 = 1337;
             int testInt2 = 7331;
 
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testInt1)
                 .Write(testInt2);
 
@@ -53,7 +53,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt1 = 1337;
             int testInt2 = 7331;
 
-            var pw = new PayloadWriter(isBigEndian: false)
+            var pw = new PayloadWriter(shouldWriteBigEndian: false)
                 .Write(testInt1)
                 .Write(testInt2);
 
@@ -76,7 +76,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt1 = 1337;
             int testInt2 = 7331;
 
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testInt1);
 
             Assert.Equal(4, pw1.Context.BytesWritten);
@@ -104,7 +104,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt1 = 1337;
             int testInt2 = 7331;
 
-            var pw1 = new PayloadWriter(isBigEndian: false).Write(testInt1);
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: false).Write(testInt1);
             pw1.Context.CreatePayloadWriter().Write(testInt2);
 
             Assert.True(pw1.TryWritePayload(out var payload));
@@ -126,7 +126,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt1 = 1337;
             int testInt2 = 7331;
 
-            var pw1 = new PayloadWriter(isBigEndian: false)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: false)
                 .Write(testInt1);
 
             var pw2 = pw1.Context.CreatePayloadWriter()
@@ -152,7 +152,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt2 = 7331;
             int testInt3 = 42;
 
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testInt1);
 
             var pw2 = pw1.Context.CreatePayloadWriter()
@@ -184,7 +184,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int testInt2 = 7331;
             int testInt3 = 42;
 
-            var pw1 = new PayloadWriter(isBigEndian: false).Write(testInt1);
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: false).Write(testInt1);
             var pw2 = pw1.Context.CreatePayloadWriter().Write(testInt2);
             pw2.Context.CreatePayloadWriter().Write(testInt3);
 
@@ -208,7 +208,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         public void CanWriteInt16BigEndianOnce()
         {
             short testShort = 1337;
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testShort);
 
             Assert.True(pw.TryWritePayload(out var payload));
@@ -225,7 +225,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         public void CanWriteInt16LittleEndianOnce()
         {
             short testShort = 1337;
-            var pw = new PayloadWriter(isBigEndian: false)
+            var pw = new PayloadWriter(shouldWriteBigEndian: false)
                 .Write(testShort);
 
             Assert.True(pw.TryWritePayload(out var payload));
@@ -242,7 +242,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         public void CanWriteInt64BigEndianOnce()
         {
             long testLong = long.MaxValue;
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .Write(testLong);
 
             Assert.True(pw.TryWritePayload(out var payload));
@@ -259,7 +259,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         public void CanWriteInt64LittleEndianOnce()
         {
             long testLong = long.MaxValue;
-            var pw = new PayloadWriter(isBigEndian: false)
+            var pw = new PayloadWriter(shouldWriteBigEndian: false)
                 .Write(testLong);
 
             Assert.True(pw.TryWritePayload(out var payload));
@@ -280,7 +280,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
 
             int expectedSizeCalculation = sizeof(long);
 
-            var pw = new PayloadWriter(isBigEndian: false)
+            var pw = new PayloadWriter(shouldWriteBigEndian: false)
                 .StartCalculatingSize("testSize1")
                     .Write(testLong)
                 .EndSizeCalculation("testSize1");
@@ -318,7 +318,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             int expectedTestSize2 =
                 sizeof(int); // testInt2
 
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize("testSize1")
                     .Write(testLong1)
                     .StartCalculatingSize("testSize2")
@@ -348,7 +348,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         [Fact]
         public void UniqueNamesOnlyForSize()
         {
-            Assert.Throws<ArgumentException>(() => new PayloadWriter(isBigEndian: true)
+            Assert.Throws<ArgumentException>(() => new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize("testSize1")
                     .Write(1)
                 .StartCalculatingSize("testSize1")
@@ -370,7 +370,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
                 sizeof(int)
                 + sizeof(long);
 
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize("testSize1")
                 .Write(testInt1);
 
@@ -397,7 +397,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
         [Fact]
         public void AllSizeCalculationsMustBeClosed()
         {
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize("testSize1")
                 .Write(1);
 
@@ -421,7 +421,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             // 4 = just the value itself that the size calculation calculated.
             int expectedCalculatedSize1 = 4;
 
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks))
                     .WriteArray(testObjectArray, TestObjectWriter)
                 .EndSizeCalculation(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks));
@@ -460,7 +460,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Tests
             // 4 = just the value itself that the size calculation calculated.
             int expectedCalculatedSize1 = 12;
 
-            var pw1 = new PayloadWriter(isBigEndian: true)
+            var pw1 = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks))
                     .WriteArray(testObjectArray, TestObjectWriter)
                 .EndSizeCalculation(nameof(ArraysCanBeWrittenNullAndSizeCalculationWorks));

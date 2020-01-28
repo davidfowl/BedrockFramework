@@ -37,15 +37,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// <summary>
         /// Creates a root instance of the <see cref="PayloadWriter"/> struct.
         /// </summary>
-        /// <param name="isBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
-        public PayloadWriter(bool isBigEndian)
+        /// <param name="shouldWriteBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
+        public PayloadWriter(bool shouldWriteBigEndian)
         {
             var pipe = new Pipe();
             this.ToParent = pipe.Writer;
             this.FromChild = pipe.Reader;
 
             this.Context = new PayloadWriterContext(
-                isBigEndian,
+                shouldWriteBigEndian,
                 pipe);
 
             // Root writer, so route writer to itself.
@@ -94,7 +94,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
 
             var span = calculation.memory.Span;
 
-            if (this.Context.IsBigEndian)
+            if (this.Context.ShouldWriteBigEndian)
             {
                 BinaryPrimitives.WriteInt32BigEndian(span, size);
             }
@@ -128,7 +128,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(short));
 
-            if (this.Context.IsBigEndian)
+            if (this.Context.ShouldWriteBigEndian)
             {
                 BinaryPrimitives.WriteInt16BigEndian(span, value);
             }
@@ -158,7 +158,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(long));
 
-            if (this.Context.IsBigEndian)
+            if (this.Context.ShouldWriteBigEndian)
             {
                 BinaryPrimitives.WriteInt64BigEndian(span, value);
             }
@@ -177,7 +177,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         {
             var span = this.CurrentWriter.GetSpan(sizeof(int));
 
-            if (this.Context.IsBigEndian)
+            if (this.Context.ShouldWriteBigEndian)
             {
                 BinaryPrimitives.WriteInt32BigEndian(span, value);
             }

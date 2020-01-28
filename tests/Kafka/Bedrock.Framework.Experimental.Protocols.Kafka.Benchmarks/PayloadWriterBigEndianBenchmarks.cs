@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark(Baseline = true)]
         public void WriteByteToArray()
         {
-            var pw = new PayloadWriter(isBigEndian: true);
+            var pw = new PayloadWriter(shouldWriteBigEndian: true);
 
             var dataBaselineByteScratch = new byte[NumIterations * sizeof(byte)];
             var span = new Span<byte>(dataBaselineByteScratch);
@@ -50,7 +50,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void PayloadWriterWritesByte()
         {
-            var pw = new PayloadWriter(isBigEndian: true);
+            var pw = new PayloadWriter(shouldWriteBigEndian: true);
 
             for (byte i = 0; i < NumIterations; i++)
             {
@@ -67,7 +67,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void PayloadWriterWritesByteAndSizeCalculation()
         {
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize(nameof(PayloadWriterWritesByteAndSizeCalculation));
 
             for (byte i = 0; i < NumIterations; i++)
@@ -87,7 +87,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void PayloadWriterWritesShort()
         {
-            var pw = new PayloadWriter(isBigEndian: true);
+            var pw = new PayloadWriter(shouldWriteBigEndian: true);
 
             for (short i = 0; i < NumIterations; i++)
             {
@@ -104,7 +104,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void PayloadWriterWritesInt()
         {
-            var pw = new PayloadWriter(isBigEndian: true);
+            var pw = new PayloadWriter(shouldWriteBigEndian: true);
 
             for (int i = 0; i < NumIterations; i++)
             {
@@ -121,7 +121,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void PayloadWriterWritesLong()
         {
-            var pw = new PayloadWriter(isBigEndian: true);
+            var pw = new PayloadWriter(shouldWriteBigEndian: true);
 
             for (long i = 0; i < NumIterations; i++)
             {

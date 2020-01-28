@@ -29,7 +29,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             var clientId = message.ClientId;
 
             // On every outgoing message...
-            var pw = new PayloadWriter(isBigEndian: true)
+            var pw = new PayloadWriter(shouldWriteBigEndian: true)
                 .StartCalculatingSize("payloadSize")
                     .Write((short)message.ApiKey)
                     .Write(message.ApiVersion)

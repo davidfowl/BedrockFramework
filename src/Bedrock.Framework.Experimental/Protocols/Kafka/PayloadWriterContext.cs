@@ -11,14 +11,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
     public class PayloadWriterContext
     {
         public readonly Dictionary<string, (long position, Memory<byte> memory)> SizeCalculations;
-        public readonly bool IsBigEndian;
+        public readonly bool ShouldWriteBigEndian;
         public readonly Pipe Pipe;
         public int BytesWritten;
 
-        public PayloadWriterContext(bool isBigEndian, Pipe pipe)
+        public PayloadWriterContext(bool shouldWriteBigEndian, Pipe pipe)
         {
             this.SizeCalculations = new Dictionary<string, (long, Memory<byte>)>();
-            this.IsBigEndian = isBigEndian;
+            this.ShouldWriteBigEndian = shouldWriteBigEndian;
             this.BytesWritten = 0;
             this.Pipe = pipe;
         }

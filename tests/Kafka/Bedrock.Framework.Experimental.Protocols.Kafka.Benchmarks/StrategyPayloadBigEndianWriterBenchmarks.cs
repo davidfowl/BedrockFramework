@@ -26,7 +26,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark(Baseline = true)]
         public void StrategyPayloadWriterWritesByte()
         {
-            var pw = new StrategyPayloadWriter(isBigEndian: true);
+            var pw = new StrategyPayloadWriter(shouldWriteBigEndian: true);
 
             for (byte i = 0; i < NumIterations; i++)
             {
@@ -43,7 +43,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void StrategyPayloadWriterWritesShort()
         {
-            var pw = new StrategyPayloadWriter(isBigEndian: true);
+            var pw = new StrategyPayloadWriter(shouldWriteBigEndian: true);
 
             for (short i = 0; i < NumIterations; i++)
             {
@@ -60,7 +60,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void StrategyPayloadWriterWritesInt()
         {
-            var pw = new StrategyPayloadWriter(isBigEndian: true);
+            var pw = new StrategyPayloadWriter(shouldWriteBigEndian: true);
 
             for (int i = 0; i < NumIterations; i++)
             {
@@ -77,7 +77,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Benchmarks
         [Benchmark]
         public void StrategyPayloadWriterWritesLong()
         {
-            var pw = new StrategyPayloadWriter(isBigEndian: true);
+            var pw = new StrategyPayloadWriter(shouldWriteBigEndian: true);
 
             for (long i = 0; i < NumIterations; i++)
             {
