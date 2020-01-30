@@ -209,7 +209,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <returns>True if the message is text, false otherwise.</returns>
         public async ValueTask<bool> MoveNextMessageAsync(CancellationToken cancellationToken = default)
         {
-            if (_payloadReader.BytesRemaining != 0)
+            if (_payloadReader?.BytesRemaining != 0)
             {
                 throw new InvalidOperationException("MoveNextMessageAsync cannot be called while a message is still being read.");
             }
