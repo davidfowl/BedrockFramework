@@ -54,10 +54,29 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </summary>
         /// <param name="cancellationToken">A cancellation token, if any.</param>
         /// <returns>A WebSocketReadResult.</returns>
-        public async ValueTask<WebSocketReadResult> ReadAsync(CancellationToken cancellationToken = default)
+        public ValueTask<WebSocketReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
-            var messageIsText = await _messageReader.MoveNextMessageAsync(cancellationToken).ConfigureAwait(false);
-            return new WebSocketReadResult(messageIsText, _messageReader);
+            var readTask = _messageReader.MoveNextMessageAsync(cancellationToken);
+
+            if (readTask.IsCompletedSuccessfully)
+            {
+                return new ValueTask<WebSocketReadResult>(new WebSocketReadResult(readTask.Result, _messageReader));
+            }
+            else
+            {
+                return DoReadAsync(readTask, cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// Reads the next message from the WebSocket asynchronously.
+        /// </summary>
+        /// <param name="readTask">The active message reader task.</param>
+        /// <param name="cancellationToken">A cancellation token, if any.</param>
+        /// <returns>A WebSocketReadResult.</returns>
+        private async ValueTask<WebSocketReadResult> DoReadAsync(ValueTask<bool> readTask, CancellationToken cancellationToken)
+        {
+            return new WebSocketReadResult(await readTask.ConfigureAwait(false), _messageReader);
         }
 
         /// <summary>

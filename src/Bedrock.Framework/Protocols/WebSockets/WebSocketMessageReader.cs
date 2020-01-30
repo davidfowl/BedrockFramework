@@ -58,6 +58,11 @@ namespace Bedrock.Framework.Protocols.WebSockets
         private ProtocolReader _protocolReader;
 
         /// <summary>
+        /// An instance of the WebSocket frame reader.
+        /// </summary>
+        private WebSocketFrameReader _frameReader = new WebSocketFrameReader();
+
+        /// <summary>
         /// An instance of the control frame handler for handling control frame flow.
         /// </summary>
         private IControlFrameHandler _controlFrameHandler;
@@ -111,7 +116,18 @@ namespace Bedrock.Framework.Protocols.WebSockets
             //TODO: Is this even the right value to use in this context?
             if (_buffer.UnconsumedWrittenCount < _options.PauseWriterThreshold)
             {
-                var payloadSequence = await _protocolReader.ReadAsync(_payloadReader, cancellationToken).ConfigureAwait(false);
+                var readTask = _protocolReader.ReadAsync(_payloadReader, cancellationToken);
+                ProtocolReadResult<ReadOnlySequence<byte>> payloadSequence;
+
+                if (readTask.IsCompletedSuccessfully)
+                {
+                    payloadSequence = readTask.Result;
+                }
+                else
+                {
+                    payloadSequence = await readTask;
+                }
+
                 if (payloadSequence.IsCanceled)
                 {
                     throw new OperationCanceledException("Read canceled while attempting to read WebSocket payload.");
@@ -235,11 +251,46 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </summary>
         /// <param name="cancellationToken">A cancellation token, if any.</param>
         /// <returns>A new WebSocket read frame.</returns>
-        private async ValueTask<WebSocketReadFrame> GetNextMessageFrameAsync(CancellationToken cancellationToken)
+        private ValueTask<WebSocketReadFrame> GetNextMessageFrameAsync(CancellationToken cancellationToken)
+        {
+            var readTask = _protocolReader.ReadAsync(_frameReader, cancellationToken);
+            ProtocolReadResult<WebSocketReadFrame> frame;
+
+            if (readTask.IsCompletedSuccessfully)
+            {
+                frame = readTask.Result;
+            }
+            else
+            {
+                return DoGetNextMessageAsync(readTask, cancellationToken);
+            }
+
+            if (frame.IsCanceled)
+            {
+                throw new OperationCanceledException("Read canceled while attempting to read WebSocket frame.");
+            }
+
+            var header = frame.Message.Header;
+            if (!(header.Opcode == WebSocketOpcode.Ping || header.Opcode == WebSocketOpcode.Pong || header.Opcode == WebSocketOpcode.Close))
+            {
+                _protocolReader.Advance();
+                return new ValueTask<WebSocketReadFrame>(frame.Message);
+            }
+
+            return DoGetNextMessageAsync(readTask, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets the next message frame from the transport as an async call.
+        /// </summary>
+        /// <param name="readTask">The active protocol reader ReadAsync task to await.</param>
+        /// <param name="cancellationToken">A cancellation token, if any.</param>
+        /// <returns>A new WebSocket read frame.</returns>
+        private async ValueTask<WebSocketReadFrame> DoGetNextMessageAsync(ValueTask<ProtocolReadResult<WebSocketReadFrame>> readTask, CancellationToken cancellationToken)
         {
             while (true)
             {
-                var frame = await _protocolReader.ReadAsync(new WebSocketFrameReader(), cancellationToken).ConfigureAwait(false);
+                var frame = await readTask.ConfigureAwait(false);
                 _protocolReader.Advance();
 
                 if (frame.IsCanceled)
@@ -264,6 +315,8 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 {
                     return frame.Message;
                 }
+
+                readTask = _protocolReader.ReadAsync(new WebSocketFrameReader(), cancellationToken);
             }
         }
 
