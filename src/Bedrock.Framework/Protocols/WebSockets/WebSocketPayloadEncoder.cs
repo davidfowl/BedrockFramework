@@ -58,7 +58,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 MaskUnmaskSpan(input.FirstSpan, bytesToRead);
 
                 position = input.GetPosition(bytesToRead);
-                return lengthRemaining - bytesToRead;
+                return bytesToRead;
             }
 
             foreach (var memory in input)
@@ -71,7 +71,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 lengthRemaining -= bytesToRead;
             }
 
-            return lengthRemaining;
+            return consumed;
         }
 
         /// <summary>
