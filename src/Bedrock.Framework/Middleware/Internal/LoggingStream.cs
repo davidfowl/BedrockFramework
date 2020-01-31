@@ -14,11 +14,13 @@ namespace Bedrock.Framework.Infrastructure
     {
         private readonly Stream _inner;
         private readonly ILogger _logger;
+        private readonly LoggingFormatter _logFormatter;
 
-        public LoggingStream(Stream inner, ILogger logger)
+        public LoggingStream(Stream inner, ILogger logger, LoggingFormatter logFormatter = null)
         {
             _inner = inner;
             _logger = logger;
+            _logFormatter = logFormatter;
         }
 
         public override bool CanRead
@@ -140,6 +142,12 @@ namespace Bedrock.Framework.Infrastructure
 
         private void Log(string method, ReadOnlySpan<byte> buffer)
         {
+            if (_logFormatter != null)
+            {
+                _logFormatter(_logger, method, buffer);
+                return;
+            }
+
             if (!_logger.IsEnabled(LogLevel.Debug))
             {
                 return;
