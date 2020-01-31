@@ -13,11 +13,12 @@ namespace Bedrock.Framework
     {
         private readonly PipeStream _stream;
 
-        public NamedPipeConnectionContext(PipeStream stream)
+        public NamedPipeConnectionContext(PipeStream stream, NamedPipeEndPoint endPoint)
         {
             _stream = stream;
             Transport = this;
             ConnectionId = Guid.NewGuid().ToString();
+            RemoteEndPoint = endPoint;
 
             Input = PipeReader.Create(stream);
             Output = PipeWriter.Create(stream);
