@@ -54,7 +54,7 @@ namespace Bedrock.Framework
                     break;
                 }
 
-                _acceptedQueue.Writer.TryWrite(new NamedPipeConnectionContext(stream));
+                _acceptedQueue.Writer.TryWrite(new NamedPipeConnectionContext(stream, _endpoint));
             }
 
             _acceptedQueue.Writer.TryComplete();
