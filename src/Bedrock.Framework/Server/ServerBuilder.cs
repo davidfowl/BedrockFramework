@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using Bedrock.Framework.Infrastructure;
 
 namespace Bedrock.Framework
 {
     public class ServerBuilder
     {
+        public ServerBuilder() : this(EmptyServiceProvider.Instance)
+        {
+
+        }
+
         public ServerBuilder(IServiceProvider serviceProvider)
         {
             ApplicationServices = serviceProvider;

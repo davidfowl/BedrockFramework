@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
@@ -10,6 +11,10 @@ namespace Bedrock.Framework
     {
         private readonly ConnectionBuilder _connectionBuilder;
 
+        public ClientBuilder() : this(EmptyServiceProvider.Instance)
+        {
+
+        }
 
         public ClientBuilder(IServiceProvider serviceProvider)
         {
