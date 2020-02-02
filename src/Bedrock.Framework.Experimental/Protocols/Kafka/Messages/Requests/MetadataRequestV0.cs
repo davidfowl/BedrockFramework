@@ -16,12 +16,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         public string[]? Topics { get; set; }
 
-        public override void WriteRequest(ref PayloadWriter writer)
+        public override void WriteRequest<TStrategy>(ref StrategyPayloadWriter<TStrategy> writer)
         {
             writer.WriteArray(this.Topics, this.WriteTopic);
         }
 
-        private PayloadWriterContext WriteTopic(string topicName, PayloadWriterContext context)
+        private StrategyPayloadWriterContext<TStrategy> WriteTopic<TStrategy>(string topicName, StrategyPayloadWriterContext<TStrategy> context)
+            where TStrategy : struct, IPayloadWriterStrategy
         {
             var writer = context.CreatePayloadWriter();
             writer.WriteString(topicName);

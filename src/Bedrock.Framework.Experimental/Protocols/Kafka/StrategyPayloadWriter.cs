@@ -3,58 +3,44 @@
 
 using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    public ref struct StrategyPayloadWriter
+    public ref struct StrategyPayloadWriter<TStrategy>
+        where TStrategy : struct, IPayloadWriterStrategy
     {
-        public readonly PipeWriter ToParent;
-        public readonly PipeReader FromChild;
-        public readonly PipeWriter CurrentWriter;
+        private StrategyPayloadWriterContext<TStrategy> context;
+        public StrategyPayloadWriterContext<TStrategy> Context
+        {
+            get
+            {
+                if (this.context != null)
+                {
+                    return this.context;
+                }
+                
+                this.context = new StrategyPayloadWriterContext<TStrategy>();
 
-        public StrategyPayloadWriterContext Context;
-        private readonly IPayloadWriterStrategy strategy;
+                return this.context;
+            }
+
+            set => this.context = value;
+        }
 
         /// <summary>
         /// Initializes a new child instance of the <see cref="StrategyPayloadWriter"/>,
         /// from the context of another <see cref="StrategyPayloadWriter"/>.
         /// </summary>
-        /// <param name="settings">The context of the parent writer.</param>
-        public StrategyPayloadWriter(ref StrategyPayloadWriterContext settings)
+        /// <param name="context">The context of the parent writer.</param>
+        public StrategyPayloadWriter(ref StrategyPayloadWriterContext<TStrategy> context)
         {
-            this.Context = settings;
-            this.strategy = this.Context.WritingStrategy;
+            this.context = context;
 
             // Hook up the parent's pipe reader to this writer, and vice-versa.
-            this.ToParent = PipeWriter.Create(this.Context.Pipe.Reader.AsStream());
-            this.FromChild = PipeReader.Create(this.Context.Pipe.Writer.AsStream());
-
-            this.CurrentWriter = this.Context.Pipe.Writer;
-        }
-
-        /// <summary>
-        /// Creates a root instance of the <see cref="PayloadWriter"/> struct.
-        /// </summary>
-        /// <param name="shouldWriteBigEndian">Whether or not to write bytes as big endian. Defaults to true.</param>
-        public StrategyPayloadWriter(bool shouldWriteBigEndian)
-        {
-            var pipe = new Pipe();
-            this.ToParent = pipe.Writer;
-            this.FromChild = pipe.Reader;
-
-            this.Context = new StrategyPayloadWriterContext(
-                shouldWriteBigEndian
-                ? new BigEndianStrategy()
-                : (IPayloadWriterStrategy)new LittleEndianStrategy(),
-                pipe);
-
-            this.strategy = this.Context.WritingStrategy;
-
-            // Root writer, so route writer to itself.
-            this.CurrentWriter = this.ToParent;
+            // this.ToParent = PipeWriter.Create(this.context.Pipe.Reader.AsStream());
+            // this.FromChild = PipeReader.Create(this.context.Pipe.Writer.AsStream());
         }
 
         /// <summary>
@@ -65,14 +51,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         /// <param name="name">The distinct name of a size calculation.</param>
         /// <returns>The <see cref="PayloadWriter"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter StartCalculatingSize(string name)
+        public StrategyPayloadWriter<TStrategy> StartCalculatingSize(string name)
         {
             if (this.Context.SizeCalculations.ContainsKey(name))
             {
                 throw new ArgumentException($"Unable to add another size calculation called: {name}", nameof(name));
             }
 
-            var memory = this.CurrentWriter
+            var memory = this.Context.CurrentWriter
                 .GetMemory(sizeof(int))
                 .Slice(0, sizeof(int));
 
@@ -86,7 +72,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter EndSizeCalculation(string name)
+        public StrategyPayloadWriter<TStrategy> EndSizeCalculation(string name)
         {
             if (!this.Context.SizeCalculations.TryGetValue(name, out var calculation))
             {
@@ -98,23 +84,22 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
             var size = (int)(currentPosition - calculation.position);
 
             var span = calculation.memory.Span;
-
-            this.strategy.WriteInt32(span, size);
+            default(TStrategy).WriteInt32(span, size);
 
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(ReadOnlySpan<byte> bytes)
+        public StrategyPayloadWriter<TStrategy> Write(ReadOnlySpan<byte> bytes)
         {
-            this.CurrentWriter.Write(bytes);
+            this.Context.CurrentWriter.Write(bytes);
             this.Context.Advance(bytes.Length);
 
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(Action<StrategyPayloadWriterContext> action)
+        public StrategyPayloadWriter<TStrategy> Write(Action<StrategyPayloadWriterContext<TStrategy>> action)
         {
             action(this.Context);
 
@@ -122,11 +107,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(short value)
+        public StrategyPayloadWriter<TStrategy> Write(short value)
         {
-            var span = this.CurrentWriter.GetSpan(sizeof(short));
-
-            this.strategy.WriteInt16(span, value);
+            var span = this.Context.CurrentWriter.GetSpan(sizeof(short));
+            default(TStrategy).WriteInt16(span, value);
 
             this.Context.Advance(sizeof(short));
 
@@ -134,10 +118,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(byte value)
+        public StrategyPayloadWriter<TStrategy> Write(byte value)
         {
-            var span = this.CurrentWriter.GetSpan(sizeof(byte));
-            this.strategy.WriteByte(span, value);
+            var span = this.Context.CurrentWriter.GetSpan(sizeof(byte));
+            default(TStrategy).WriteByte(span, value);
 
             this.Context.Advance(sizeof(byte));
 
@@ -145,21 +129,21 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(long value)
+        public StrategyPayloadWriter<TStrategy> Write(long value)
         {
-            var span = this.CurrentWriter.GetSpan(sizeof(long));
+            var span = this.Context.CurrentWriter.GetSpan(sizeof(long));
+            default(TStrategy).WriteInt64(span, value);
 
-            this.strategy.WriteInt64(span, value);
             this.Context.Advance(sizeof(long));
 
             return this;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StrategyPayloadWriter Write(int value)
+        public StrategyPayloadWriter<TStrategy> Write(int value)
         {
-            var span = this.CurrentWriter.GetSpan(sizeof(int));
-            this.strategy.WriteInt32(span, value);
+            var span = this.Context.CurrentWriter.GetSpan(sizeof(int));
+            default(TStrategy).WriteInt32(span, value);
 
             this.Context.Advance(sizeof(int));
 
@@ -174,7 +158,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka
                 throw new InvalidOperationException($"Not all size calculations have been closed. Call {nameof(PayloadWriter.EndSizeCalculation)} for: {string.Join(',', this.Context.SizeCalculations.Keys)}");
             }
 
-            this.CurrentWriter.Complete();
+            this.Context.CurrentWriter.Complete();
 
             return this.WriteOutput(out payload);
         }

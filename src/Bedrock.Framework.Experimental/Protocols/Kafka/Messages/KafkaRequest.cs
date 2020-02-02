@@ -19,9 +19,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
 
         public NullableString ClientId { get; set; }
 
-        public abstract void WriteRequest(ref PayloadWriter writer);
+        public abstract void WriteRequest<TStrategy>(ref StrategyPayloadWriter<TStrategy> writer)
+            where TStrategy : struct, IPayloadWriterStrategy;
 
         private bool disposedValue = false; // To detect redundant calls
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -38,14 +40,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Kafka.Messages.Requests
             }
         }
 
-        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-        // ~KafkaRequest()
-        // {
-        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        //   Dispose(false);
-        // }
-
-        // This code added to correctly implement the disposable pattern.
         public void Dispose()
         {
             // Do not change this code. Put cleanup code in Dispose(bool disposing) above.

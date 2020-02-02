@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace Bedrock.Framework.Experimental.Protocols.Kafka
 {
-    public class BigEndianStrategy : IPayloadWriterStrategy
+    public struct BigEndianStrategy : IPayloadWriterStrategy
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteByte(Span<byte> destination, byte value)
