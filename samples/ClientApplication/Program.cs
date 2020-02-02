@@ -267,7 +267,7 @@ namespace ClientApplication
         {
             var client = new ClientBuilder(serviceProvider)
                         .UseConnectionFactory(new NamedPipeConnectionFactory())
-                        .UseConnectionLogging()
+                        .UseConnectionLogging(loggingFormatter: LoggingFormatting.Wireshark)
                         .Build();
 
             await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
