@@ -44,6 +44,18 @@ namespace Bedrock.Framework.Protocols.WebSockets
         }
 
         /// <summary>
+        /// Resets the payload reader.
+        /// </summary>
+        /// <param name="header">The WebSocketHeader associated with this payload.</param>
+        public void Reset(WebSocketHeader header)
+        {
+            BytesRemaining = header.PayloadLength;
+            _masked = header.Masked;
+
+            _payloadEncoder.Reset(header.MaskingKey);
+        }
+
+        /// <summary>
         /// Attempts to read the WebSocket payload from a sequence.
         /// </summary>
         /// <param name="input">The sequence to parse messages from.</param>

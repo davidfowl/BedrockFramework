@@ -1,5 +1,6 @@
 ﻿using Bedrock.Framework.Protocols.WebSockets;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Configs;
 using Microsoft.AspNetCore.Connections;
 using System;
 using System.Buffers;
@@ -13,21 +14,27 @@ using System.Threading.Tasks;
 
 namespace Bedrock.Framework.Benchmarks
 {
+    [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
+    [CategoriesColumn]
     public class WebSocketProtocolBenchmarks
     {
-        private WebSocket _webSocket;
+        private WebSocket _webSocketServer;
 
-        private WebSocketProtocol _webSocketProtocol;
+        private WebSocket _webSocketClient;
 
-        private DefaultConnectionContext _connectionContext;
+        private WebSocketProtocol _webSocketProtocolServer;
 
-        private MemoryStream _stream;
+        private WebSocketProtocol _webSocketProtocolClient;
 
-        private byte[] _message;
+        private DefaultConnectionContext _serverConnectionContext;
+
+        private DefaultConnectionContext _clientConnectionContext;
+
+        private MemoryStream _serverStream;
+
+        private MemoryStream _clientStream;
 
         private ArraySegment<byte> _arrayBuffer;
-
-        private ReadOnlyMemory<byte> _romBuffer;
 
         private class DummyPipeReader : PipeReader
         {
@@ -65,49 +72,84 @@ namespace Bedrock.Framework.Benchmarks
         [GlobalSetup]
         public async ValueTask Setup()
         {
+            var serverMessage = await GetMessageBytes(true, 4000);
+            var clientMessage = await GetMessageBytes(false, 4000);
+
+            (_serverConnectionContext, _serverStream) = CreateContextAndStream(serverMessage);
+            (_clientConnectionContext, _clientStream) = CreateContextAndStream(clientMessage);
+
+            _webSocketServer = WebSocket.CreateFromStream(_serverStream, true, null, TimeSpan.FromSeconds(30));
+            _webSocketProtocolServer = new WebSocketProtocol(_serverConnectionContext, WebSocketProtocolType.Server);
+
+            _webSocketClient = WebSocket.CreateFromStream(_clientStream, false, null, TimeSpan.FromSeconds(30));
+            _webSocketProtocolClient = new WebSocketProtocol(_clientConnectionContext, WebSocketProtocolType.Server);
+
+            _arrayBuffer = new ArraySegment<byte>(new byte[10000]);
+        }
+
+        private async ValueTask<byte[]> GetMessageBytes(bool isMasked, long size)
+        {
             var writer = new WebSocketFrameWriter();
             var pipe = new Pipe();
 
-            _message = new byte[4000];
-
-            var header = WebSocketHeader.CreateMasked(true, WebSocketOpcode.Binary, 4000);
-            writer.WriteMessage(new WebSocketWriteFrame(header, new ReadOnlySequence<byte>(_message)), pipe.Writer);
+            var header = new WebSocketHeader(true, WebSocketOpcode.Binary, isMasked, (ulong)size, isMasked ? WebSocketHeader.GenerateMaskingKey() : default);
+            writer.WriteMessage(new WebSocketWriteFrame(header, new ReadOnlySequence<byte>(new byte[4000])), pipe.Writer);
 
             await pipe.Writer.FlushAsync();
 
             var result = await pipe.Reader.ReadAsync();
-            _message = result.Buffer.ToArray();
-
-            var dummyReader = new DummyPipeReader { Result = new ReadResult(new ReadOnlySequence<byte>(_message), false, false) };
-            var dummyDuplexPipe = new DummyDuplexPipe { DummyReader = dummyReader };
-
-            _connectionContext = new DefaultConnectionContext { Transport = dummyDuplexPipe };
-            _stream = new MemoryStream(_message);
-
-            _webSocket = WebSocket.CreateFromStream(_stream, true, null, TimeSpan.FromSeconds(30));
-            _webSocketProtocol = new WebSocketProtocol(_connectionContext, WebSocketProtocolType.Server);
-
-            _arrayBuffer = new ArraySegment<byte>(new byte[10000]);
-            _romBuffer = new ReadOnlyMemory<byte>(_message);
+            return result.Buffer.ToArray();
         }
 
-        [Benchmark(Baseline = true)]
-        public async ValueTask WebSocketReadMasked()
+        private (DefaultConnectionContext context, MemoryStream stream) CreateContextAndStream(byte[] message)
         {
-            _stream.Seek(0, SeekOrigin.Begin);
+            var reader = new DummyPipeReader { Result = new ReadResult(new ReadOnlySequence<byte>(message), false, false) };
+            var duplexPipe = new DummyDuplexPipe { DummyReader = reader };
+
+            var stream = new MemoryStream(message);
+            var context = new DefaultConnectionContext { Transport = duplexPipe };
+
+            return (context, stream);
+        }
+
+        [BenchmarkCategory("Masked"), Benchmark(Baseline = true)]
+        public async ValueTask WebSocketRead()
+        {
+            _clientStream.Seek(0, SeekOrigin.Begin);
 
             var endOfMessage = false;
             while (!endOfMessage)
             {
-                var result = await _webSocket.ReceiveAsync(_arrayBuffer, CancellationToken.None);
+                var result = await _webSocketClient.ReceiveAsync(_arrayBuffer, CancellationToken.None);
                 endOfMessage = result.EndOfMessage;
             }
         }
 
-        [Benchmark]
+        [BenchmarkCategory("Unmasked"), Benchmark(Baseline = true)]
+        public async ValueTask WebSocketReadMasked()
+        {
+            _serverStream.Seek(0, SeekOrigin.Begin);
+
+            var endOfMessage = false;
+            while (!endOfMessage)
+            {
+                var result = await _webSocketServer.ReceiveAsync(_arrayBuffer, CancellationToken.None);
+                endOfMessage = result.EndOfMessage;
+            }
+        }
+
+        [BenchmarkCategory("Masked"), Benchmark]
+        public async ValueTask WebSocketProtocolRead()
+        {
+            var message = await _webSocketProtocolClient.ReadAsync();
+            var data = await message.Reader.ReadAsync();
+            message.Reader.AdvanceTo(data.Data.End);
+        }
+
+        [BenchmarkCategory("Unmasked"), Benchmark]
         public async ValueTask WebSocketProtocolReadMasked()
         {
-            var message = await _webSocketProtocol.ReadAsync();
+            var message = await _webSocketProtocolServer.ReadAsync();
             var data = await message.Reader.ReadAsync();
             message.Reader.AdvanceTo(data.Data.End);
         }

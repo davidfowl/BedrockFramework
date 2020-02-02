@@ -14,6 +14,11 @@ namespace Bedrock.Framework.Protocols.WebSockets
     public class WebSocketFrameReader : IMessageReader<WebSocketReadFrame>
     {
         /// <summary>
+        /// An instance of the WebSocketFrameReader.
+        /// </summary>
+        private WebSocketPayloadReader _payloadReader;
+
+        /// <summary>
         /// Attempts to parse a message from a sequence.
         /// </summary>
         /// <param name="input">The sequence to parse messages from.</param>
@@ -30,7 +35,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 return false;
             }
 
-            if (input.IsSingleSegment)
+            if (input.IsSingleSegment || input.FirstSpan.Length >= 14)
             {
                 if (TryParseSpan(input.FirstSpan, input.Length, out var bytesRead, out message))
                 {
@@ -123,8 +128,17 @@ namespace Bedrock.Framework.Protocols.WebSockets
             }
 
             var header = new WebSocketHeader(fin, opcode, masked, payloadLength, maskingKey);
-            message = new WebSocketReadFrame(header, new WebSocketPayloadReader(header));
 
+            if(_payloadReader == null)
+            {
+                _payloadReader = new WebSocketPayloadReader(header);
+            }
+            else
+            {
+                _payloadReader.Reset(header);
+            }
+
+            message = new WebSocketReadFrame(header, _payloadReader);
             bytesRead = 2 + extendedPayloadLengthSize + maskSize;
             return true;
         }

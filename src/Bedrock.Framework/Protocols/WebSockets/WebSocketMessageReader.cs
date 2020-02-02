@@ -101,62 +101,91 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </summary>
         /// <param name="cancellationToken">A cancellation token, if any.</param>
         /// <returns>A message read result.</returns>
-        public async ValueTask<MessageReadResult> ReadAsync(CancellationToken cancellationToken = default)
+        public ValueTask<MessageReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
             if (_awaitingHeader)
             {
-                var frame = await GetNextMessageFrameAsync(cancellationToken).ConfigureAwait(false);
-                ValidateHeader(frame.Header);
+                var readTask = GetNextMessageFrameAsync(cancellationToken);
+                if(readTask.IsCompletedSuccessfully)
+                {
+                    var frame = readTask.Result;
+                    ValidateHeader(frame.Header);
 
-                _header = frame.Header;
-                _payloadReader = frame.Payload;
+                    _header = frame.Header;
+                    _payloadReader = frame.Payload;
+                }
+                else
+                {
+                    return DoReadHeaderRequiredAsync(readTask, cancellationToken);
+                }
             }
 
+            return ReadPayloadAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Completes an async read when reading a header is required.
+        /// </summary>
+        /// <param name="readTask">The active async read task from the ProtocolReader.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A MessageReadResult.</returns>
+        private async ValueTask<MessageReadResult> DoReadHeaderRequiredAsync(ValueTask<WebSocketReadFrame> readTask, CancellationToken cancellationToken)
+        {
+            var frame = await readTask.ConfigureAwait(false);
+
+            ValidateHeader(frame.Header);
+
+            _header = frame.Header;
+            _payloadReader = frame.Payload;
+
+            return await ReadPayloadAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Reads a portion of a message payload.
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A MessageReadResult.</returns>
+        private ValueTask<MessageReadResult> ReadPayloadAsync(CancellationToken cancellationToken)
+        {
             //Don't keep reading data into the buffer if we've hit a threshold
             //TODO: Is this even the right value to use in this context?
             if (_buffer.UnconsumedWrittenCount < _options.PauseWriterThreshold)
             {
                 var readTask = _protocolReader.ReadAsync(_payloadReader, cancellationToken);
-                ProtocolReadResult<ReadOnlySequence<byte>> payloadSequence;
-
                 if (readTask.IsCompletedSuccessfully)
                 {
-                    payloadSequence = readTask.Result;
+                    PopulateFromRead(readTask.Result);
                 }
                 else
                 {
-                    payloadSequence = await readTask;
-                }
-
-                if (payloadSequence.IsCanceled)
-                {
-                    throw new OperationCanceledException("Read canceled while attempting to read WebSocket payload.");
-                }
-
-                var sequence = payloadSequence.Message;
-
-                //If there is already data in the buffer, we'll need to add to it
-                if (_buffer.UnconsumedWrittenCount > 0)
-                {
-                    if (sequence.IsSingleSegment)
-                    {
-                        _buffer.Write(sequence.FirstSpan);
-                    }
-                    else
-                    {
-                        foreach (var segment in sequence)
-                        {
-                            _buffer.Write(segment.Span);
-                        }
-                    }
-                }
-
-                _currentSequence = payloadSequence.Message;
-                _isCompleted = payloadSequence.IsCompleted;
-                _isCanceled = payloadSequence.IsCanceled;
-
-                _awaitingHeader = _payloadReader.BytesRemaining == 0;
+                    return CreateMessageReadResultAsync(readTask, cancellationToken);
+                }   
             }
+
+            var endOfMessage = _header.Fin && _payloadReader.BytesRemaining == 0;
+
+            //Serve back buffered data, if it exists, else give the direct sequence without buffering
+            if (_buffer.UnconsumedWrittenCount > 0)
+            {
+                return new ValueTask<MessageReadResult>(
+                    new MessageReadResult(new ReadOnlySequence<byte>(_buffer.WrittenMemory), endOfMessage, _isCanceled, _isCompleted));
+            }
+            else
+            {
+                return new ValueTask<MessageReadResult>(new MessageReadResult(_currentSequence, endOfMessage, _isCanceled, _isCompleted));
+            }
+        }
+
+        /// <summary>
+        /// Creates a new MessageReadResult asynchronously.
+        /// </summary>
+        /// <param name="readTask">The active read task from the ProtocolReader.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A new MessageReadResult.</returns>
+        private async ValueTask<MessageReadResult> CreateMessageReadResultAsync(ValueTask<ProtocolReadResult<ReadOnlySequence<byte>>> readTask, CancellationToken cancellationToken)
+        {
+            PopulateFromRead(await readTask);
 
             var endOfMessage = _header.Fin && _payloadReader.BytesRemaining == 0;
 
@@ -169,6 +198,42 @@ namespace Bedrock.Framework.Protocols.WebSockets
             {
                 return new MessageReadResult(_currentSequence, endOfMessage, _isCanceled, _isCompleted);
             }
+        }
+
+        /// <summary>
+        /// Populates the message reader from a payload read result.
+        /// </summary>
+        /// <param name="readResult">The read result to populate the message reader from.</param>
+        private void PopulateFromRead(ProtocolReadResult<ReadOnlySequence<byte>> readResult)
+        {
+            if (readResult.IsCanceled)
+            {
+                throw new OperationCanceledException("Read canceled while attempting to read WebSocket payload.");
+            }
+
+            var sequence = readResult.Message;
+
+            //If there is already data in the buffer, we'll need to add to it
+            if (_buffer.UnconsumedWrittenCount > 0)
+            {
+                if (sequence.IsSingleSegment)
+                {
+                    _buffer.Write(sequence.FirstSpan);
+                }
+                else
+                {
+                    foreach (var segment in sequence)
+                    {
+                        _buffer.Write(segment.Span);
+                    }
+                }
+            }
+
+            _currentSequence = readResult.Message;
+            _isCompleted = readResult.IsCompleted;
+            _isCanceled = readResult.IsCanceled;
+
+            _awaitingHeader = _payloadReader.BytesRemaining == 0;
         }
 
         /// <summary>
@@ -223,15 +288,40 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </summary>
         /// <param name="cancellationToken">A cancellation token, if any.</param>
         /// <returns>True if the message is text, false otherwise.</returns>
-        public async ValueTask<bool> MoveNextMessageAsync(CancellationToken cancellationToken = default)
+        public ValueTask<bool> MoveNextMessageAsync(CancellationToken cancellationToken = default)
         {
             if (_payloadReader is object && _payloadReader.BytesRemaining != 0)
             {
                 throw new InvalidOperationException("MoveNextMessageAsync cannot be called while a message is still being read.");
             }
 
-            var frame = await GetNextMessageFrameAsync(cancellationToken);
+            var readTask = GetNextMessageFrameAsync(cancellationToken);
+            if (readTask.IsCompletedSuccessfully)
+            {
+                return new ValueTask<bool>(SetNextMessageAndGetIsText(readTask.Result));
+            }
 
+            return DoSetNextMessageAsync(readTask);
+        }
+
+        /// <summary>
+        /// Sets the next message frame asynchronously.
+        /// </summary>
+        /// <param name="readTask">The active ProtocolReader read task.</param>
+        /// <returns>True if the next message is a text message, false otherwise.</returns>
+        private async ValueTask<bool> DoSetNextMessageAsync(ValueTask<WebSocketReadFrame> readTask)
+        {
+            return SetNextMessageAndGetIsText(await readTask);
+        }
+
+        /// <summary>
+        /// Sets the message reader up with the next message frame data and determines if the message
+        /// is a text or binary message.
+        /// </summary>
+        /// <param name="frame">The read frame to set the message reader with.</param>
+        /// <returns>True if the next message is text, false otherwise.</returns>
+        private bool SetNextMessageAndGetIsText(WebSocketReadFrame frame)
+        {
             if (frame.Header.Opcode != WebSocketOpcode.Binary && frame.Header.Opcode != WebSocketOpcode.Text)
             {
                 ThrowBadProtocol($"Expected a start of message frame of Binary or Text but received {frame.Header.Opcode} instead.");
