@@ -12,7 +12,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
     {
         public void WriteMessage(MemcachedRequest message, IBufferWriter<byte> output)
         {           
-            Span<byte> headerSpan = (stackalloc byte[Constants.HeaderLength]).Slice(0, Constants.HeaderLength);
+            Span<byte> headerSpan = stackalloc byte[Constants.HeaderLength];
             var extraLength = 0;
             if (message.Opcode == Enums.Opcode.Set)
                 extraLength = 8;
