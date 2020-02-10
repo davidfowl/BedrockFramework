@@ -7,6 +7,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
+using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
@@ -76,7 +77,36 @@ namespace ClientApplication
                     Console.WriteLine("Talk to local docker daemon");
                     await DockerDaemon(serviceProvider);
                 }
+                else if (keyInfo.Key == ConsoleKey.D8)
+                {
+                    Console.WriteLine("Send Request To Memcached");
+                    await MemcachedProtocol(serviceProvider);
+                }
             }
+        }
+        private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
+        {
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder(serviceProvider)
+                .UseSockets()
+                .UseConnectionLogging(loggerFactory: loggerFactory)
+                .Build();
+            var ipAddress = IPAddress.Parse("127.0.0.1");
+            var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 11211));
+            MemcachedProtocol memcachedProtocol = new MemcachedProtocol(connection);
+            await memcachedProtocol.Set<string>("Hello", "World", TimeSpan.FromMinutes(30));
+            await memcachedProtocol.Set<string>("Pouet", "Yop", TimeSpan.FromMinutes(30));
+
+            var result = await memcachedProtocol.Get<string>("Hello");
+            Console.WriteLine("****************************"+result);
+
+
+
         }
 
         private static async Task EchoServer(IServiceProvider serviceProvider)
