@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bedrock.Framework.Infrastructure;
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -47,16 +48,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 Data = sequence.First.Slice(Header.KeyLength + Header.ExtraLength);
             }
             else
-            {
-                var buffer = MemoryPool<byte>.Shared.Rent((int)Header.TotalBodyLength).Memory.Slice(0, (int)Header.TotalBodyLength);
-                int n = 0;
-                foreach (var segment in sequence)
-                {
-                    segment.CopyTo(buffer.Slice(n));
-                    n += segment.Length;
-                }
-                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(buffer.Slice(0).Span);
-                Data = buffer.Slice(Header.KeyLength + Header.ExtraLength);
+            { 
+                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.Slice(0).FirstSpan);
+                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength).ToMemory();
             }
         }
     }
