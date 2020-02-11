@@ -16,14 +16,14 @@ namespace Bedrock.Framework.Transports.Memory
         public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
             endpoint ??= MemoryEndPoint.Default;
+            MemoryConnectionListener listener;
 
-            if (_listeners.TryGetValue(endpoint, out _))
+            if (_listeners.TryGetValue(endpoint, out _) ||
+                !_listeners.TryAdd(endpoint, listener = new MemoryConnectionListener() { EndPoint = endpoint }))
             {
                 throw new AddressInUseException($"{endpoint} listener already bound");
             }
 
-            MemoryConnectionListener listener;
-            _listeners[endpoint] = listener = new MemoryConnectionListener() { EndPoint = endpoint };
             return new ValueTask<IConnectionListener>(listener);
         }
 

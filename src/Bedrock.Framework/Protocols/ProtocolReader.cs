@@ -86,48 +86,98 @@ namespace Bedrock.Framework.Protocols
             return DoAsyncRead(maximumMessageSize, reader, cancellationToken);
         }
 
-        private async ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
+        private ValueTask<ProtocolReadResult<TReadMessage>> DoAsyncRead<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
         {
             while (true)
             {
-                var result = await _reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-
-                _buffer = result.Buffer;
-                _isCanceled = result.IsCanceled;
-                _isCompleted = result.IsCompleted;
-                _consumed = _buffer.Start;
-                _examined = _buffer.End;
-
-                if (_isCanceled)
+                var readTask = _reader.ReadAsync(cancellationToken);
+                ReadResult result;
+                if (readTask.IsCompletedSuccessfully)
                 {
-                    break;
-                }
-
-                if (TryParseMessage(maximumMessageSize, reader, _buffer, out var protocolMessage))
-                {
-                    _hasMessage = true;
-                    return new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false);
+                    result = readTask.Result;
                 }
                 else
                 {
-                    _reader.AdvanceTo(_consumed, _examined);
+                    return ContinueDoAsyncRead(readTask, maximumMessageSize, reader, cancellationToken);
                 }
 
-                if (_isCompleted)
+                (var shouldContinue, var hasMessage) = TrySetMessage(result, maximumMessageSize, reader, out var protocolReadResult);
+                if (hasMessage)
                 {
-                    _consumed = default;
-                    _examined = default;
-
-                    if (!_buffer.IsEmpty)
-                    {
-                        throw new InvalidDataException("Connection terminated while reading a message.");
-                    }
-
+                    return new ValueTask<ProtocolReadResult<TReadMessage>>(protocolReadResult);
+                }
+                else if (!shouldContinue)
+                {
                     break;
                 }
             }
 
+            return new ValueTask<ProtocolReadResult<TReadMessage>>(new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted));
+        }
+
+        private async ValueTask<ProtocolReadResult<TReadMessage>> ContinueDoAsyncRead<TReadMessage>(ValueTask<ReadResult> readTask, int? maximumMessageSize, IMessageReader<TReadMessage> reader, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                var result = await readTask;
+
+                (var shouldContinue, var hasMessage) = TrySetMessage(result, maximumMessageSize, reader, out var protocolReadResult);
+                if (hasMessage)
+                {
+                    return protocolReadResult;
+                }
+                else if (!shouldContinue)
+                {
+                    break;
+                }
+
+                readTask = _reader.ReadAsync(cancellationToken);
+            }
+
             return new ProtocolReadResult<TReadMessage>(default, _isCanceled, _isCompleted);
+        }
+
+        private (bool ShouldContinue, bool HasMessage) TrySetMessage<TReadMessage>(ReadResult result, int? maximumMessageSize, IMessageReader<TReadMessage> reader, out ProtocolReadResult<TReadMessage> readResult)
+        {
+            _buffer = result.Buffer;
+            _isCanceled = result.IsCanceled;
+            _isCompleted = result.IsCompleted;
+            _consumed = _buffer.Start;
+            _examined = _buffer.End;
+
+            if (_isCanceled)
+            {
+                readResult = default;
+                return (false, false);
+            }
+
+            if (TryParseMessage(maximumMessageSize, reader, _buffer, out var protocolMessage))
+            {
+                _hasMessage = true;
+                readResult = new ProtocolReadResult<TReadMessage>(protocolMessage, _isCanceled, isCompleted: false);
+                return (false, true);
+            }
+            else
+            {
+                _reader.AdvanceTo(_consumed, _examined);
+            }
+
+            if (_isCompleted)
+            {
+                _consumed = default;
+                _examined = default;
+
+                if (!_buffer.IsEmpty)
+                {
+                    throw new InvalidDataException("Connection terminated while reading a message.");
+                }
+
+                readResult = default;
+                return (false, false);
+            }
+
+            readResult = default;
+            return (true, false);
         }
 
         private bool TryParseMessage<TReadMessage>(int? maximumMessageSize, IMessageReader<TReadMessage> reader, in ReadOnlySequence<byte> buffer, out TReadMessage protocolMessage)
@@ -135,12 +185,7 @@ namespace Bedrock.Framework.Protocols
             // No message limit, just parse and dispatch
             if (maximumMessageSize == null)
             {
-                if (reader.TryParseMessage(buffer, ref _consumed, ref _examined, out protocolMessage))
-                {
-                    return true;
-                }
-
-                return false;
+                return reader.TryParseMessage(buffer, ref _consumed, ref _examined, out protocolMessage);
             }
 
             // We give the parser a sliding window of the default message size
