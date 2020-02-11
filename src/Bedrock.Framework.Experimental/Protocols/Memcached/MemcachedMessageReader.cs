@@ -12,7 +12,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
     public class MemcachedMessageReader : IMessageReader<MemcachedResponse>
     {
         public MemcachedResponse InProgressResponse { get; private set; } = new MemcachedResponse();
-      
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out MemcachedResponse message)
         {
@@ -21,6 +20,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 message = default;
                 return false;
             }
+
             if (input.First.Length >= Constants.HeaderLength)
             {
                 InProgressResponse.ReadHeader(input.First.Span);
@@ -31,6 +31,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 input.Slice(0, Constants.HeaderLength).CopyTo(header);
                 InProgressResponse.ReadHeader(header);
             }
+
             if (input.Length < InProgressResponse.Header.TotalBodyLength + Constants.HeaderLength)
             {
                 message = default;
@@ -44,8 +45,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             message = InProgressResponse;
             InProgressResponse = new MemcachedResponse();
             return true;
-
-            
         }
     }
 }

@@ -30,6 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             _memcachedMessageWriter = new MemcachedMessageWriter();
             _memcachedMessageReader = new MemcachedMessageReader();
         }
+
         public async Task<T> Get<T>(string key)
         {   
             var keyBytes = Encoding.UTF8.GetBytes(key);           
@@ -40,6 +41,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             _protocolReader.Advance();
             return (T)serializer.Deserialize(result.Message.Data);
         }
+
         public async Task Set<T>(string key, T value, TimeSpan? expireIn)
         {
             var keyBytes = Encoding.UTF8.GetBytes(key);            
@@ -47,8 +49,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             var request = new MemcachedRequest(Enums.Opcode.Set, keyBytes, NextOpaque, serializer.Serialize(value), flags, expireIn);
             await _protocolWriter.WriteAsync(_memcachedMessageWriter, request);
             var result = await _protocolReader.ReadAsync(_memcachedMessageReader);
-            _protocolReader.Advance();
-            
+            _protocolReader.Advance();            
         }
     }
 }

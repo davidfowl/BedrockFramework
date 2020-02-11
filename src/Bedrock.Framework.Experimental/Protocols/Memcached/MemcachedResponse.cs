@@ -12,11 +12,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
         public ReadOnlyMemory<byte> Data { get; private set; }
         public TypeCode Flags { get; set; }
         public MemcachedResponseHeader Header { get; private set; }
+
         public void ReadHeader(ReadOnlySpan<byte> buffer)
         {
-           
+
             if (buffer[0] != MemcachedResponseHeader.Magic)
+            {
                 throw new ArgumentException("Magic mismatch");
+            }
 
             this.Header = new MemcachedResponseHeader()
             {
@@ -30,10 +33,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 Cas = BinaryPrimitives.ReadUInt64BigEndian(buffer.Slice(16)),
             };
         }
+
         public void ReadBody(ReadOnlySequence<byte> sequence)
         {
             if (sequence.Length == 0)
+            {
                 return;
+            }
+                
             if (sequence.IsSingleSegment)
             {
                 Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.First.Span);

@@ -23,12 +23,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             Flags = flags;
             ExpireIn = expireIn;            
         }
+
         public MemcachedRequest(Opcode opcode, byte[] key, uint opaque)
         {
             Opcode = opcode;
             Key = key;
             Opaque = opaque;   
-
         }
     }
 }

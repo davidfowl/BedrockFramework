@@ -12,6 +12,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
         {
             Value = value;
         }
+
         public static implicit operator Expiration(TimeSpan? expireIn) => SetExpiration(expireIn);
 
         private static Expiration SetExpiration(TimeSpan? expireIn)
@@ -20,12 +21,15 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             if (expireIn != null)
             {
                 if (expireIn < TimeSpan.FromDays(30))
+                {
                     value = (uint)expireIn.Value.TotalSeconds;
+                }
                 else
+                {
                     value = (uint)new DateTimeOffset(DateTime.UtcNow.Add(expireIn.Value)).ToUnixTimeSeconds();
+                }                    
             }
             return new Expiration(value);
-
         }
     }
 }

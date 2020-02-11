@@ -14,7 +14,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached.Serializers
                 TypeCode.Object => new BinarySerializer<T>() as ISerializer<T>,
                 _ => throw new ArgumentException($"flags {flags} not supported"),
             };
-        }        
+        }    
+        
         public static ISerializer<T> GetSerializer<T>(out TypeCode flags)
         {
             flags = Type.GetTypeCode(typeof(T));

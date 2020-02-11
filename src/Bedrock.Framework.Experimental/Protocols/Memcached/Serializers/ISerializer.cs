@@ -11,12 +11,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached.Serializers
         byte[] Serialize(T src);
         T Deserialize(ReadOnlyMemory<byte> src);
     }
+
     public class StringSerializer : ISerializer<string>
     {
-
         public string Deserialize(ReadOnlyMemory<byte> src) => Encoding.UTF8.GetString(src.Span);
         public byte[] Serialize(string src) => Encoding.UTF8.GetBytes(src);
     }
+
     public class BinarySerializer<T> : ISerializer<T>
     {
         public T Deserialize(ReadOnlyMemory<byte> src)

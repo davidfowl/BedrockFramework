@@ -14,6 +14,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             Get = 0x00,
             Set = 0x01
         }
+
         public enum ResponseStatus : byte
         {
             NoError = 0x0000,
@@ -32,9 +33,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             InternalError = 0x0084,
             Busy = 0x0085,
             TemporaryFailure = 0x0086
-
         }
-
-
     }
 }

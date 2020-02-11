@@ -15,10 +15,16 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             Span<byte> headerSpan = stackalloc byte[Constants.HeaderLength];
             var extraLength = 0;
             if (message.Opcode == Enums.Opcode.Set)
+            {
                 extraLength = 8;
+            }
+               
             var messageValue = 0;
             if (message.Value != null)
+            {
                 messageValue = message.Value.Length;
+            }
+               
             var header = new MemcachedRequestHeader()
             {                
                 KeyLength = (ushort)message.Key.Length,
@@ -26,8 +32,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 TotalBodyLength = (uint)(extraLength + message.Key.Length + messageValue),
                 ExtraLength = (byte)extraLength   
             };
+
             if (message.Opcode == Enums.Opcode.Set)
+            {
                 header.Extras = (message.Flags, message.ExpireIn);
+            }
+                
             headerSpan[0] = MemcachedRequestHeader.Magic;
             headerSpan[1] = (byte)message.Opcode;
             BinaryPrimitives.WriteUInt16BigEndian(headerSpan.Slice(2), header.KeyLength);
@@ -39,17 +49,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             BinaryPrimitives.WriteUInt64BigEndian(headerSpan.Slice(16), header.Cas);
 
             output.Write(headerSpan);           
-            // BODY
+           
             var body = output.GetSpan((int)header.TotalBodyLength);            
             BinaryPrimitives.WriteUInt32BigEndian(body.Slice(0), (uint)header.Extras.Flags);
             BinaryPrimitives.WriteUInt32BigEndian(body.Slice(4), (uint)header.Extras.Expiration.Value);
             
             message.Key.CopyTo(body.Slice(header.ExtraLength));
             message.Value.CopyTo(body.Slice(header.ExtraLength + message.Key.Length));
-            output.Advance((int)header.TotalBodyLength);
-            
-
+            output.Advance((int)header.TotalBodyLength);    
         }
-
     }
 }
