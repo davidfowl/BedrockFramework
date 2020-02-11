@@ -84,6 +84,7 @@ namespace ClientApplication
                 }
             }
         }
+
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
         {
             var loggerFactory = LoggerFactory.Create(builder =>
@@ -94,19 +95,21 @@ namespace ClientApplication
 
             var client = new ClientBuilder(serviceProvider)
                 .UseSockets()
-                .UseConnectionLogging(loggerFactory: loggerFactory)
+                .UseConnectionLogging(/*loggerFactory: loggerFactory*/)
                 .Build();
             var ipAddress = IPAddress.Parse("127.0.0.1");
             var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 11211));
             MemcachedProtocol memcachedProtocol = new MemcachedProtocol(connection);
-            await memcachedProtocol.Set<string>("Hello", "World", TimeSpan.FromMinutes(30));
-            await memcachedProtocol.Set<string>("Pouet", "Yop", TimeSpan.FromMinutes(30));
+            var largeString = String.Empty;
+            
+            for (int i = 0; i < 10_000; i++)
+            {
+                largeString += i + "_";
+            }
 
-            var result = await memcachedProtocol.Get<string>("Hello");
-            Console.WriteLine("****************************"+result);
-
-
-
+            await memcachedProtocol.Set("Hello", Encoding.UTF8.GetBytes(largeString), TimeSpan.FromMinutes(30));   
+            var byteResult = await memcachedProtocol.Get("Hello");
+            var result = Encoding.UTF8.GetString(byteResult);
         }
 
         private static async Task EchoServer(IServiceProvider serviceProvider)
