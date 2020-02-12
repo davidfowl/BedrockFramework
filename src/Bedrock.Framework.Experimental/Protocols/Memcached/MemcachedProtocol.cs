@@ -44,17 +44,22 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
             var keyBytes = Encoding.UTF8.GetBytes(key);
             var request = new MemcachedRequest(Enums.Opcode.Get, keyBytes, NextOpaque);
-            var result = await ExecuteCommand(request);
-            _semaphore.Release();
-
-            if(result.Header.ResponseStatus == ResponseStatus.NoError)
+            try
             {
-                return result.Data.ToArray();
+                var result = await ExecuteCommand(request);
+                if (result.Header.ResponseStatus == ResponseStatus.NoError)
+                {
+                    return result.Data.ToArray();
+                }
+                else
+                {
+                    throw new Exception(result.Header.ResponseStatus.ToString());
+                }
             }
-            else
+            finally
             {
-                throw new Exception(result.Header.ResponseStatus.ToString());
-            }
+                _semaphore.Release();
+            }            
         }
 
         public async Task Set(string key, byte[] value, TimeSpan? expireIn)
@@ -63,14 +68,18 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
             var keyBytes = Encoding.UTF8.GetBytes(key);            
             var request = new MemcachedRequest(Enums.Opcode.Set, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
-            var result = await ExecuteCommand(request);
-
-            _semaphore.Release();
-
-            if (result.Header.ResponseStatus != ResponseStatus.NoError)
+            try
             {
-                throw new Exception(result.Header.ResponseStatus.ToString());
-            }
+                var result = await ExecuteCommand(request);
+                if (result.Header.ResponseStatus != ResponseStatus.NoError)
+                {
+                    throw new Exception(result.Header.ResponseStatus.ToString());
+                }
+            }            
+            finally
+            {
+                _semaphore.Release();
+            }            
         }
 
         private async Task<MemcachedResponse> ExecuteCommand(MemcachedRequest request)
