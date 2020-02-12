@@ -40,17 +40,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             {
                 return;
             }
-                
-            if (sequence.IsSingleSegment)
-            {
-                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.FirstSpan);
-                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
-            }
-            else
-            { 
-                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.Slice(0).FirstSpan);
-                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
-            }
+
+            Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
+
+            Span<byte> buffer = stackalloc byte[4];
+            sequence.Slice(0, 4).CopyTo(buffer);
+            Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(buffer);            
         }
     }
 }
