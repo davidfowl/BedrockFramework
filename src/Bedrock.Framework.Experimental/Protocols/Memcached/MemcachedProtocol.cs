@@ -2,6 +2,7 @@
 using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;

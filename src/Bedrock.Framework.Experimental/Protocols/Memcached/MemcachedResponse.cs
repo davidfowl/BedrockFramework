@@ -10,7 +10,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 {
     public class MemcachedResponse
     {
-        public ReadOnlyMemory<byte> Data { get; private set; }
+        public ReadOnlySequence<byte> Data { get; private set; }
         public TypeCode Flags { get; set; }
         public MemcachedResponseHeader Header { get; private set; }
 
@@ -45,12 +45,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             if (sequence.IsSingleSegment)
             {
                 Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.First.Span);
-                Data = sequence.First.Slice(Header.KeyLength + Header.ExtraLength);
+                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
             }
             else
             { 
                 Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.Slice(0).FirstSpan);
-                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength).ToMemory();
+                Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
             }
         }
     }
