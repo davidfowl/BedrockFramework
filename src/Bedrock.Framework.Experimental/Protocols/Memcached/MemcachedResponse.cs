@@ -16,7 +16,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
         public void ReadHeader(ReadOnlySpan<byte> buffer)
         {
-
             if (buffer[0] != MemcachedResponseHeader.Magic)
             {
                 throw new ArgumentException("Magic mismatch");
@@ -44,7 +43,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 
             if (sequence.IsSingleSegment)
             {
-                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.First.Span);
+                Flags = (TypeCode)BinaryPrimitives.ReadUInt32BigEndian(sequence.FirstSpan);
                 Data = sequence.Slice(Header.KeyLength + Header.ExtraLength);
             }
             else
