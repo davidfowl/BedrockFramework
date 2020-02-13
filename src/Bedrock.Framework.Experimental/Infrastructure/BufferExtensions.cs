@@ -32,6 +32,16 @@ namespace Bedrock.Framework.Infrastructure
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ReadOnlyMemory<byte> ToMemory(in this ReadOnlySequence<byte> buffer)
+        {
+            if (buffer.IsSingleSegment)
+            {
+                return buffer.First;
+            }
+            return buffer.ToArray();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void WriteNumeric<T>(ref this BufferWriter<T> buffer, uint number)
              where T : struct, IBufferWriter<byte>
         {

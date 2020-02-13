@@ -17,12 +17,12 @@ namespace Bedrock.Framework.Protocols
             _reader = connection.CreateReader();
         }
 
-        public async ValueTask<HttpRequestMessage> ReadRequestAsync()
+        public async ValueTask<HttpRequestMessage> ReadRequestAsync(System.Threading.CancellationToken cancellationToken = default)
         {
             var content = new HttpBodyContent();
             var headerReader = new Http1RequestMessageReader(content);
 
-            var result = await _reader.ReadAsync(headerReader).ConfigureAwait(false);
+            var result = await _reader.ReadAsync(headerReader, cancellationToken).ConfigureAwait(false);
 
             if (result.IsCompleted)
             {
@@ -50,7 +50,7 @@ namespace Bedrock.Framework.Protocols
             return request;
         }
 
-        public async ValueTask WriteResponseAsync(HttpResponseMessage responseMessage)
+        public async ValueTask WriteResponseAsync(HttpResponseMessage responseMessage, System.Threading.CancellationToken cancellationToken = default)
         {
             _writer.WriteMessage(responseMessage, _connection.Transport.Output);
 

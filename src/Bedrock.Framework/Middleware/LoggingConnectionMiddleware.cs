@@ -14,11 +14,13 @@ namespace Bedrock.Framework
     {
         private readonly ConnectionDelegate _next;
         private readonly ILogger _logger;
+        private readonly LoggingFormatter _loggingFormatter;
 
-        public LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger)
+        public LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger, LoggingFormatter loggingFormatter = null)
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggingFormatter = loggingFormatter;
         }
 
         public async Task OnConnectionAsync(ConnectionContext context)
@@ -27,7 +29,7 @@ namespace Bedrock.Framework
 
             try
             {
-                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger))
+                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, _loggingFormatter))
                 {
                     context.Transport = loggingDuplexPipe;
 
@@ -42,8 +44,8 @@ namespace Bedrock.Framework
 
         private class LoggingDuplexPipe : DuplexPipeStreamAdapter<LoggingStream>
         {
-            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger) :
-                base(transport, stream => new LoggingStream(stream, logger))
+            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, LoggingFormatter loggingFormatter) :
+                base(transport, stream => new LoggingStream(stream, logger, loggingFormatter))
             {
             }
         }

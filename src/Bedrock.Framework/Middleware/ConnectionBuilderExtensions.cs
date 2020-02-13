@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Bedrock.Framework.Infrastructure;
 using Bedrock.Framework.Middleware.Tls;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,30 +10,18 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Bedrock.Framework
 {
+    public delegate void LoggingFormatter(ILogger logger, string method, ReadOnlySpan<byte> buffer);
+
     public static class ConnectionBuilderExtensions
     {
         /// <summary>
         /// Emits verbose logs for bytes read from and written to the connection.
         /// </summary>
-        /// <returns>
-        /// The <see cref="ListenOptions"/>.
-        /// </returns>
-        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder) where TBuilder : IConnectionBuilder
+        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string loggerName = null, ILoggerFactory loggerFactory = null, LoggingFormatter loggingFormatter = null) where TBuilder : IConnectionBuilder
         {
-            return builder.UseConnectionLogging(loggerName: null);
-        }
-
-        /// <summary>
-        /// Emits verbose logs for bytes read from and written to the connection.
-        /// </summary>
-        /// <returns>
-        /// The <see cref="ListenOptions"/>.
-        /// </returns>
-        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string loggerName) where TBuilder : IConnectionBuilder
-        {
-            var loggerFactory = builder.ApplicationServices.GetRequiredService<ILoggerFactory>();
+            loggerFactory ??= builder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerName == null ? loggerFactory.CreateLogger<LoggingConnectionMiddleware>() : loggerFactory.CreateLogger(loggerName);
-            builder.Use(next => new LoggingConnectionMiddleware(next, logger).OnConnectionAsync);
+            builder.Use(next => new LoggingConnectionMiddleware(next, logger, loggingFormatter).OnConnectionAsync);
             return builder;
         }
 

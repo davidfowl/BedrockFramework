@@ -69,7 +69,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D6)
                 {
                     Console.WriteLine("Custom length prefixed protocol.");
-                    await CustomProtocol(serviceProvider);
+                    await CustomProtocol();
                 }
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
@@ -234,11 +234,17 @@ namespace ClientApplication
             await server.StopAsync();
         }
 
-        private static async Task CustomProtocol(IServiceProvider serviceProvider)
+        private static async Task CustomProtocol()
         {
-            var client = new ClientBuilder(serviceProvider)
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder()
                                     .UseSockets()
-                                    .UseConnectionLogging()
+                                    .UseConnectionLogging(loggerFactory: loggerFactory)
                                     .Build();
 
             await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));

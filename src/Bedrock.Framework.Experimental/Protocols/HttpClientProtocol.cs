@@ -21,12 +21,13 @@ namespace Bedrock.Framework.Protocols
             {
                 UriEndPoint uriEndPoint => (uriEndPoint.Uri.Host, uriEndPoint.Uri.Port),
                 IPEndPoint ip => (ip.Address.ToString(), ip.Port),
+                NamedPipeEndPoint np => (np.PipeName, 80),
                 _ => throw new NotSupportedException($"{connection.RemoteEndPoint} not supported")
             };
             _messageWriter = new Http1RequestMessageWriter(host, port);
         }
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead)
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead, System.Threading.CancellationToken cancellationToken = default)
         {
             // Write request message headers
             _messageWriter.WriteMessage(requestMessage, _connection.Transport.Output);
@@ -37,12 +38,12 @@ namespace Bedrock.Framework.Protocols
                 await requestMessage.Content.CopyToAsync(_connection.Transport.Output.AsStream()).ConfigureAwait(false);
             }
 
-            await _connection.Transport.Output.FlushAsync().ConfigureAwait(false);
+            await _connection.Transport.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             var content = new HttpBodyContent();
             var headerReader = new Http1ResponseMessageReader(content);
 
-            var result = await _reader.ReadAsync(headerReader).ConfigureAwait(false);
+            var result = await _reader.ReadAsync(headerReader, cancellationToken).ConfigureAwait(false);
 
             if (result.IsCompleted)
             {
