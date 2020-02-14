@@ -13,30 +13,32 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
         public void WriteMessage(MemcachedRequest message, IBufferWriter<byte> output)
         {           
             Span<byte> headerSpan = stackalloc byte[Constants.HeaderLength];
-            var extraLength = 0;
-            if (message.Opcode == Enums.Opcode.Set)
+            byte extraLength = 0;
+            
+            if(message.Flags != TypeCode.Empty)
             {
                 extraLength = 8;
             }
                
-            var messageValue = 0;
+            var messageValueLength = 0;
+
             if (message.Value != null)
             {
-                messageValue = message.Value.Length;
+                messageValueLength = message.Value.Length;
             }
                
             var header = new MemcachedRequestHeader()
             {                
                 KeyLength = (ushort)message.Key.Length,
                 Opaque = message.Opaque,
-                TotalBodyLength = (uint)(extraLength + message.Key.Length + messageValue),
-                ExtraLength = (byte)extraLength   
+                TotalBodyLength = (uint)(extraLength + message.Key.Length + message.Value.Length),
+                ExtraLength = extraLength   
             };
 
-            if (message.Opcode == Enums.Opcode.Set)
+            if(extraLength != 0)
             {
                 header.Extras = (message.Flags, message.ExpireIn);
-            }
+            }            
                 
             headerSpan[0] = MemcachedRequestHeader.Magic;
             headerSpan[1] = (byte)message.Opcode;

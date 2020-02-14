@@ -38,12 +38,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             _memcachedMessageReader = new MemcachedMessageReader();
         }
 
-        public async Task<byte[]> Get(string key)
+        private async Task<byte[]> CommandWithResult(MemcachedRequest request)
         {
-            await _semaphore.WaitAsync();
-
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Get, keyBytes, NextOpaque);
             try
             {
                 var result = await ExecuteCommand(request);
@@ -57,9 +53,45 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
                 }
             }
             finally
+            {                
+                _semaphore.Release();
+            }
+        }
+
+        private async Task CommandWithNoResult(MemcachedRequest request)
+        {
+            try
+            {
+                var result = await ExecuteCommand(request);
+                if (result.Header.ResponseStatus != ResponseStatus.NoError)
+                {
+                    throw new Exception(result.Header.ResponseStatus.ToString());
+                }
+            }
+            finally
             {
                 _semaphore.Release();
-            }            
+            }
+        }
+       
+        public async Task<byte[]> Get(string key)
+        {
+            await _semaphore.WaitAsync();
+            
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var request = new MemcachedRequest(Enums.Opcode.Get, keyBytes, NextOpaque);
+
+            return await CommandWithResult(request);                   
+        }
+
+        public async Task Delete(string key)
+        {
+            await _semaphore.WaitAsync();
+           
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var request = new MemcachedRequest(Enums.Opcode.Delete, keyBytes, NextOpaque);
+
+            await CommandWithNoResult(request);
         }
 
         public async Task Set(string key, byte[] value, TimeSpan? expireIn)
@@ -68,18 +100,28 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
             var keyBytes = Encoding.UTF8.GetBytes(key);            
             var request = new MemcachedRequest(Enums.Opcode.Set, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
-            try
-            {
-                var result = await ExecuteCommand(request);
-                if (result.Header.ResponseStatus != ResponseStatus.NoError)
-                {
-                    throw new Exception(result.Header.ResponseStatus.ToString());
-                }
-            }            
-            finally
-            {
-                _semaphore.Release();
-            }            
+
+            await CommandWithNoResult(request);          
+        }
+
+        public async Task Add(string key, byte[] value, TimeSpan? expireIn)
+        {
+            await _semaphore.WaitAsync();
+
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var request = new MemcachedRequest(Enums.Opcode.Add, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
+
+            await CommandWithNoResult(request);
+        }
+
+        public async Task Replace(string key, byte[] value, TimeSpan? expireIn)
+        {
+            await _semaphore.WaitAsync();
+
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var request = new MemcachedRequest(Enums.Opcode.Replace, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
+
+            await CommandWithNoResult(request);
         }
 
         private async Task<MemcachedResponse> ExecuteCommand(MemcachedRequest request)

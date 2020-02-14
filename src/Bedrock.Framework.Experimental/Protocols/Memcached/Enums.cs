@@ -12,7 +12,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
         public enum Opcode : byte
         {
             Get = 0x00,
-            Set = 0x01
+            Set = 0x01,
+            Add = 0x02,
+            Replace = 0x03,
+            Delete = 0x04           
         }
 
         public enum ResponseStatus : byte
