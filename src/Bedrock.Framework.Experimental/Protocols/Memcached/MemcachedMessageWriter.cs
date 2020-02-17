@@ -31,7 +31,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
             {                
                 KeyLength = (ushort)message.Key.Length,
                 Opaque = message.Opaque,
-                TotalBodyLength = (uint)(extraLength + message.Key.Length + message.Value.Length),
+                TotalBodyLength = (uint)(extraLength + message.Key.Length + messageValueLength),
                 ExtraLength = extraLength   
             };
 
