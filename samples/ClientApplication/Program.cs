@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net;
@@ -7,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
+using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
@@ -76,7 +78,54 @@ namespace ClientApplication
                     Console.WriteLine("Talk to local docker daemon");
                     await DockerDaemon(serviceProvider);
                 }
+                else if (keyInfo.Key == ConsoleKey.D8)
+                {
+                    Console.WriteLine("Send Request To Memcached");
+                    await MemcachedProtocol(serviceProvider);
+                }
             }
+        }
+
+        private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
+        {
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder(serviceProvider)
+                .UseSockets()
+               /* .UseConnectionLogging(loggerFactory: loggerFactory)*/
+                .Build();
+            var ipAddress = IPAddress.Parse("127.0.0.1");
+            var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 11211));
+            MemcachedProtocol memcachedProtocol = new MemcachedProtocol(connection);
+            var largeString = String.Empty;
+            var tasks = new List<Task<byte[]>>();
+            for (int i = 0; i < 10; i++)
+            {
+                largeString += i + "_";
+            }
+            //await memcachedProtocol.Set("Hello", Encoding.UTF8.GetBytes(largeString), TimeSpan.FromMinutes(30));
+            /*for (int i = 0; i < 10; i++)
+            {
+                tasks.Add(memcachedProtocol.Get("Hello"));                
+            }
+            
+            await memcachedProtocol.Set("Hello", Encoding.UTF8.GetBytes("World!!"), TimeSpan.FromMinutes(30));
+            await Task.WhenAll(tasks);
+           
+            foreach (var item in tasks)
+            {
+                Console.WriteLine(Encoding.UTF8.GetString(item.Result));
+                Console.WriteLine("-------------------------------");
+            } */
+           
+            Console.WriteLine("Complete");
+           
+            //var byteResult = await memcachedProtocol.Get("Hello");
+            //var result = Encoding.UTF8.GetString(byteResult);
         }
 
         private static async Task EchoServer(IServiceProvider serviceProvider)
