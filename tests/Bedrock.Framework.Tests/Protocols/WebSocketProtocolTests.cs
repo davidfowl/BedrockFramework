@@ -15,6 +15,8 @@ namespace Bedrock.Framework.Tests.Protocols
 {
     public class WebSocketProtocolTests
     {
+        private byte[] _buffer = new byte[4096];
+
         [Fact]
         public async Task SingleMessageWorks()
         {
@@ -90,6 +92,37 @@ namespace Bedrock.Framework.Tests.Protocols
             }    
 
             Assert.Equal(payloadString, Encoding.UTF8.GetString(buffer.WrittenSpan));
+        }
+
+        [Fact]
+        public async Task WriteSingleMessageWorks()
+        {
+            var context = new InMemoryConnectionContext(new PipeOptions(useSynchronizationContext: false));
+            var protocol = new WebSocketProtocol(context, WebSocketProtocolType.Server);
+
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(context.Application.Input, context.Application.Output), false, null, TimeSpan.FromSeconds(30));
+            var payloadString = "This is a test payload.";
+            await protocol.WriteSingleFrameMessageAsync(new ReadOnlySequence<byte>(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(payloadString))), false, default);
+
+            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(_buffer), default);         
+            Assert.Equal(payloadString, Encoding.UTF8.GetString(_buffer, 0, result.Count));
+        }
+
+        [Fact]
+        public async Task WriteMultipleFramesWorks()
+        {
+            var context = new InMemoryConnectionContext(new PipeOptions(useSynchronizationContext: false));
+            var protocol = new WebSocketProtocol(context, WebSocketProtocolType.Server);
+
+            var webSocket = WebSocket.CreateFromStream(new DuplexPipeStream(context.Application.Input, context.Application.Output), false, null, TimeSpan.FromSeconds(30));
+            var payloadString = "This is a test payload.";
+            var writer = await protocol.StartMessageAsync(new ReadOnlySequence<byte>(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(payloadString))), false, default);
+            await writer.EndMessageAsync(new ReadOnlySequence<byte>(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(payloadString))));
+
+            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(_buffer, 0, _buffer.Length), default);
+            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(_buffer, result.Count, _buffer.Length - result.Count), default);
+
+            Assert.Equal($"{payloadString}{payloadString}", Encoding.UTF8.GetString(_buffer, 0, result.Count * 2));
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Bedrock.Framework.Benchmarks
         {
             typeof(ProtocolReaderBenchmarks),
             typeof(MessagePipeReaderBenchmarks),
-            typeof(WebSocketProtocolBenchmarks)
+            typeof(WebSocketProtocolBenchmarks),
             typeof(HttpHeaderReaderBenchmarks)
         };
     }

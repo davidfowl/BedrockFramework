@@ -33,6 +33,11 @@ namespace Bedrock.Framework.Protocols.WebSockets
         private WebSocketMessageReader _messageReader;
 
         /// <summary>
+        /// The shared WebSocket message writer.
+        /// </summary>
+        private WebSocketMessageWriter _messageWriter;
+
+        /// <summary>
         /// The type of WebSocket protocol, server or client.
         /// </summary>
         private WebSocketProtocolType _protocolType;
@@ -46,6 +51,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
         {
             _transport = connection.Transport;
             _messageReader = new WebSocketMessageReader(_transport.Input, this);
+            _messageWriter = new WebSocketMessageWriter(_transport.Output, protocolType);
             _protocolType = protocolType;
         }
 
@@ -85,23 +91,61 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <param name="message">The message to write.</param>
         /// <param name="isText">True if the message is a text type message, false otherwise.</param>
         /// <param name="cancellationToken">A cancellation token, if any.</param>
-        public async ValueTask WriteMessageAsync(ReadOnlySequence<byte> message, bool isText, CancellationToken cancellationToken = default)
+        /// <returns>The WebSocket message writer.</returns>
+        public ValueTask<WebSocketMessageWriter> StartMessageAsync(ReadOnlySequence<byte> message, bool isText, CancellationToken cancellationToken = default)
         {
             if (IsClosed)
             {
                 throw new InvalidOperationException("A close message was already received from the remote endpoint.");
             }
 
-            var opcode = isText ? WebSocketOpcode.Text : WebSocketOpcode.Binary;
-            var masked = _protocolType == WebSocketProtocolType.Client;
+            var startMessageTask = _messageWriter.StartMessageAsync(message, isText, cancellationToken);
+            if(startMessageTask.IsCompletedSuccessfully)
+            {
+                return new ValueTask<WebSocketMessageWriter>(_messageWriter);
+            }
+            else
+            {
+                return DoStartMessageAsync(startMessageTask);
+            }
+        }
 
-            var header = new WebSocketHeader(true, opcode, masked, (ulong)message.Length, WebSocketHeader.GenerateMaskingKey());
+        public ValueTask WriteSingleFrameMessageAsync(ReadOnlySequence<byte> message, bool isText, CancellationToken cancellationToken = default)
+        {
+            if (IsClosed)
+            {
+                throw new InvalidOperationException("A close message was already received from the remote endpoint.");
+            }
 
-            var frame = new WebSocketWriteFrame(header, message);
-            var writer = new WebSocketFrameWriter();
+            var writerTask = _messageWriter.WriteSingleFrameMessageAsync(message, isText, cancellationToken);
+            if (writerTask.IsCompletedSuccessfully)
+            {
+                return writerTask;
+            }
+            else
+            {
+                return DoWriteSingleFrameAsync(writerTask);
+            }
+        }
 
-            writer.WriteMessage(frame, _transport.Output);
-            await _transport.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
+        /// <summary>
+        /// Completes a start message task.
+        /// </summary>
+        /// <param name="startMessageTask">The active start message task.</param>
+        /// <returns>The WebSocket message writer.</returns>
+        private async ValueTask<WebSocketMessageWriter> DoStartMessageAsync(ValueTask startMessageTask)
+        {
+            await startMessageTask;
+            return _messageWriter;
+        }
+
+        /// <summary>
+        /// Completes a single frame writer task.
+        /// </summary>
+        /// <param name="writeFrameTask">The active writer task.</param>
+        private async ValueTask DoWriteSingleFrameAsync(ValueTask writeFrameTask)
+        {
+            await writeFrameTask;
         }
 
         /// <summary>
