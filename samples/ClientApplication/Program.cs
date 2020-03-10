@@ -124,7 +124,14 @@ namespace ClientApplication
                 new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(connectionStart.Locale))
                 ));
             var connectionTune = await amqpClientProtocol.ReceiveAsync<ConnectionTune>();
-            string temp = "";
+
+            await amqpClientProtocol.SendAsync(new ConnectionTuneOk(connectionTune.MaxChannel, connectionTune.MaxFrame, connectionTune.HeartBeat));
+            await amqpClientProtocol.SendAsync(new ConnectionOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("/")),
+                new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)),
+                0));
+
+            var connectionOpenOk = amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
+
 
         }
 

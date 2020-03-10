@@ -43,6 +43,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                         {
                             10 => new ConnectionStart(),
                             30 => new ConnectionTune(),
+                            41 => new ConnectionOpenOk(),
                             _ => throw new Exception($"not (yet) supported methodId {methodId}"),
                         },
                         _ => throw new Exception($"not (yet) supported classId {classId}"),
