@@ -24,10 +24,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             return _writer.WriteAsync(_formatter, message);
         }
 
-        public async Task<IAmqpMessage> ReceiveAsync()
+        public async Task<T> ReceiveAsync<T>() where T : IAmqpMessage
         {
             var result = await _reader.ReadAsync(_formatter);
-            return result.Message;
+            _reader.Advance();
+            return (T)result.Message;
         }
     }
 }

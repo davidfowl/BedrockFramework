@@ -25,6 +25,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
             this.VersionMajor = verionMajor;
             this.VersionMinor = versionMinor;
+
             try
             {
                 ServerProperties = ProtocolHelper.ReadTable(ref reader);

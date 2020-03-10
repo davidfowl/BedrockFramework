@@ -37,10 +37,16 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                     var methodId = BinaryPrimitives.ReadUInt16BigEndian(methodBuffer.Slice(2));
                     payload = payload.Slice(4);
                     //TEMP
-                    if(classId == 10 && methodId == 10)
+                    message = classId switch
                     {
-                        message = new ConnectionStart();
-                    }
+                        10 => methodId switch
+                        {
+                            10 => new ConnectionStart(),
+                            30 => new ConnectionTune(),
+                            _ => throw new Exception($"not (yet) supported methodId {methodId}"),
+                        },
+                        _ => throw new Exception($"not (yet) supported classId {classId}"),
+                    };                   
                 }
                 if(message.TryParse(payload, out SequencePosition end))
                 {

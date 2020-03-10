@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
 using Bedrock.Framework.Experimental.Protocols.Amqp;
+using Bedrock.Framework.Experimental.Protocols.Amqp.Methods;
 using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
@@ -110,8 +111,20 @@ namespace ClientApplication
             var ipAddress = IPAddress.Parse("127.0.0.1");
             var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 5672));
             AmqpClientProtocol amqpClientProtocol = new AmqpClientProtocol(connection);
+
             await amqpClientProtocol.SendAsync(new AmqpProtocolversionHeader());
-            var result = await amqpClientProtocol.ReceiveAsync();
+            var connectionStart = await amqpClientProtocol.ReceiveAsync<ConnectionStart>();
+            //
+            string username = "guest";
+            string password = "guest";
+            byte[] credentials = Encoding.UTF8.GetBytes("\0" + username + "\0" + password);
+
+            await amqpClientProtocol.SendAsync(new ConnectionOk(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(connectionStart.SecurityMechanims)),
+                new ReadOnlyMemory<byte>(credentials),
+                new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(connectionStart.Locale))
+                ));
+            var connectionTune = await amqpClientProtocol.ReceiveAsync<ConnectionTune>();
+            string temp = "";
 
         }
 
