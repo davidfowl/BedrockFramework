@@ -35,6 +35,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                     payload.Slice(0, 4).CopyTo(methodBuffer);
                     var classId = BinaryPrimitives.ReadUInt16BigEndian(methodBuffer);
                     var methodId = BinaryPrimitives.ReadUInt16BigEndian(methodBuffer.Slice(2));
+                    Console.WriteLine(classId + " - " + methodId);
                     payload = payload.Slice(4);
                     //TEMP
                     message = classId switch

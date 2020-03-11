@@ -15,8 +15,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);            
             try
-            {                
-
+            { 
                 end = reader.Position;
                 return true;
             }

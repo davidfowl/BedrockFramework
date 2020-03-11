@@ -14,6 +14,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
         private readonly AmqpMessageFormatter _formatter;
         public AmqpClientProtocol(ConnectionContext connection)
         { 
+            
             _writer = connection.CreateWriter();
             _reader = connection.CreateReader();
             _formatter = new AmqpMessageFormatter();
@@ -29,6 +30,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             var result = await _reader.ReadAsync(_formatter);
             _reader.Advance();
             return (T)result.Message;
+        }
+        public async Task ReadFrameAsync()
+        {
+
         }
     }
 }

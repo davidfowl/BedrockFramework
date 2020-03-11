@@ -130,7 +130,7 @@ namespace ClientApplication
                 new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)),
                 0));
 
-            var connectionOpenOk = amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
+            var connectionOpenOk = await amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
 
 
         }

@@ -29,29 +29,19 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
         public void Write(IBufferWriter<byte> output)
         {
-            int PayloadLength = Vhost.Length + Reserved1.Length + sizeof(byte);
+            int PayloadLength = 1+Vhost.Length + 1+Reserved1.Length + 4 + sizeof(byte);
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + PayloadLength + 1);
 
             WriteHeader(ref buffer, 0, PayloadLength);
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);
-            buffer = buffer.Slice(2);
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, MethodId);
-            buffer = buffer.Slice(2);            
-           
-            buffer[0] = (byte)Vhost.Length;
-            buffer = buffer.Slice(1);
-            Vhost.Span.CopyTo(buffer);
-            buffer = buffer.Slice(Vhost.Length);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);            
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId); 
+            buffer[4] = (byte)Vhost.Length;           
+            Vhost.Span.CopyTo(buffer.Slice(5));           
 
-            buffer[0] = (byte)Reserved1.Length;
-            buffer = buffer.Slice(1);
-            Reserved1.Span.CopyTo(buffer);
-            buffer = buffer.Slice(Reserved1.Length);
-
-            buffer[0] = Reserved2;
-            buffer = buffer.Slice(1);
-           
-            buffer[0] = (byte)FrameType.End;
+            buffer[5+Vhost.Length] = (byte)Reserved1.Length;            
+            Reserved1.Span.CopyTo(buffer.Slice(5 + Vhost.Length + 1));
+            buffer[5 + Vhost.Length + 1 + Reserved1.Length] = Reserved2; 
+            buffer[PayloadLength] = (byte)FrameType.End;
             output.Advance(AmqpMessageFormatter.HeaderLength + PayloadLength + sizeof(byte));
         }
     }
