@@ -23,9 +23,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
                 reader.TryReadBigEndian(out short maxChannel);
                 reader.TryReadBigEndian(out int maxFrame);
                 reader.TryReadBigEndian(out short heartBeat);
-                this.MaxChannel = maxChannel;
-                this.MaxFrame = maxFrame;
-                this.HeartBeat = heartBeat;
+
+                MaxChannel = maxChannel;
+                MaxFrame = maxFrame;
+                HeartBeat = heartBeat;
 
                 end = reader.Position;
                 return true;

@@ -10,7 +10,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
     { 
         public override byte ClassId => 50;
         public override byte MethodId => 11;
-        public string QueueName { get; private set; }
+        public ReadOnlyMemory<byte> QueueName { get; private set; }
         public uint MessageCount { get; private set; }
         public uint ConsumerCount { get; private set; }
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bedrock.Framework.Infrastructure;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
@@ -68,20 +69,33 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             return result;
         }
 
-        public static string ReadLongString(ref SequenceReader<byte> reader)
+        public static ReadOnlyMemory<byte> ReadLongString(ref SequenceReader<byte> reader)
         {
             reader.TryReadBigEndian(out int length);
-            var value = Encoding.UTF8.GetString(reader.Sequence.Slice(reader.CurrentSpanIndex, length).FirstSpan);
+            var result = reader.Sequence.Slice(reader.CurrentSpanIndex, length).ToMemory();
             reader.Advance(length);
-            return value;
+            return result;
         }
 
-        public static string ReadShortString(ref SequenceReader<byte> reader)
+        public static ReadOnlyMemory<byte> ReadShortString(ref SequenceReader<byte> reader)
         {
             reader.TryRead(out byte length);
-            var value = Encoding.UTF8.GetString(reader.Sequence.Slice(reader.CurrentSpanIndex, length).FirstSpan);
+            var result = reader.Sequence.Slice(reader.CurrentSpanIndex, length).ToMemory();
             reader.Advance(length);
-            return value;
+            return result;
+        }
+
+        public static byte BoolArrayToByte(bool[] source)
+        {
+            byte result = 0;
+            int index = 8 - source.Length;
+            foreach (bool b in source)
+            {
+                if (b)
+                    result |= (byte)(1 << (7 - index));
+                index++;
+            }
+            return result;
         }
 
     }

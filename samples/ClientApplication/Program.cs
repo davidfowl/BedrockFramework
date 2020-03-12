@@ -114,30 +114,23 @@ namespace ClientApplication
 
             await amqpClientProtocol.SendAsync(new AmqpProtocolversionHeader());
             var connectionStart = await amqpClientProtocol.ReceiveAsync<ConnectionStart>();
-            //
-            string username = "guest";
-            string password = "guest";
-            byte[] credentials = Encoding.UTF8.GetBytes("\0" + username + "\0" + password);
+            //           
+            byte[] credentials = Encoding.UTF8.GetBytes("\0guest"  + "\0guest");
 
-            await amqpClientProtocol.SendAsync(new ConnectionOk(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(connectionStart.SecurityMechanims)),
-                new ReadOnlyMemory<byte>(credentials),
-                new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(connectionStart.Locale))
-                ));
+            await amqpClientProtocol.SendAsync(new ConnectionOk(connectionStart.SecurityMechanims, new ReadOnlyMemory<byte>(credentials), connectionStart.Locale));
             var connectionTune = await amqpClientProtocol.ReceiveAsync<ConnectionTune>();
 
             await amqpClientProtocol.SendAsync(new ConnectionTuneOk(connectionTune.MaxChannel, connectionTune.MaxFrame, connectionTune.HeartBeat));
             await amqpClientProtocol.SendAsync(new ConnectionOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("/")),
                 new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)),
                 0));
-
             var connectionOpenOk = await amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
 
-            await amqpClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), 1));
-
+            ushort channelId = 1;
+            await amqpClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
             var channelOpenOk = await amqpClientProtocol.ReceiveAsync<ChannelOpenOk>();
 
-            await amqpClientProtocol.SendAsync(new QueueDeclare(1,0, "queue_test",false,true, true,true));
-
+            await amqpClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test",false,true, true,true));
             var queueDeclareOk = await amqpClientProtocol.ReceiveAsync<QueueDeclareOk>();
             string temp = "";
 

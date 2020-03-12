@@ -11,14 +11,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public override byte ClassId => 20;
         public override byte MethodId => 11;       
 
-        public string Reserved1 { get; private set; }        
+        public ReadOnlyMemory<byte> Reserved1 { get; private set; }        
 
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);
             try
             {
-                this.Reserved1 = ProtocolHelper.ReadLongString(ref reader);
+                Reserved1 = ProtocolHelper.ReadLongString(ref reader);
                 end = reader.Position;
                 return true;
             }

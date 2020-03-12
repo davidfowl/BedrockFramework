@@ -13,8 +13,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public byte VersionMajor { get; private set; }
         public byte VersionMinor { get; private set; }
         public Dictionary<string, object> ServerProperties { get; private set; }
-        public string SecurityMechanims { get; private set; }
-        public string Locale { get; private set; }
+        public ReadOnlyMemory<byte> SecurityMechanims { get; private set; }
+        public ReadOnlyMemory<byte> Locale { get; private set; }
 
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
         {
@@ -23,17 +23,20 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             reader.TryRead(out var verionMajor);
             reader.TryRead(out var versionMinor);
 
-            this.VersionMajor = verionMajor;
-            this.VersionMinor = versionMinor;
-
+            VersionMajor = verionMajor;
+            VersionMinor = versionMinor;           
             try
             {
-                ServerProperties = ProtocolHelper.ReadTable(ref reader);              
-                SecurityMechanims = ProtocolHelper.ReadLongString(ref reader) switch
+                ServerProperties = ProtocolHelper.ReadTable(ref reader);
+                var security = ProtocolHelper.ReadLongString(ref reader);
+                if(security.Span.IndexOf(Encoding.UTF8.GetBytes("PLAIN AMQPLAIN").AsSpan()) >= 0)
                 {
-                    "PLAIN AMQPLAIN" => "PLAIN",
-                    _ => throw new Exception($"Unsupported security mechanism")
-                };
+                    SecurityMechanims = Encoding.UTF8.GetBytes("PLAIN").AsMemory();
+                }
+                else
+                {
+                    throw new Exception($"Unsupported security mechanism");
+                }                
                 Locale = ProtocolHelper.ReadLongString(ref reader);
                 end = reader.Position;
                 return true;

@@ -30,7 +30,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
         public void Write(IBufferWriter<byte> output)
         {
-            int PayloadLength = 1+Vhost.Length + 1+Reserved1.Length + 4 + sizeof(byte);
+            int PayloadLength = 1+Vhost.Length + 1+Reserved1.Length + MethodHeaderLength + sizeof(byte);
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + PayloadLength + 1);
 
             WriteHeader(ref buffer, 0, PayloadLength);

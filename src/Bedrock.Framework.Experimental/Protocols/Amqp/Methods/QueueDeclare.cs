@@ -40,18 +40,18 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
         public void Write(IBufferWriter<byte> output)
         {          
-            var payloadLength = 6 + 1 + QueueName.Length + sizeof(byte) + 4 ;
+            var payloadLength = 6 + 1 + QueueName.Length + sizeof(byte) + MethodHeaderLength;
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + payloadLength + 1);
            
             WriteHeader(ref buffer, this.Channel, payloadLength);
+
             BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(4), Reserved1);
-            buffer[6] = (byte)QueueName.Length;
-           
+            buffer[6] = (byte)QueueName.Length;           
             Encoding.UTF8.GetBytes(QueueName).CopyTo(buffer.Slice(7));
             var bools = new bool[5] { Passive, Durable, Exclusive, AutoDelete, NoWait };
-            var bytes = BoolArrayToByte(bools);
+            var bytes = ProtocolHelper.BoolArrayToByte(bools);
             buffer[7 + QueueName.Length] = bytes;
             buffer[7 + QueueName.Length+1] = 0;
             buffer[7 + QueueName.Length+2] = 0;
@@ -60,19 +60,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             //TO DO write table
             BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(7 + QueueName.Length + 5), 0);
             buffer[payloadLength] = (byte)FrameType.End;
+
             output.Advance(AmqpMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
-        }
-        private byte BoolArrayToByte(bool[] source)
-        {
-            byte result = 0;           
-            int index = 8 - source.Length;           
-            foreach (bool b in source)
-            {               
-                if (b)
-                    result |= (byte)(1 << (7 - index));
-                index++;
-            }
-            return result;
-        }
+        }        
     }
 }

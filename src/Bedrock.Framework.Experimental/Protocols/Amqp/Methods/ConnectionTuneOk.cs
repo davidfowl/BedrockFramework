@@ -29,16 +29,18 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
         public void Write(IBufferWriter<byte> output)
         {  
-            var payloadLength = sizeof(ushort) + sizeof(uint) + sizeof(ushort) + 4;
+            var payloadLength = sizeof(ushort) + sizeof(uint) + sizeof(ushort) + MethodHeaderLength;
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + payloadLength + 1);
 
             WriteHeader(ref buffer, 0, payloadLength);
+
             BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);            
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(4), (ushort)this.MaxChannel);
             BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(6), (uint)this.MaxFrame);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(10), (ushort)this.HeartBeat);
             buffer[payloadLength]= (byte)FrameType.End;
+
             output.Advance(AmqpMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
         }
     }
