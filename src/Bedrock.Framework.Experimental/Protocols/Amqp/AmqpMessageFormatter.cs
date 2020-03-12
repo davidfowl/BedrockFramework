@@ -62,7 +62,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                     };                   
                 }
 
-                if(message.TryParse(payload, out SequencePosition end))
+                if (message.TryParse(payload, out SequencePosition end))
                 {
                     var frameEnd = payload.Slice(end).FirstSpan[0];
                     if (frameEnd != (byte)FrameType.End)
