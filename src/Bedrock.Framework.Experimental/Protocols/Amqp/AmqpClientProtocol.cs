@@ -31,9 +31,6 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             _reader.Advance();
             return (T)result.Message;
         }
-        public async Task ReadFrameAsync()
-        {
-
-        }
+        
     }
 }

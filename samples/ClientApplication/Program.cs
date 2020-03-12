@@ -130,10 +130,9 @@ namespace ClientApplication
             await amqpClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
             var channelOpenOk = await amqpClientProtocol.ReceiveAsync<ChannelOpenOk>();
 
-            await amqpClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test",false,true, true,true));
+            await amqpClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_toto",false,true, true,true));
             var queueDeclareOk = await amqpClientProtocol.ReceiveAsync<QueueDeclareOk>();
             string temp = "";
-
         }
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)

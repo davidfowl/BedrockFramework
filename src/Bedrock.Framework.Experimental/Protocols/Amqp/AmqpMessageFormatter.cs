@@ -33,11 +33,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                 {
                     Span<byte> methodBuffer = stackalloc byte[4];
                     payload.Slice(0, 4).CopyTo(methodBuffer);
+
                     var classId = BinaryPrimitives.ReadUInt16BigEndian(methodBuffer);
                     var methodId = BinaryPrimitives.ReadUInt16BigEndian(methodBuffer.Slice(2));
-                    Console.WriteLine(classId + " - " + methodId);
+                    
                     payload = payload.Slice(4);
-                    //TEMP
+                   
                     message = classId switch
                     {
                         10 => methodId switch
@@ -60,6 +61,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                         _ => throw new Exception($"not (yet) supported classId {classId}"),
                     };                   
                 }
+
                 if(message.TryParse(payload, out SequencePosition end))
                 {
                     var frameEnd = payload.Slice(end).FirstSpan[0];

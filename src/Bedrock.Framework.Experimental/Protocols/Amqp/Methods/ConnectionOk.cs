@@ -34,17 +34,14 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
             WriteHeader(ref buffer, 0, PayloadLength);
 
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);
-            buffer = buffer.Slice(2);
-            BinaryPrimitives.WriteUInt16BigEndian(buffer, MethodId);
-            buffer = buffer.Slice(2);
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);            
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId);           
             //TO DO replace by client properties
-            BinaryPrimitives.WriteUInt32BigEndian(buffer, 0);
-            buffer = buffer.Slice(4);
-            buffer[0] = (byte)SecurityMechanism.Length;
-            buffer = buffer.Slice(1);
-            SecurityMechanism.Span.CopyTo(buffer);
-            buffer = buffer.Slice(SecurityMechanism.Length);
+            BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(4), 0);
+            buffer = buffer.Slice(8);
+            buffer[0] = (byte)SecurityMechanism.Length;           
+            SecurityMechanism.Span.CopyTo(buffer.Slice(1));
+            buffer = buffer.Slice(SecurityMechanism.Length+1);
             BinaryPrimitives.WriteInt32BigEndian(buffer, Credentials.Length);
             buffer = buffer.Slice(4);
             Credentials.Span.CopyTo(buffer);
