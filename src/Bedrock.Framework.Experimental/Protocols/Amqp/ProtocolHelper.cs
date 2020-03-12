@@ -76,10 +76,12 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             return value;
         }
 
-        public static string ReadShortString(ReadOnlySequence<byte> input)
+        public static string ReadShortString(ref SequenceReader<byte> reader)
         {
-            var StringLength = input.FirstSpan[0];
-            return Encoding.ASCII.GetString(input.Slice(4, StringLength).FirstSpan);
+            reader.TryRead(out byte length);
+            var value = Encoding.UTF8.GetString(reader.Sequence.Slice(reader.CurrentSpanIndex, length).FirstSpan);
+            reader.Advance(length);
+            return value;
         }
 
     }

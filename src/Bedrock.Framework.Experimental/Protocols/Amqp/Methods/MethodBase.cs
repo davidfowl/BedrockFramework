@@ -10,6 +10,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public abstract byte ClassId { get; }
         public abstract byte MethodId { get; }
 
+        public const int MethodHeaderLength = 4;
+
         public void WriteHeader(ref Span<byte> buffer, ushort channel, int payloadLength)
         {
             buffer[0] = (byte)FrameType.Method;

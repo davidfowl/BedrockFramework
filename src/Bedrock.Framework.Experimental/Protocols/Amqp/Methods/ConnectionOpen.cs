@@ -11,8 +11,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public override byte ClassId => 10;
         public override byte MethodId => 40;
 
-        public ReadOnlyMemory<byte> Vhost { get; }
-        public ReadOnlyMemory<byte> Reserved1 { get; }
+        public ReadOnlyMemory<byte> Vhost { get; private set; }
+        public ReadOnlyMemory<byte> Reserved1 { get; private set; }
+
         public byte Reserved2 { get; }
 
         public ConnectionOpen(ReadOnlyMemory<byte> vhost, ReadOnlyMemory<byte> reserved1, byte reserved2)
@@ -33,15 +34,16 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + PayloadLength + 1);
 
             WriteHeader(ref buffer, 0, PayloadLength);
+
             BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);            
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId); 
             buffer[4] = (byte)Vhost.Length;           
-            Vhost.Span.CopyTo(buffer.Slice(5));           
-
+            Vhost.Span.CopyTo(buffer.Slice(5)); 
             buffer[5+Vhost.Length] = (byte)Reserved1.Length;            
             Reserved1.Span.CopyTo(buffer.Slice(5 + Vhost.Length + 1));
             buffer[5 + Vhost.Length + 1 + Reserved1.Length] = Reserved2; 
             buffer[PayloadLength] = (byte)FrameType.End;
+
             output.Advance(AmqpMessageFormatter.HeaderLength + PayloadLength + sizeof(byte));
         }
     }

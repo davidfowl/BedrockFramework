@@ -33,6 +33,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + PayloadLength + 1);
 
             WriteHeader(ref buffer, 0, PayloadLength);
+
             BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);
             buffer = buffer.Slice(2);
             BinaryPrimitives.WriteUInt16BigEndian(buffer, MethodId);
@@ -53,6 +54,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             Locale.Span.CopyTo(buffer);
             buffer = buffer.Slice(Locale.Length);
             buffer[0] = (byte)FrameType.End;
+
             output.Advance(AmqpMessageFormatter.HeaderLength + PayloadLength + sizeof(byte));
         }
     }

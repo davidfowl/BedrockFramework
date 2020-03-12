@@ -28,15 +28,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 
             try
             {
-                ServerProperties = ProtocolHelper.ReadTable(ref reader);
-               // SecurityMechanims = ProtocolHelper.ReadLongString(ref reader);
+                ServerProperties = ProtocolHelper.ReadTable(ref reader);              
                 SecurityMechanims = ProtocolHelper.ReadLongString(ref reader) switch
                 {
                     "PLAIN AMQPLAIN" => "PLAIN",
                     _ => throw new Exception($"Unsupported security mechanism")
                 };
                 Locale = ProtocolHelper.ReadLongString(ref reader);
-
                 end = reader.Position;
                 return true;
             }

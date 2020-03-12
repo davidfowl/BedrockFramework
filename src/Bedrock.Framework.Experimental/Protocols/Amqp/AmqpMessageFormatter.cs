@@ -45,7 +45,17 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                             10 => new ConnectionStart(),
                             30 => new ConnectionTune(),
                             41 => new ConnectionOpenOk(),
-                            _ => throw new Exception($"not (yet) supported methodId {methodId}"),
+                            _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
+                        },
+                        20 => methodId switch
+                        {
+                            11 => new ChannelOpenOk(),
+                            _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
+                        },
+                        50 => methodId switch
+                        {
+                            11 => new QueueDeclareOk(),
+                            _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
                         },
                         _ => throw new Exception($"not (yet) supported classId {classId}"),
                     };                   
@@ -55,7 +65,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
                     var frameEnd = payload.Slice(end).FirstSpan[0];
                     if(frameEnd != (byte)FrameType.End)
                     {
-
+                        throw new Exception($"unexcepted frame end");
                     }
                     consumed = payload.End;
                     examined = consumed;

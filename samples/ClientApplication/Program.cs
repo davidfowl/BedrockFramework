@@ -132,6 +132,14 @@ namespace ClientApplication
 
             var connectionOpenOk = await amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
 
+            await amqpClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), 1));
+
+            var channelOpenOk = await amqpClientProtocol.ReceiveAsync<ChannelOpenOk>();
+
+            await amqpClientProtocol.SendAsync(new QueueDeclare(1,0, "queue_test",false,true, true,true));
+
+            var queueDeclareOk = await amqpClientProtocol.ReceiveAsync<QueueDeclareOk>();
+            string temp = "";
 
         }
 

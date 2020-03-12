@@ -6,18 +6,24 @@ using System.Text;
 
 namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
 {
-    public class ConnectionOpenOk : MethodBase, IAmqpMessage
+    public class QueueDeclareOk : MethodBase, IAmqpMessage
     { 
-        public override byte ClassId => 10;
-        public override byte MethodId => 41;
-        public string Reserved1 { get; private set; }
-
+        public override byte ClassId => 50;
+        public override byte MethodId => 11;
+        public string QueueName { get; private set; }
+        public uint MessageCount { get; private set; }
+        public uint ConsumerCount { get; private set; }
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);            
             try
             {
-                this.Reserved1 = ProtocolHelper.ReadShortString(ref reader);
+                this.QueueName = ProtocolHelper.ReadShortString(ref reader);
+                if (reader.TryReadBigEndian(out int messageCount))
+                    this.MessageCount = (uint)messageCount;
+                if (reader.TryReadBigEndian(out int consumerCount))
+                    this.ConsumerCount = (uint)consumerCount;
+
                 end = reader.Position;
                 return true;
             }
