@@ -13,8 +13,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
         private readonly ProtocolReader _reader;
         private readonly AmqpMessageFormatter _formatter;
         public AmqpClientProtocol(ConnectionContext connection)
-        { 
-            
+        {             
             _writer = connection.CreateWriter();
             _reader = connection.CreateReader();
             _formatter = new AmqpMessageFormatter();

@@ -87,6 +87,11 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
 
         public static byte BoolArrayToByte(bool[] source)
         {
+            if(source.Length > 8)
+            {
+                return 0;
+            } 
+
             byte result = 0;
             int index = 8 - source.Length;
             foreach (bool b in source)
