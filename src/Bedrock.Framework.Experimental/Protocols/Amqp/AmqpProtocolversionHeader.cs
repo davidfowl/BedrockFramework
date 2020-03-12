@@ -8,7 +8,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
 {
     public class AmqpProtocolversionHeader : IAmqpMessage
     {
-        private ReadOnlySpan<byte> protocolHeader => new byte[] { (byte)'A', (byte)'M', (byte)'Q', (byte)'P', 0, 0, 9, 1 };
+        private ReadOnlySpan<byte> ProtocolHeader => new byte[] { (byte)'A', (byte)'M', (byte)'Q', (byte)'P', 0, 0, 9, 1 };
         
         public bool TryParse(ReadOnlySequence<byte> input, out SequencePosition end)
         {
