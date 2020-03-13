@@ -23,7 +23,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             Reserved2 = reserved2;
         }
 
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             throw new NotImplementedException();
         }

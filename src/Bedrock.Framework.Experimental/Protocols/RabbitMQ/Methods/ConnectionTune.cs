@@ -15,9 +15,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
         public int MaxFrame { get; private set; }
         public short HeartBeat { get; private set; }
 
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
-            SequenceReader<byte> reader = new SequenceReader<byte>(input);            
+            var reader = new SequenceReader<byte>(input);            
             try
             {
                 reader.TryReadBigEndian(out short maxChannel);

@@ -13,9 +13,10 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
         public ReadOnlyMemory<byte> QueueName { get; private set; }
         public uint MessageCount { get; private set; }
         public uint ConsumerCount { get; private set; }
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
-            SequenceReader<byte> reader = new SequenceReader<byte>(input);            
+            var reader = new SequenceReader<byte>(input);            
             try
             {
                 this.QueueName = ProtocolHelper.ReadShortString(ref reader);

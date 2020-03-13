@@ -13,9 +13,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 
         public ReadOnlyMemory<byte> Reserved1 { get; private set; }        
 
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
-            SequenceReader<byte> reader = new SequenceReader<byte>(input);
+            var reader = new SequenceReader<byte>(input);
             try
             {
                 Reserved1 = ProtocolHelper.ReadLongString(ref reader);

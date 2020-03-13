@@ -18,9 +18,10 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 
         private ReadOnlySpan<byte> PlainAMQPPlain => new byte[] { (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N', (byte)' ', (byte)'A', (byte)'M', (byte)'Q', (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N' };
         private ReadOnlyMemory<byte> Plain = new byte[] { (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N' };
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+        
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
-            SequenceReader<byte> reader = new SequenceReader<byte>(input);
+            var reader = new SequenceReader<byte>(input);
 
             if (!reader.TryRead(out var verionMajor))
             {

@@ -22,7 +22,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             Locale = locale;
         }
 
-        public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
+        public bool TryParse(in ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             throw new NotImplementedException();
         }

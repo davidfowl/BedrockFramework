@@ -10,7 +10,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
     {
         private ReadOnlySpan<byte> ProtocolHeader => new byte[] { (byte)'A', (byte)'M', (byte)'Q', (byte)'P', 0, 0, 9, 1 };
         
-        public bool TryParse(ReadOnlySequence<byte> input, out SequencePosition end)
+        public bool TryParse(in ReadOnlySequence<byte> input, out SequencePosition end)
         {
             throw new NotImplementedException();
         }
