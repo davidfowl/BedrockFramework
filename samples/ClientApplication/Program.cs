@@ -88,14 +88,14 @@ namespace ClientApplication
                 }
                 else if (keyInfo.Key == ConsoleKey.D9)
                 {
-                    Console.WriteLine("AMQP test");
-                    await AmqpProtocol(serviceProvider);
+                    Console.WriteLine("RabbitMQ test");
+                    await RabbitMQProtocol(serviceProvider);
                 }
-                await AmqpProtocol(serviceProvider);
+                await RabbitMQProtocol(serviceProvider);
             }
         }
 
-        private static async Task AmqpProtocol(IServiceProvider serviceProvider)
+        private static async Task RabbitMQProtocol(IServiceProvider serviceProvider)
         {
             var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -110,29 +110,28 @@ namespace ClientApplication
 
             var ipAddress = IPAddress.Parse("127.0.0.1");
             var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 5672));
-            RabbitMQClientProtocol amqpClientProtocol = new RabbitMQClientProtocol(connection);
+            var rabbitMqClientProtocol = new RabbitMQClientProtocol(connection);
 
-            await amqpClientProtocol.SendAsync(new RabbitMQProtocolVersionHeader());
-            var connectionStart = await amqpClientProtocol.ReceiveAsync<ConnectionStart>();
+            await rabbitMqClientProtocol.SendAsync(new RabbitMQProtocolVersionHeader());
+            var connectionStart = await rabbitMqClientProtocol.ReceiveAsync<ConnectionStart>();
             //           
             byte[] credentials = Encoding.UTF8.GetBytes("\0guest"  + "\0guest");
 
-            await amqpClientProtocol.SendAsync(new ConnectionOk(connectionStart.SecurityMechanims, new ReadOnlyMemory<byte>(credentials), connectionStart.Locale));
-            var connectionTune = await amqpClientProtocol.ReceiveAsync<ConnectionTune>();
+            await rabbitMqClientProtocol.SendAsync(new ConnectionOk(connectionStart.SecurityMechanims, new ReadOnlyMemory<byte>(credentials), connectionStart.Locale));
+            var connectionTune = await rabbitMqClientProtocol.ReceiveAsync<ConnectionTune>();
 
-            await amqpClientProtocol.SendAsync(new ConnectionTuneOk(connectionTune.MaxChannel, connectionTune.MaxFrame, connectionTune.HeartBeat));
-            await amqpClientProtocol.SendAsync(new ConnectionOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("/")),
+            await rabbitMqClientProtocol.SendAsync(new ConnectionTuneOk(connectionTune.MaxChannel, connectionTune.MaxFrame, connectionTune.HeartBeat));
+            await rabbitMqClientProtocol.SendAsync(new ConnectionOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("/")),
                 new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)),
                 0));
-            var connectionOpenOk = await amqpClientProtocol.ReceiveAsync<ConnectionOpenOk>();
+            var connectionOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ConnectionOpenOk>();
 
             ushort channelId = 1;
-            await amqpClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
-            var channelOpenOk = await amqpClientProtocol.ReceiveAsync<ChannelOpenOk>();
+            await rabbitMqClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
+            var channelOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ChannelOpenOk>();
 
-            await amqpClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_toto",false,true, true,true));
-            var queueDeclareOk = await amqpClientProtocol.ReceiveAsync<QueueDeclareOk>();
-            string temp = "";
+            await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_toto",false,true, true,true));
+            var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();            
         }
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
