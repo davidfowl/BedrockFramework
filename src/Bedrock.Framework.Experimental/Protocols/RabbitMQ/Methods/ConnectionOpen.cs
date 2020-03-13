@@ -31,9 +31,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
         public void Write(IBufferWriter<byte> output)
         {
             var payloadLength = 1 + Vhost.Length + 1 + Reserved1.Length + MethodHeaderLength + sizeof(byte);
-            var buffer = output.GetSpan(RabbitMQMessageFormatter.HeaderLength + PayloadLength + 1);
+            var buffer = output.GetSpan(RabbitMQMessageFormatter.HeaderLength + payloadLength + 1);
 
-            WriteHeader(ref buffer, 0, PayloadLength);
+            WriteHeader(ref buffer, 0, payloadLength);
 
             BinaryPrimitives.WriteUInt16BigEndian(buffer, ClassId);            
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId); 
@@ -42,9 +42,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             buffer[5 + Vhost.Length] = (byte)Reserved1.Length;            
             Reserved1.Span.CopyTo(buffer.Slice(5 + Vhost.Length + 1));
             buffer[5 + Vhost.Length + 1 + Reserved1.Length] = Reserved2; 
-            buffer[PayloadLength] = (byte)FrameType.End;
+            buffer[payloadLength] = (byte)FrameType.End;
 
-            output.Advance(RabbitMQMessageFormatter.HeaderLength + PayloadLength + sizeof(byte));
+            output.Advance(RabbitMQMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
         }
     }
 }
