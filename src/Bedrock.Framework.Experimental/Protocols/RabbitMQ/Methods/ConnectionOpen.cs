@@ -39,7 +39,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId); 
             buffer[4] = (byte)Vhost.Length;           
             Vhost.Span.CopyTo(buffer.Slice(5)); 
-            buffer[5+Vhost.Length] = (byte)Reserved1.Length;            
+            buffer[5 + Vhost.Length] = (byte)Reserved1.Length;            
             Reserved1.Span.CopyTo(buffer.Slice(5 + Vhost.Length + 1));
             buffer[5 + Vhost.Length + 1 + Reserved1.Length] = Reserved2; 
             buffer[PayloadLength] = (byte)FrameType.End;
