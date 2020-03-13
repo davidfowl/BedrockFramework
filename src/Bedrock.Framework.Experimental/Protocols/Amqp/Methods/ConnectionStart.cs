@@ -20,8 +20,16 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);
 
-            reader.TryRead(out var verionMajor);
-            reader.TryRead(out var versionMinor);
+            if (!reader.TryRead(out var verionMajor))
+            {
+                end = default;
+                return false;
+            }
+            if (reader.TryRead(out var versionMinor))
+            {
+                end = default;
+                return false;
+            }
 
             VersionMajor = verionMajor;
             VersionMinor = versionMinor;           

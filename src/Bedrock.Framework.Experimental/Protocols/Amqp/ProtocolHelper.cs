@@ -102,6 +102,5 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
             }
             return result;
         }
-
     }
 }

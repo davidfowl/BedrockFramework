@@ -18,7 +18,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp
         public void Write(IBufferWriter<byte> output)
         {
             var writer = new BufferWriter<IBufferWriter<byte>>(output);
-            writer.Write(protocolHeader);
+            writer.Write(ProtocolHeader);
             writer.Commit();            
         }
     }
