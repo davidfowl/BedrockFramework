@@ -131,7 +131,10 @@ namespace ClientApplication
             var channelOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ChannelOpenOk>();
 
             await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test"));
-            var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();            
+            var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();
+            
+            await rabbitMqClientProtocol.SendAsync(new QueueDelete(channelId, 0, "queue_test"));
+            var queueDeleteOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeleteOk>();
         }
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)

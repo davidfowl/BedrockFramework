@@ -22,6 +22,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 
         public const int Queue = 50;
         public const int QueueDeclareOk = 11;
+        public const int QueueDeleteOk = 41;
 
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out IAmqpMessage message)
         {
@@ -68,6 +69,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
                         Queue => methodId switch
                         {
                             QueueDeclareOk => new QueueDeclareOk(),
+                            QueueDeleteOk => new QueueDeleteOk(),
                             _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
                         },
                         _ => throw new Exception($"not (yet) supported classId {classId}"),

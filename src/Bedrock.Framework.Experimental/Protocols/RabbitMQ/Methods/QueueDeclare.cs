@@ -22,7 +22,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
         public Dictionary<string, object> Arguments { get; private set; }
         public ReadOnlyMemory<byte> Options { get; private set; }
 
-        public QueueDeclare(ushort channel,ushort reserved1, string queueName, bool passive = false, bool durable = true, bool exclusive = true, bool autoDelete = true, bool noWait = false, Dictionary<string,object> arguments = null )
+        public QueueDeclare(ushort channel,ushort reserved1, string queueName, bool passive = false, bool durable = true, bool exclusive = false, bool autoDelete = false, bool noWait = false, Dictionary<string,object> arguments = null )
         {
             Channel = channel;
             Reserved1 = reserved1;
