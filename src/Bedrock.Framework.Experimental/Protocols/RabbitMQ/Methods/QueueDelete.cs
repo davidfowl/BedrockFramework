@@ -35,7 +35,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 
         public void Write(IBufferWriter<byte> output)
         {          
-            var payloadLength = MethodHeaderLength + 2 + 1 + QueueName.Length + sizeof(byte) ;
+            var payloadLength = MethodHeaderLength + 2 + 1 + QueueName.Length + sizeof(byte);
             var buffer = output.GetSpan(RabbitMQMessageFormatter.HeaderLength + payloadLength + 1);
            
             WriteHeader(ref buffer, this.Channel, payloadLength);
