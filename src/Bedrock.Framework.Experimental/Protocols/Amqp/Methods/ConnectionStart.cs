@@ -25,7 +25,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
                 end = default;
                 return false;
             }
-            if (reader.TryRead(out var versionMinor))
+            if (!reader.TryRead(out var versionMinor))
             {
                 end = default;
                 return false;
