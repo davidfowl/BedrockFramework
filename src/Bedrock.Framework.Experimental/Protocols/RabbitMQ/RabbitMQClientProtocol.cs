@@ -5,19 +5,19 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 {
-    public class AmqpClientProtocol
+    public class RabbitMQClientProtocol
     {
         private readonly ProtocolWriter _writer;
         private readonly ProtocolReader _reader;
-        private readonly AmqpMessageFormatter _formatter;
+        private readonly RabbitMQMessageFormatter _formatter;
 
-        public AmqpClientProtocol(ConnectionContext connection)
+        public RabbitMQClientProtocol(ConnectionContext connection)
         {             
             _writer = connection.CreateWriter();
             _reader = connection.CreateReader();
-            _formatter = new AmqpMessageFormatter();
+            _formatter = new RabbitMQMessageFormatter();
         }
 
         public ValueTask SendAsync(IAmqpMessage message)

@@ -8,8 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
-using Bedrock.Framework.Experimental.Protocols.Amqp;
-using Bedrock.Framework.Experimental.Protocols.Amqp.Methods;
+using Bedrock.Framework.Experimental.Protocols.RabbitMQ;
 using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
@@ -18,6 +17,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
+using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
 
 namespace ClientApplication
 {
@@ -110,9 +110,9 @@ namespace ClientApplication
 
             var ipAddress = IPAddress.Parse("127.0.0.1");
             var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 5672));
-            AmqpClientProtocol amqpClientProtocol = new AmqpClientProtocol(connection);
+            RabbitMQClientProtocol amqpClientProtocol = new RabbitMQClientProtocol(connection);
 
-            await amqpClientProtocol.SendAsync(new AmqpProtocolversionHeader());
+            await amqpClientProtocol.SendAsync(new RabbitMQProtocolVersionHeader());
             var connectionStart = await amqpClientProtocol.ReceiveAsync<ConnectionStart>();
             //           
             byte[] credentials = Encoding.UTF8.GetBytes("\0guest"  + "\0guest");

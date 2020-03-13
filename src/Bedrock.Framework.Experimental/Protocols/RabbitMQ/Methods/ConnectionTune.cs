@@ -4,20 +4,30 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 {
-    public class ConnectionOpenOk : MethodBase, IAmqpMessage
+    public class ConnectionTune : MethodBase, IAmqpMessage
     { 
         public override byte ClassId => 10;
-        public override byte MethodId => 41;
-        public ReadOnlyMemory<byte> Reserved1 { get; private set; }
+        public override byte MethodId => 30;
+
+        public short MaxChannel { get; private set; }
+        public int MaxFrame { get; private set; }
+        public short HeartBeat { get; private set; }
 
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);            
             try
             {
-                Reserved1 = ProtocolHelper.ReadShortString(ref reader);
+                reader.TryReadBigEndian(out short maxChannel);
+                reader.TryReadBigEndian(out int maxFrame);
+                reader.TryReadBigEndian(out short heartBeat);
+
+                MaxChannel = maxChannel;
+                MaxFrame = maxFrame;
+                HeartBeat = heartBeat;
+
                 end = reader.Position;
                 return true;
             }

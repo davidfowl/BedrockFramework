@@ -4,7 +4,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 {
     public class ProtocolHelper
     {

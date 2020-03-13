@@ -1,4 +1,4 @@
-﻿namespace Bedrock.Framework.Experimental.Protocols.Amqp
+﻿namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 {
     internal enum FrameType : byte
     {

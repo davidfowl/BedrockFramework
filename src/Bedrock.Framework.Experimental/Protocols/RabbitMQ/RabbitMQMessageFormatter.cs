@@ -1,4 +1,4 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Amqp.Methods;
+﻿using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
 using Bedrock.Framework.Protocols;
 using System;
 using System.Buffers;
@@ -6,9 +6,9 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 {
-    public class AmqpMessageFormatter : IMessageWriter<IAmqpMessage>, IMessageReader<IAmqpMessage>
+    public class RabbitMQMessageFormatter : IMessageWriter<IAmqpMessage>, IMessageReader<IAmqpMessage>
     {
         public const int HeaderLength = 7;
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out IAmqpMessage message)

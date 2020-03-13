@@ -4,9 +4,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
 {
-    public class AmqpProtocolversionHeader : IAmqpMessage
+    public class RabbitMQProtocolVersionHeader : IAmqpMessage
     {
         private ReadOnlySpan<byte> ProtocolHeader => new byte[] { (byte)'A', (byte)'M', (byte)'Q', (byte)'P', 0, 0, 9, 1 };
         

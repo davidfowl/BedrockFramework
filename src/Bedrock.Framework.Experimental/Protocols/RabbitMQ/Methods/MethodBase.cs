@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 {
     public abstract class MethodBase
     {        

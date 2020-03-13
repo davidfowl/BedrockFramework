@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 {
     public class ConnectionStart : MethodBase, IAmqpMessage
     {

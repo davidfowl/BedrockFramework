@@ -4,7 +4,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
+namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
 {
     public class ChannelOpen : MethodBase, IAmqpMessage
     {
@@ -28,7 +28,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public void Write(IBufferWriter<byte> output)
         {  
             var payloadLength = 1 + Reserved1.Length + MethodHeaderLength;
-            var buffer = output.GetSpan(AmqpMessageFormatter.HeaderLength + payloadLength + 1);
+            var buffer = output.GetSpan(RabbitMQMessageFormatter.HeaderLength + payloadLength + 1);
 
             WriteHeader(ref buffer, Channel, payloadLength);
 
@@ -38,7 +38,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             Reserved1.Span.CopyTo(buffer.Slice(5));
             buffer[payloadLength]= (byte)FrameType.End;
 
-            output.Advance(AmqpMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
+            output.Advance(RabbitMQMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
         }
     }
 }
