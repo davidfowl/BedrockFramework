@@ -11,6 +11,18 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
     public class RabbitMQMessageFormatter : IMessageWriter<IAmqpMessage>, IMessageReader<IAmqpMessage>
     {
         public const int HeaderLength = 7;
+
+        public const int Connection = 10;
+        public const int ConnectionStart = 10;
+        public const int ConnectionTune = 30;
+        public const int ConnectionOpen = 41;
+
+        public const int Channel = 20;
+        public const int ChannelOpenOk = 11;
+
+        public const int Queue = 50;
+        public const int QueueDeclareOk = 11;
+
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out IAmqpMessage message)
         {
             message = default;
@@ -41,21 +53,21 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
                    
                     message = classId switch
                     {
-                        10 => methodId switch
+                        Connection => methodId switch
                         {
-                            10 => new ConnectionStart(),
-                            30 => new ConnectionTune(),
+                            ConnectionStart => new ConnectionStart(),
+                            ConnectionTune => new ConnectionTune(),
                             41 => new ConnectionOpenOk(),
                             _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
                         },
-                        20 => methodId switch
+                        Channel => methodId switch
                         {
-                            11 => new ChannelOpenOk(),
+                            ChannelOpenOk => new ChannelOpenOk(),
                             _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
                         },
-                        50 => methodId switch
+                        Queue => methodId switch
                         {
-                            11 => new QueueDeclareOk(),
+                            QueueDeclareOk => new QueueDeclareOk(),
                             _ => throw new Exception($"not (yet) supported classId {classId} - methodId {methodId}"),
                         },
                         _ => throw new Exception($"not (yet) supported classId {classId}"),
