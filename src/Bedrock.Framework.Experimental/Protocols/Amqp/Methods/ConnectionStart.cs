@@ -16,6 +16,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
         public ReadOnlyMemory<byte> SecurityMechanims { get; private set; }
         public ReadOnlyMemory<byte> Locale { get; private set; }
 
+        private ReadOnlySpan<byte> PlainAMQPPlain => new byte[] { (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N', (byte)' ', (byte)'A', (byte)'M', (byte)'Q', (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N' };
+        private ReadOnlyMemory<byte> Plain = new byte[] { (byte)'P', (byte)'L', (byte)'A', (byte)'I', (byte)'N' };
         public bool TryParse(ReadOnlySequence<byte> input,  out SequencePosition end)
         {
             SequenceReader<byte> reader = new SequenceReader<byte>(input);
@@ -37,9 +39,9 @@ namespace Bedrock.Framework.Experimental.Protocols.Amqp.Methods
             {
                 ServerProperties = ProtocolHelper.ReadTable(ref reader);
                 var security = ProtocolHelper.ReadLongString(ref reader);
-                if(security.Span.IndexOf(Encoding.UTF8.GetBytes("PLAIN AMQPLAIN").AsSpan()) >= 0)
+                if(security.Span.SequenceEqual(PlainAMQPPlain))
                 {
-                    SecurityMechanims = Encoding.UTF8.GetBytes("PLAIN").AsMemory();
+                    SecurityMechanims = Plain;
                 }
                 else
                 {
