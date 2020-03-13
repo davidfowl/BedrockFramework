@@ -85,21 +85,23 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
             return result;
         }
 
-        public static byte BoolArrayToByte(bool[] source)
+        public static byte BoolArrayToByte(ReadOnlyMemory<byte> source)
         {
             if (source.Length > 8)
             {
                 return 0;
-            } 
+            }
 
             byte result = 0;
             int index = 8 - source.Length;
-            foreach (bool b in source)
+            for (int i = 0; i < source.Length; i++)
             {
-                if (b)
+                if(source.Span[i] == 1)
+                {
                     result |= (byte)(1 << (7 - index));
+                }                
                 index++;
-            }
+            }            
             return result;
         }
     }

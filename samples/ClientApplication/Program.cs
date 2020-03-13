@@ -130,7 +130,7 @@ namespace ClientApplication
             await rabbitMqClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
             var channelOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ChannelOpenOk>();
 
-            await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_toto",false,true, true,true));
+            await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test"));
             var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();            
         }
 

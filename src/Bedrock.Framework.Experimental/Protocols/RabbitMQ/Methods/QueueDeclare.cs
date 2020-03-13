@@ -20,8 +20,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
         public bool AutoDelete { get; private set; }
         public bool NoWait { get; private set; }
         public Dictionary<string, object> Arguments { get; private set; }
+        public ReadOnlyMemory<byte> Options { get; private set; }
 
-        public QueueDeclare(ushort channel,ushort reserved1, string queueName, bool passive = false, bool durable = false, bool exclusive = false, bool autoDelete = false, bool noWait = false, Dictionary<string,object> arguments = null )
+        public QueueDeclare(ushort channel,ushort reserved1, string queueName, bool passive = false, bool durable = true, bool exclusive = true, bool autoDelete = true, bool noWait = false, Dictionary<string,object> arguments = null )
         {
             Channel = channel;
             Reserved1 = reserved1;
@@ -30,8 +31,9 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             Durable = durable;
             Exclusive = exclusive;
             AutoDelete = autoDelete;
-            NoWait = noWait;
+            NoWait = noWait;            
             Arguments = arguments;
+            Options = new ReadOnlyMemory<byte>(new byte[] { Convert.ToByte(passive), Convert.ToByte(durable), Convert.ToByte(exclusive), Convert.ToByte(autoDelete), Convert.ToByte(noWait) });
         }
         public bool TryParse(in ReadOnlySequence<byte> input, out SequencePosition end)
         {
@@ -51,15 +53,12 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             buffer[6] = (byte)QueueName.Length;           
             Encoding.UTF8.GetBytes(QueueName).CopyTo(buffer.Slice(7));
             var bools = new bool[5] { Passive, Durable, Exclusive, AutoDelete, NoWait };
-            var bytes = ProtocolHelper.BoolArrayToByte(bools);
-            buffer[7 + QueueName.Length] = bytes;
-            buffer[7 + QueueName.Length+1] = 0;
-            buffer[7 + QueueName.Length+2] = 0;
-            buffer[7 + QueueName.Length+3] = 0;
-            buffer[7 + QueueName.Length+4] = 0;
+            var bytes = ProtocolHelper.BoolArrayToByte(Options);
+            buffer = buffer.Slice(7 + QueueName.Length);
+            buffer[0] = bytes;           
             //TO DO write table
-            BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(7 + QueueName.Length + 5), 0);
-            buffer[payloadLength] = (byte)FrameType.End;
+            BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(1), 0);
+            buffer[5] = (byte)FrameType.End;
 
             output.Advance(RabbitMQMessageFormatter.HeaderLength + payloadLength + sizeof(byte));
         }        
