@@ -35,6 +35,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             Arguments = arguments;
             Options = new ReadOnlyMemory<byte>(new byte[] { Convert.ToByte(passive), Convert.ToByte(durable), Convert.ToByte(exclusive), Convert.ToByte(autoDelete), Convert.ToByte(noWait) });
         }
+
         public bool TryParse(in ReadOnlySequence<byte> input, out SequencePosition end)
         {
             throw new NotImplementedException();
@@ -51,8 +52,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(2), MethodId);
             BinaryPrimitives.WriteUInt16BigEndian(buffer.Slice(4), Reserved1);
             buffer[6] = (byte)QueueName.Length;           
-            Encoding.UTF8.GetBytes(QueueName).CopyTo(buffer.Slice(7));
-            var bools = new bool[5] { Passive, Durable, Exclusive, AutoDelete, NoWait };
+            Encoding.UTF8.GetBytes(QueueName).CopyTo(buffer.Slice(7));            
             var bytes = ProtocolHelper.BoolArrayToByte(Options);
             buffer = buffer.Slice(7 + QueueName.Length);
             buffer[0] = bytes;           
