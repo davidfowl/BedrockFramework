@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
+using Bedrock.Framework.Experimental.Protocols.RabbitMQ;
 using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
 using Bedrock.Framework.Transports.Memory;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
+using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
 
 namespace ClientApplication
 {
@@ -84,7 +86,55 @@ namespace ClientApplication
                     Console.WriteLine("Send Request To Memcached");
                     await MemcachedProtocol(serviceProvider);
                 }
+                else if (keyInfo.Key == ConsoleKey.D9)
+                {
+                    Console.WriteLine("RabbitMQ test");
+                    await RabbitMQProtocol(serviceProvider);
+                }
+                await RabbitMQProtocol(serviceProvider);
             }
+        }
+
+        private static async Task RabbitMQProtocol(IServiceProvider serviceProvider)
+        {
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Error);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder(serviceProvider)
+                .UseSockets()
+                .UseConnectionLogging(loggerFactory: loggerFactory)
+                .Build();
+
+            var ipAddress = IPAddress.Parse("127.0.0.1");
+            var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 5672));
+            var rabbitMqClientProtocol = new RabbitMQClientProtocol(connection);
+
+            await rabbitMqClientProtocol.SendAsync(new RabbitMQProtocolVersionHeader());
+            var connectionStart = await rabbitMqClientProtocol.ReceiveAsync<ConnectionStart>();
+            //           
+            byte[] credentials = Encoding.UTF8.GetBytes("\0guest"  + "\0guest");
+
+            await rabbitMqClientProtocol.SendAsync(new ConnectionOk(connectionStart.SecurityMechanims, new ReadOnlyMemory<byte>(credentials), connectionStart.Locale));
+            var connectionTune = await rabbitMqClientProtocol.ReceiveAsync<ConnectionTune>();
+
+            await rabbitMqClientProtocol.SendAsync(new ConnectionTuneOk(connectionTune.MaxChannel, connectionTune.MaxFrame, connectionTune.HeartBeat));
+            await rabbitMqClientProtocol.SendAsync(new ConnectionOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes("/")),
+                new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)),
+                0));
+            var connectionOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ConnectionOpenOk>();
+
+            ushort channelId = 1;
+            await rabbitMqClientProtocol.SendAsync(new ChannelOpen(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(string.Empty)), channelId));
+            var channelOpenOk = await rabbitMqClientProtocol.ReceiveAsync<ChannelOpenOk>();
+
+            await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test"));
+            var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();
+            
+            await rabbitMqClientProtocol.SendAsync(new QueueDelete(channelId, 0, "queue_test"));
+            var queueDeleteOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeleteOk>();
         }
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
