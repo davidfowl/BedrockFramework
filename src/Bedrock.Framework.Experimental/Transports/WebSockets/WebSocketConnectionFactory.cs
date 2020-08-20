@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Bedrock.Framework
 {
-    public class WebSocketConnectionFactory : IConnectionFactory
+    public class WebSocketConnectionFactory : ConnectionFactory
     {
         private readonly ILoggerFactory _loggerFactory;
 
@@ -18,23 +19,23 @@ namespace Bedrock.Framework
             _loggerFactory = loggerFactory;
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
-            if (!(endpoint is UriEndPoint uriEndpoint))
+            if (!(endPoint is UriEndPoint uriEndpoint))
             {
-                throw new NotSupportedException($"{endpoint} is not supported");
+                throw new NotSupportedException($"{endPoint} is not supported");
             }
 
-            var options = new HttpConnectionOptions
+            var httpOptions = new HttpConnectionOptions
             {
                 Url = uriEndpoint.Uri,
                 Transports = HttpTransportType.WebSockets,
                 SkipNegotiation = true
             };
 
-            var httpConnection = new HttpConnection(options, _loggerFactory);
+            var httpConnection = new HttpConnection(httpOptions, _loggerFactory);
             await httpConnection.StartAsync();
-            return httpConnection;
+            return httpConnection.AsConnection();
         }
     }
 }
