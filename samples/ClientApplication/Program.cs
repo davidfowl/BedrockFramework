@@ -79,7 +79,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
                     Console.WriteLine("Talk to local docker daemon");
-                    // await DockerDaemon(serviceProvider);
+                    await DockerDaemon(serviceProvider);
                 }
                 else if (keyInfo.Key == ConsoleKey.D8)
                 {
@@ -353,47 +353,44 @@ namespace ClientApplication
             }
         }
 
-        //private static async Task DockerDaemon(IServiceProvider serviceProvider)
-        //{
-        //    var client = new ClientBuilder(serviceProvider)
-        //                .UseConnectionFactory(new NamedPipeConnectionFactory())
-        //                .UseConnectionLogging()
-        //                .Build();
+        private static async Task DockerDaemon(IServiceProvider serviceProvider)
+        {
+            var client = new ClientBuilder(serviceProvider)
+                        .UseConnectionFactory(new NamedPipeConnectionFactory())
+                        .UseConnectionLogging()
+                        .Build();
 
-        //    await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
+            await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
 
-        //    // Use the HTTP/1.1 protocol
-        //    var httpProtocol = new HttpClientProtocol(connection);
+            // Use the HTTP/1.1 protocol
+            var httpProtocol = new HttpClientProtocol(connection);
 
-        //    while (true)
-        //    {
-        //        // Console.Write("http1.1> ");
-        //        var path = Console.ReadLine();
+            while (true)
+            {
+                // Console.Write("http1.1> ");
+                var path = Console.ReadLine();
 
-        //        if (path == null)
-        //        {
-        //            break;
-        //        }
+                if (path == null)
+                {
+                    break;
+                }
 
-        //        // Console.WriteLine();
+                // Console.WriteLine();
 
-        //        if (path == string.Empty)
-        //        {
-        //            path = "/";
-        //        }
+                if (path == string.Empty)
+                {
+                    path = "/";
+                }
 
-        //        var request = new HttpRequestMessage(HttpMethod.Get, path);
-        //        request.Headers.Host = "localhost";
+                var request = new HttpRequestMessage(HttpMethod.Get, path);
+                request.Headers.Host = "localhost";
 
-        //        var response = await httpProtocol.SendAsync(request);
+                var response = await httpProtocol.SendAsync(request);
 
-        //        await response.Content.CopyToAsync(Console.OpenStandardOutput());
+                await response.Content.CopyToAsync(Console.OpenStandardOutput());
 
-        //        Console.WriteLine();
-        //    }
-        //}
+                Console.WriteLine();
+            }
+        }
     }
-
-    // Property bag needed on ConnectAsync and BindAsync
-    // Maybe change EndPoint to some other binding abstraction
 }
