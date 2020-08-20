@@ -86,7 +86,7 @@ namespace Bedrock.Framework
 
             var listener = new WebSocketConnectionListener(server, _configure, serverOptions.Value.ApplicationServices, path);
 
-            await listener.BindAsync(cancellationToken);
+            await listener.StartAsync(cancellationToken);
 
             listener.EndPoint = listenOptions.IPEndPoint;
 

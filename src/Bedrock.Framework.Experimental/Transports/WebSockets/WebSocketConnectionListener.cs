@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace Bedrock.Framework
 {
-    public class WebSocketConnectionListener : ConnectionListener, IHttpApplication<HttpContext>
+    public class WebSocketConnectionListener : ConnectionListener, IConnectionProperties, IHttpApplication<HttpContext>
     {
         private readonly KestrelServer _server;
         private readonly Channel<Connection> _acceptQueue = Channel.CreateUnbounded<Connection>(new UnboundedChannelOptions
@@ -51,16 +51,16 @@ namespace Bedrock.Framework
             _application = builder.Build();
         }
 
-        public Task BindAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
             return _server.StartAsync(this, cancellationToken);
         }
 
         public EndPoint EndPoint { get; set; }
 
-        public override IConnectionProperties ListenerProperties => throw new NotImplementedException();
+        public override IConnectionProperties ListenerProperties => this;
 
-        public override EndPoint LocalEndPoint => throw new NotImplementedException();
+        public override EndPoint LocalEndPoint => EndPoint;
 
 
         public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
@@ -97,6 +97,12 @@ namespace Bedrock.Framework
             _acceptQueue.Writer.TryComplete();
 
             await base.DisposeAsyncCore();
+        }
+
+        public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
+        {
+            property = _server.Features[propertyKey];
+            return property != null;
         }
 
         // This exists solely to track the lifetime of the connection
