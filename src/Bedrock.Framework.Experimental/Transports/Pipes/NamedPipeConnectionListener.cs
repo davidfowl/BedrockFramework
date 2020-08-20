@@ -66,7 +66,13 @@ namespace Bedrock.Framework
             _acceptedQueue.Writer.TryComplete();
         }
 
-        public async ValueTask<Connection> AcceptAsync(CancellationToken cancellationToken = default)
+        protected override ValueTask DisposeAsyncCore()
+        {
+            _listeningSource.Dispose();
+            return base.DisposeAsyncCore();
+        }
+
+        public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             while (await _acceptedQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -76,17 +82,6 @@ namespace Bedrock.Framework
                 }
             }
             return null;
-        }
-
-        protected override ValueTask DisposeAsyncCore()
-        {
-            _listeningSource.Dispose();
-            return base.DisposeAsyncCore();
-        }
-
-        public override ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
         }
 
         public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
