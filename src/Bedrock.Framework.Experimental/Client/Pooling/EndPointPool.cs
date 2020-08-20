@@ -115,7 +115,7 @@ namespace Bedrock.Framework
             {
                 IncrementConnectionCount();
 
-                var Connection = new PooledConnectionContext(await _connectionFactory.ConnectAsync(_endPoint, options: null, cancellationToken: token), this);
+                var Connection = new PooledConnection(await _connectionFactory.ConnectAsync(_endPoint, options: null, cancellationToken: token), this);
                 if (Connection == null)
                 {
                     DecrementConnectionCount();

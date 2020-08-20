@@ -21,8 +21,6 @@ namespace Bedrock.Framework
             _connectionBuilder = new ConnectionBuilder(serviceProvider);
         }
 
-        internal static object Key { get; } = new object();
-
         private ConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
 
         public IServiceProvider ApplicationServices => _connectionBuilder.ApplicationServices;
@@ -43,14 +41,14 @@ namespace Bedrock.Framework
 
             _connectionBuilder.Run(connection =>
             {
-                if (connection.ConnectionProperties.TryGet<ConnectionContextWithDelegate>(out var connectionContextWithDelegate))
+                if (connection.ConnectionProperties.TryGet<ConnectionWithDelegate>(out var connectionWithDelegate))
                 {
-                    connectionContextWithDelegate.Initialized.TrySetResult(connection);
+                    connectionWithDelegate.Initialized.TrySetResult(connection);
 
 
                     // This task needs to stay around until the connection is disposed
                     // only then can we unwind the middleware chain
-                    return connectionContextWithDelegate.ExecutionTask;
+                    return connectionWithDelegate.ExecutionTask;
                 }
 
                 // REVIEW: Do we throw in this case? It's edgy but possible to call next with a differnt

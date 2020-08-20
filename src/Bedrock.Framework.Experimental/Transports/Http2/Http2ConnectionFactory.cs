@@ -1,23 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Connections;
+using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Net;
+using System.Net.Connections;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
-    public class Http2ConnectionFactory : IConnectionFactory
+    public class Http2ConnectionFactory : ConnectionFactory
     {
         private readonly HttpClient _client = new HttpClient();
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             Uri uri = null;
             switch (endPoint)
@@ -46,64 +44,60 @@ namespace Bedrock.Framework
             return connection;
         }
 
-        private class HttpClientConnectionContext : ConnectionContext,
-                IConnectionLifetimeFeature,
-                IConnectionEndPointFeature,
-                IConnectionItemsFeature,
-                IConnectionIdFeature,
-                IConnectionTransportFeature,
-                IDuplexPipe
+        private class HttpClientConnectionContext : Connection, IDuplexPipe, IConnectionProperties
         {
             private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             public HttpClientConnectionContext()
             {
                 Transport = this;
-
-                Features.Set<IConnectionIdFeature>(this);
-                Features.Set<IConnectionTransportFeature>(this);
-                Features.Set<IConnectionItemsFeature>(this);
-                Features.Set<IConnectionEndPointFeature>(this);
-                Features.Set<IConnectionLifetimeFeature>(this);
             }
 
             public Task ExecutionTask => _executionTcs.Task;
 
-            public override string ConnectionId { get; set; } = Guid.NewGuid().ToString();
-
-            public override IFeatureCollection Features { get; } = new FeatureCollection();
-
-            public override IDictionary<object, object> Items { get; set; } = new ConnectionItems();
-            public override IDuplexPipe Transport { get; set; }
-
-            public override EndPoint LocalEndPoint { get; set; }
-
-            public override EndPoint RemoteEndPoint { get; set; }
+            public IDuplexPipe Transport { get; set; }
 
             public PipeReader Input { get; set; }
 
             public PipeWriter Output { get; set; }
 
-            public override CancellationToken ConnectionClosed { get; set; }
-
             public HttpResponseMessage HttpResponseMessage { get; set; }
 
-            public override void Abort(ConnectionAbortedException abortReason)
+            public override IConnectionProperties ConnectionProperties => this;
+
+            public override EndPoint LocalEndPoint { get; }
+
+            public override EndPoint RemoteEndPoint { get; }
+
+            public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
             {
-                HttpResponseMessage.Dispose();
-
-                _executionTcs.TrySetCanceled();
-
-                Input.CancelPendingRead();
-                Output.CancelPendingFlush();
+                property = null;
+                return false;
             }
 
-            public override ValueTask DisposeAsync()
+            protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
             {
-                HttpResponseMessage.Dispose();
+                switch (method)
+                {
+                    case ConnectionCloseMethod.GracefulShutdown:
+                        HttpResponseMessage.Dispose();
 
-                _executionTcs.TrySetResult(null);
-                return base.DisposeAsync();
+                        _executionTcs.TrySetResult(null);
+                        break;
+                    case ConnectionCloseMethod.Abort:
+                    case ConnectionCloseMethod.Immediate:
+                        HttpResponseMessage.Dispose();
+
+                        _executionTcs.TrySetCanceled();
+
+                        Input.CancelPendingRead();
+                        Output.CancelPendingFlush();
+                        break;
+                    default:
+                        break;
+                }
+
+                return default;
             }
         }
 

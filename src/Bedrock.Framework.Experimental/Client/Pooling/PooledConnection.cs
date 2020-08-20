@@ -1,21 +1,17 @@
 using System;
-using System.Collections.Generic;
-using System.IO.Pipelines;
 using System.Net;
 using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
-    internal class PooledConnectionContext : Connection, IAsyncDisposable
+    internal class PooledConnection : Connection, IAsyncDisposable
     {
         private Connection _connection;
         private IEndPointPool _pool;
 
-        public PooledConnectionContext(Connection context, IEndPointPool pool)
+        public PooledConnection(Connection context, IEndPointPool pool)
         {
             _connection = context;
             _pool = pool;

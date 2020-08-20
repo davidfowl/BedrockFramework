@@ -20,25 +20,25 @@ namespace Bedrock.Framework
             _limiter = new SemaphoreSlim(limit);
         }
 
-        public async Task OnConnectionAsync(Connection connectionContext)
+        public async Task OnConnectionAsync(Connection connection)
         {
             // Wait 10 seconds for a connection
             var task = _limiter.WaitAsync(TimeSpan.FromSeconds(10));
 
             if (!task.IsCompletedSuccessfully)
             {
-                _logger.LogInformation("{ConnectionId} queued", connectionContext.LocalEndPoint);
+                _logger.LogInformation("{ConnectionId} queued", connection.LocalEndPoint);
 
                 if (!await task.ConfigureAwait(false))
                 {
-                    _logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.LocalEndPoint);
+                    _logger.LogInformation("{ConnectionId} timed out in the connection queue", connection.LocalEndPoint);
                     return;
                 }
             }
 
             try
             {
-                await _next(connectionContext).ConfigureAwait(false);
+                await _next(connection).ConfigureAwait(false);
             }
             finally
             {

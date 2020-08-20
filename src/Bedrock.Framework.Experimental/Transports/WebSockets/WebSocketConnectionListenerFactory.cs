@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -17,7 +18,7 @@ using Microsoft.Extensions.Options;
 
 namespace Bedrock.Framework
 {
-    public partial class WebSocketConnectionListenerFactory : IConnectionListenerFactory, IHostApplicationLifetime
+    public partial class WebSocketConnectionListenerFactory : ConnectionListenerFactory, IHostApplicationLifetime
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly Action<Microsoft.AspNetCore.Http.Connections.WebSocketOptions> _configure;
@@ -34,11 +35,11 @@ namespace Bedrock.Framework
 
         public CancellationToken ApplicationStopping => default;
 
-        public async ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             IPEndPoint iPEndPoint = null;
             var path = "";
-            switch (endpoint)
+            switch (endPoint)
             {
                 // Kestrel doesn't natively support UriEndpoints as yet
                 case UriEndPoint uriEndPoint:
@@ -58,7 +59,7 @@ namespace Bedrock.Framework
                     iPEndPoint = ip;
                     break;
                 default:
-                    throw new NotSupportedException($"{endpoint} not supported");
+                    throw new NotSupportedException($"{endPoint} not supported");
             }
 
             var services = new ServiceCollection();
@@ -71,7 +72,7 @@ namespace Bedrock.Framework
             services.AddSingleton(diagnosticListener);
             var serverOptions = Options.Create(new KestrelServerOptions() { ApplicationServices = services.BuildServiceProvider() }); ;
             var socketOptions = Options.Create(new SocketTransportOptions());
-            var server = new KestrelServer(serverOptions, new SocketTransportFactory(socketOptions, _loggerFactory), _loggerFactory);
+            var server = new KestrelServer(serverOptions, new[] { new SocketTransportFactory(socketOptions, _loggerFactory) }, _loggerFactory);
             ListenOptions listenOptions = null;
 
             // Bind an HTTP/1 endpoint

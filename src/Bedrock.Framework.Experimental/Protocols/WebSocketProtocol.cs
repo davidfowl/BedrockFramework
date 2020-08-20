@@ -1,16 +1,14 @@
 ﻿using System;
+using System.Net.Connections;
 using System.Net.WebSockets;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using Bedrock.Framework.Infrastructure;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Protocols
 {
     public class WebSocketProtocol
     {
-        public WebSocketProtocol(WebSocket websocket, ConnectionContext connection)
+        public WebSocketProtocol(WebSocket websocket, Connection connection)
         {
             WebSocket = websocket;
             Connection = connection;
@@ -19,7 +17,7 @@ namespace Bedrock.Framework.Protocols
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1);
 
         private WebSocket WebSocket { get; }
-        public ConnectionContext Connection { get; }
+        public Connection Connection { get; }
 
         public ValueTask<ValueWebSocketReceiveResult> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -40,9 +38,9 @@ namespace Bedrock.Framework.Protocols
             }
         }
 
-        public static WebSocketProtocol CreateFromConnection(ConnectionContext connection, bool isServer, string subProtocol, TimeSpan keepAliveInterval)
+        public static WebSocketProtocol CreateFromConnection(Connection connection, bool isServer, string subProtocol, TimeSpan keepAliveInterval)
         {
-            var websocket = WebSocket.CreateFromStream(new DuplexPipeStream(connection.Transport.Input, connection.Transport.Output), isServer, subProtocol, keepAliveInterval);
+            var websocket = WebSocket.CreateFromStream(connection.Stream, isServer, subProtocol, keepAliveInterval);
             return new WebSocketProtocol(websocket, connection);
         }
     }

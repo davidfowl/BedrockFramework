@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -15,10 +17,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
 
 namespace Bedrock.Framework
 {
-    public class Http2ConnectionListener : IConnectionListener, IHttpApplication<HttpContext>
+    public class Http2ConnectionListener : ConnectionListener, IHttpApplication<HttpContext>, IConnectionProperties
     {
         private readonly KestrelServer _server;
-        private readonly Channel<ConnectionContext> _acceptQueue = Channel.CreateUnbounded<ConnectionContext>(new UnboundedChannelOptions
+        private readonly Channel<Connection> _acceptQueue = Channel.CreateUnbounded<Connection>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = false
@@ -36,7 +38,11 @@ namespace Bedrock.Framework
 
         public EndPoint EndPoint { get; set; }
 
-        public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+        public override IConnectionProperties ListenerProperties => this;
+
+        public override EndPoint LocalEndPoint => null;
+
+        public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             while (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -51,13 +57,6 @@ namespace Bedrock.Framework
         public HttpContext CreateContext(IFeatureCollection contextFeatures)
         {
             return new DefaultHttpContext(contextFeatures);
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await UnbindAsync().ConfigureAwait(false);
-
-            _server.Dispose();
         }
 
         public void DisposeContext(HttpContext context, Exception exception)
@@ -79,6 +78,13 @@ namespace Bedrock.Framework
             await httpConnectionContext.ExecutionTask;
         }
 
+        protected override ValueTask DisposeAsyncCore()
+        {
+            _server.Dispose();
+
+            return base.DisposeAsyncCore();
+        }
+
         public async ValueTask UnbindAsync(CancellationToken cancellationToken = default)
         {
             await _server.StopAsync(cancellationToken).ConfigureAwait(false);
@@ -86,13 +92,13 @@ namespace Bedrock.Framework
             _acceptQueue.Writer.TryComplete();
         }
 
-        private class HttpConnectionContext : ConnectionContext,
-            IConnectionLifetimeFeature,
-            IConnectionEndPointFeature,
-            IConnectionItemsFeature,
-            IConnectionIdFeature,
-            IConnectionTransportFeature,
-            IDuplexPipe
+        public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
+        {
+            property = _server.Features[propertyKey];
+            return property != null;
+        }
+
+        private class HttpConnectionContext : Connection, IDuplexPipe, IConnectionProperties
         {
             private readonly HttpContext _httpContext;
             private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -101,48 +107,34 @@ namespace Bedrock.Framework
             {
                 _httpContext = httpContext;
                 Transport = this;
-                Items = httpContext.Items;
-                Features = _httpContext.Features;
-                ConnectionId = _httpContext.TraceIdentifier;
                 LocalEndPoint = new IPEndPoint(httpContext.Connection.LocalIpAddress, httpContext.Connection.LocalPort);
                 RemoteEndPoint = new IPEndPoint(httpContext.Connection.RemoteIpAddress, httpContext.Connection.RemotePort);
-                ConnectionClosed = httpContext.RequestAborted;
-
-                Features.Set<IConnectionIdFeature>(this);
-                Features.Set<IConnectionTransportFeature>(this);
-                Features.Set<IConnectionItemsFeature>(this);
-                Features.Set<IConnectionEndPointFeature>(this);
-                Features.Set<IConnectionLifetimeFeature>(this);
             }
 
             public Task ExecutionTask => _executionTcs.Task;
 
-            public override string ConnectionId { get; set; }
+            public IDuplexPipe Transport { get; }
 
-            public override IFeatureCollection Features { get; }
+            public override IConnectionProperties ConnectionProperties => this;
 
-            public override IDictionary<object, object> Items { get; set; }
-            public override IDuplexPipe Transport { get; set; }
+            public override EndPoint LocalEndPoint { get; }
 
-            public override EndPoint LocalEndPoint { get; set; }
-
-            public override EndPoint RemoteEndPoint { get; set; }
+            public override EndPoint RemoteEndPoint { get; }
 
             public PipeReader Input => _httpContext.Request.BodyReader;
 
             public PipeWriter Output => _httpContext.Response.BodyWriter;
 
-            public override CancellationToken ConnectionClosed { get; set; }
-
-            public override void Abort(ConnectionAbortedException abortReason)
+            public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
             {
-                _httpContext.Abort();
+                property = _httpContext.Features[propertyKey];
+                return property != null;
             }
 
-            public override ValueTask DisposeAsync()
+            protected override ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
             {
                 _executionTcs.TrySetResult(null);
-                return base.DisposeAsync();
+                return default;
             }
         }
     }

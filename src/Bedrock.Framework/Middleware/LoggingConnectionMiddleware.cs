@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.IO.Pipelines;
 using System.Net.Connections;
 using System.Threading.Tasks;
 using Bedrock.Framework.Infrastructure;
@@ -25,19 +24,11 @@ namespace Bedrock.Framework
 
         public async Task OnConnectionAsync(Connection connection)
         {
-            await using var loggingDuplexPipe = new LoggingDuplexPipe(connection.Pipe, _logger, _loggingFormatter);
+            await using var loggingStream = new LoggingStream(connection.Stream, _logger, _loggingFormatter);
 
-            var loggingConnection = Connection.FromPipe(loggingDuplexPipe, leaveOpen: true, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint); ;
+            var loggingConnection = Connection.FromStream(loggingStream, leaveOpen: true, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint);
 
             await _next(loggingConnection).ConfigureAwait(false);
-        }
-
-        private class LoggingDuplexPipe : DuplexPipeStreamAdapter<LoggingStream>
-        {
-            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, LoggingFormatter loggingFormatter) :
-                base(transport, stream => new LoggingStream(stream, logger, loggingFormatter))
-            {
-            }
         }
     }
 }

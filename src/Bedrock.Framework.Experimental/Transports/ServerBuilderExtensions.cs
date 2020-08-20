@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Net;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Bedrock.Framework
 {

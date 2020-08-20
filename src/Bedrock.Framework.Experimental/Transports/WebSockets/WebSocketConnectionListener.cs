@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -16,10 +18,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace Bedrock.Framework
 {
-    public class WebSocketConnectionListener : IConnectionListener, IHttpApplication<HttpContext>
+    public class WebSocketConnectionListener : ConnectionListener, IHttpApplication<HttpContext>
     {
         private readonly KestrelServer _server;
-        private readonly Channel<ConnectionContext> _acceptQueue = Channel.CreateUnbounded<ConnectionContext>(new UnboundedChannelOptions
+        private readonly Channel<Connection> _acceptQueue = Channel.CreateUnbounded<Connection>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = false
@@ -38,7 +40,7 @@ namespace Bedrock.Framework
                 configure(options.WebSockets);
                 routes.MapConnections(path, options, cb => cb.Run(inner =>
                 {
-                    var connection = new WebSocketConnectionContext(inner);
+                    var connection = new WebSocketConnection(inner);
 
                     _acceptQueue.Writer.TryWrite(connection);
 
@@ -56,7 +58,12 @@ namespace Bedrock.Framework
 
         public EndPoint EndPoint { get; set; }
 
-        public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+        public override IConnectionProperties ListenerProperties => throw new NotImplementedException();
+
+        public override EndPoint LocalEndPoint => throw new NotImplementedException();
+
+
+        public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             while (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -73,13 +80,6 @@ namespace Bedrock.Framework
             return new DefaultHttpContext(contextFeatures);
         }
 
-        public async ValueTask DisposeAsync()
-        {
-            await UnbindAsync().ConfigureAwait(false);
-
-            _server.Dispose();
-        }
-
         public void DisposeContext(HttpContext context, Exception exception)
         {
 
@@ -90,78 +90,60 @@ namespace Bedrock.Framework
             return _application(context);
         }
 
-        public async ValueTask UnbindAsync(CancellationToken cancellationToken = default)
+        protected override async ValueTask DisposeAsyncCore()
         {
-            await _server.StopAsync(cancellationToken).ConfigureAwait(false);
+            await _server.StopAsync(default).ConfigureAwait(false);
 
             _acceptQueue.Writer.TryComplete();
+
+            await base.DisposeAsyncCore();
         }
 
         // This exists solely to track the lifetime of the connection
-        private class WebSocketConnectionContext : ConnectionContext
+        private class WebSocketConnection : Connection, IConnectionProperties
         {
             private readonly ConnectionContext _connection;
             private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public WebSocketConnectionContext(ConnectionContext connection)
+            public WebSocketConnection(ConnectionContext connection)
             {
                 _connection = connection;
             }
 
             public Task ExecutionTask => _executionTcs.Task;
 
-            public override string ConnectionId
-            {
-                get => _connection.ConnectionId;
-                set => _connection.ConnectionId = value;
-            }
+            protected override IDuplexPipe CreatePipe() => _connection.Transport;
 
-            public override IFeatureCollection Features => _connection.Features;
+            protected override Stream CreateStream() => new DuplexPipeStream(_connection.Transport.Input, _connection.Transport.Output);
 
-            public override IDictionary<object, object> Items
-            {
-                get => _connection.Items;
-                set => _connection.Items = value;
-            }
+            public override EndPoint LocalEndPoint => _connection.LocalEndPoint;
 
-            public override IDuplexPipe Transport
-            {
-                get => _connection.Transport;
-                set => _connection.Transport = value;
-            }
+            public override EndPoint RemoteEndPoint => _connection.RemoteEndPoint;
 
-            public override EndPoint LocalEndPoint
-            {
-                get => _connection.LocalEndPoint;
-                set => _connection.LocalEndPoint = value;
-            }
+            public override IConnectionProperties ConnectionProperties => this;
 
-            public override EndPoint RemoteEndPoint
-            {
-                get => _connection.RemoteEndPoint;
-                set => _connection.RemoteEndPoint = value;
-            }
-
-            public override CancellationToken ConnectionClosed
-            {
-                get => _connection.ConnectionClosed;
-                set => _connection.ConnectionClosed = value;
-            }
-
-            public override void Abort()
-            {
-                _connection.Abort();
-            }
-
-            public override void Abort(ConnectionAbortedException abortReason)
-            {
-                _connection.Abort(abortReason);
-            }
-
-            public override ValueTask DisposeAsync()
+            protected override async ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
             {
                 _executionTcs.TrySetResult(null);
-                return _connection.DisposeAsync();
+
+                switch (method)
+                {
+                    case ConnectionCloseMethod.Abort:
+                        _connection.Abort();
+                        break;
+                    case ConnectionCloseMethod.Immediate:
+                    case ConnectionCloseMethod.GracefulShutdown:
+                        await _connection.DisposeAsync();
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
+            {
+                property = _connection.Features[propertyKey];
+                return property != null;
             }
         }
     }

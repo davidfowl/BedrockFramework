@@ -1,21 +1,21 @@
 ﻿using System;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
-    public class NamedPipeConnectionListenerFactory : IConnectionListenerFactory
+    public class NamedPipeConnectionListenerFactory : ConnectionListenerFactory
     {
-        public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
-            if (!(endpoint is NamedPipeEndPoint np))
+            if (!(endPoint is NamedPipeEndPoint np))
             {
-                throw new NotSupportedException($"{endpoint.GetType()} is not supported");
+                throw new NotSupportedException($"{endPoint.GetType()} is not supported");
             }
-            var listener = new NamedPipeConnectionListener(np);
-            return new ValueTask<IConnectionListener>(listener);
+            var listener = new NamedPipeConnectionListener(np, options);
+            return new ValueTask<ConnectionListener>(listener);
         }
     }
 }

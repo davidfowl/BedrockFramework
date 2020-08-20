@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace Bedrock.Framework
 {
-    internal class ConnectionContextWithDelegate : Connection, IConnectionProperties
+    internal class ConnectionWithDelegate : Connection, IConnectionProperties
     {
         private readonly Connection _connection;
         private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task _middlewareTask;
         private ConnectionDelegate _connectionDelegate;
 
-        public ConnectionContextWithDelegate(Connection connection, ConnectionDelegate connectionDelegate)
+        public ConnectionWithDelegate(Connection connection, ConnectionDelegate connectionDelegate)
         {
             _connection = connection;
             _connectionDelegate = connectionDelegate;
@@ -71,7 +71,7 @@ namespace Bedrock.Framework
 
         public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
         {
-            if (propertyKey == typeof(ConnectionContextWithDelegate))
+            if (propertyKey == typeof(ConnectionWithDelegate))
             {
                 property = this;
                 return true;

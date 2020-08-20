@@ -8,7 +8,6 @@ using System.Net.Connections;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Transports.Memory
 {

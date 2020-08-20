@@ -77,7 +77,7 @@ namespace ClientApplication
 
                 if (connection != null)
                 {
-                    _memoryCache.Set(dnsEndPoint.Host, resolvedEndPoint, new MemoryCacheEntryOptions
+                    _memoryCache.Set(dnsEndPoint.Host, (resolvedEndPoint, options), new MemoryCacheEntryOptions
                     {
                         AbsoluteExpirationRelativeToNow = _timeout
                     });
@@ -90,7 +90,7 @@ namespace ClientApplication
             }
             else
             {
-                return await ConnectionFactory.ConnectAsync(endPoint);
+                return await ConnectionFactory.ConnectAsync(endPoint, options);
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -12,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace Bedrock.Framework
 {
-    public partial class Http2ConnectionListenerFactory : IConnectionListenerFactory
+    public partial class Http2ConnectionListenerFactory : ConnectionListenerFactory
     {
         private readonly ILoggerFactory _loggerFactory;
 
@@ -21,10 +22,10 @@ namespace Bedrock.Framework
             _loggerFactory = loggerFactory;
         }
 
-        public async ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             IPEndPoint iPEndPoint = null;
-            switch (endpoint)
+            switch (endPoint)
             {
                 // Kestrel doesn't natively support UriEndpoints as yet
                 case UriEndPoint uriEndPoint:
@@ -43,7 +44,7 @@ namespace Bedrock.Framework
                     iPEndPoint = ip;
                     break;
                 default:
-                    throw new NotSupportedException($"{endpoint} not supported");
+                    throw new NotSupportedException($"{endPoint} not supported");
             }
 
             var services = new ServiceCollection();
@@ -52,7 +53,7 @@ namespace Bedrock.Framework
             var serverOptions = Options.Create(new KestrelServerOptions() { ApplicationServices = services.BuildServiceProvider() }); ;
             var socketOptions = Options.Create(new SocketTransportOptions());
             var socketTransportFactory = new SocketTransportFactory(socketOptions, _loggerFactory);
-            var server = new KestrelServer(serverOptions, socketTransportFactory, _loggerFactory);
+            var server = new KestrelServer(serverOptions, new[] { socketTransportFactory }, _loggerFactory);
             ListenOptions listenOptions = null;
 
             // Bind an HTTP/2 endpoint

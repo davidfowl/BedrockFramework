@@ -8,21 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Protocols\Http2\**" />
-    <Compile Remove="Transports\**" />
-    <EmbeddedResource Remove="Protocols\Http2\**" />
-    <EmbeddedResource Remove="Transports\**" />
-    <None Remove="Protocols\Http2\**" />
-    <None Remove="Transports\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Protocols\Http2ClientProtocol.cs" />
-    <Compile Remove="Protocols\Http2Protocol.cs" />
-    <Compile Remove="Protocols\Http2ServerProtocol.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="..\Bedrock.Framework\Infrastructure\DuplexPipe.cs" Link="Infrastructure\DuplexPipe.cs" />
     <Compile Include="..\Bedrock.Framework\Infrastructure\DuplexPipeStream.cs" Link="Infrastructure\DuplexPipeStream.cs" />
     <Compile Include="..\Bedrock.Framework\Infrastructure\TaskToApm.cs" Link="Infrastructure\TaskToApm.cs" />
@@ -32,4 +17,7 @@
     <ProjectReference Include="..\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
+  </ItemGroup>
 </Project>
