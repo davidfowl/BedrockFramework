@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.IO.Pipelines;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -9,81 +12,108 @@ using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework.Transports.Memory
 {
-    public partial class MemoryTransport : IConnectionListenerFactory, IConnectionFactory
+    public class MemoryTransport
     {
         private readonly ConcurrentDictionary<EndPoint, MemoryConnectionListener> _listeners = new ConcurrentDictionary<EndPoint, MemoryConnectionListener>();
 
-        public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public MemoryTransport()
         {
-            endpoint ??= MemoryEndPoint.Default;
-            MemoryConnectionListener listener;
-
-            if (_listeners.TryGetValue(endpoint, out _) ||
-                !_listeners.TryAdd(endpoint, listener = new MemoryConnectionListener() { EndPoint = endpoint }))
-            {
-                throw new AddressInUseException($"{endpoint} listener already bound");
-            }
-
-            return new ValueTask<IConnectionListener>(listener);
+            ConnectionListenerFactory = new MemoryConnectionListenerFactory(this);
+            ConnectionFactory = new MemoryConnectionFactory(this);
         }
 
-        public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
-        {
-            endpoint ??= MemoryEndPoint.Default;
+        public ConnectionListenerFactory ConnectionListenerFactory { get; }
+        public ConnectionFactory ConnectionFactory { get; }
 
-            if (!_listeners.TryGetValue(endpoint, out var listener))
+        internal ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+        {
+            MemoryConnectionListener listener;
+
+            if (_listeners.TryGetValue(endPoint, out _) ||
+                !_listeners.TryAdd(endPoint, listener = new MemoryConnectionListener(endPoint)))
             {
-                throw new InvalidOperationException($"{endpoint} not bound!");
+                throw new IOException($"{endPoint} listener already bound");
+            }
+
+            return new ValueTask<ConnectionListener>(listener);
+        }
+
+        internal ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options, CancellationToken cancellationToken)
+        {
+            if (!_listeners.TryGetValue(endPoint, out var listener) && !(endPoint is DnsEndPoint dns && _listeners.TryGetValue(new MemoryEndPoint(dns.Host), out listener)))
+            {
+                throw new InvalidOperationException($"{endPoint} not bound!");
             }
 
             var pair = DuplexPipe.CreateConnectionPair(new PipeOptions(), new PipeOptions());
 
-            var serverConnection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application)
-            {
-                LocalEndPoint = endpoint,
-                RemoteEndPoint = endpoint
-            };
-
-            var clientConnection = new DefaultConnectionContext(serverConnection.ConnectionId, pair.Application, pair.Transport)
-            {
-                LocalEndPoint = endpoint,
-                RemoteEndPoint = endpoint
-            };
+            var serverConnection = Connection.FromPipe(pair.Transport, localEndPoint: endPoint, remoteEndPoint: endPoint);
+            var clientConnection = Connection.FromPipe(pair.Application, localEndPoint: endPoint, remoteEndPoint: endPoint);
 
             listener.AcceptQueue.Writer.TryWrite(serverConnection);
-            return new ValueTask<ConnectionContext>(clientConnection);
+            return new ValueTask<Connection>(clientConnection);
+        }
+    }
+
+    public class MemoryConnectionListenerFactory : ConnectionListenerFactory
+    {
+        private readonly MemoryTransport _memoryTransport;
+
+        public MemoryConnectionListenerFactory(MemoryTransport memoryTransport)
+        {
+            _memoryTransport = memoryTransport;
         }
 
-        private class MemoryConnectionListener : IConnectionListener
+        public override ValueTask<ConnectionListener> ListenAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
-            public EndPoint EndPoint { get; set; }
+            return _memoryTransport.ListenAsync(endPoint, options, cancellationToken);
+        }
+    }
 
-            internal Channel<ConnectionContext> AcceptQueue { get; } = Channel.CreateUnbounded<ConnectionContext>();
+    public class MemoryConnectionListener : ConnectionListener, IConnectionProperties
+    {
+        internal Channel<Connection> AcceptQueue { get; } = Channel.CreateUnbounded<Connection>();
 
-            public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+        public MemoryConnectionListener(EndPoint endPoint)
+        {
+            LocalEndPoint = endPoint;
+        }
+
+        public override IConnectionProperties ListenerProperties => this;
+
+        public override EndPoint LocalEndPoint { get; }
+
+        public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
+        {
+            if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+                while (AcceptQueue.Reader.TryRead(out var item))
                 {
-                    while (AcceptQueue.Reader.TryRead(out var item))
-                    {
-                        return item;
-                    }
+                    return item;
                 }
-
-                return null;
             }
 
-            public ValueTask DisposeAsync()
-            {
-                return UnbindAsync();
-            }
+            return null;
+        }
 
-            public ValueTask UnbindAsync(CancellationToken cancellationToken = default)
-            {
-                AcceptQueue.Writer.TryComplete();
+        public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
+        {
+            property = null;
+            return false;
+        }
+    }
 
-                return default;
-            }
+    public class MemoryConnectionFactory : ConnectionFactory
+    {
+        private readonly MemoryTransport _memoryTransport;
+        public MemoryConnectionFactory(MemoryTransport memoryTransport)
+        {
+            _memoryTransport = memoryTransport;
+        }
+
+        public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
+        {
+            return _memoryTransport.ConnectAsync(endPoint, options, cancellationToken);
         }
     }
 }

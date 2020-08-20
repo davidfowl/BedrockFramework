@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -19,18 +20,18 @@ namespace Bedrock.Framework
             _limiter = new SemaphoreSlim(limit);
         }
 
-        public async Task OnConnectionAsync(ConnectionContext connectionContext)
+        public async Task OnConnectionAsync(Connection connectionContext)
         {
             // Wait 10 seconds for a connection
             var task = _limiter.WaitAsync(TimeSpan.FromSeconds(10));
 
             if (!task.IsCompletedSuccessfully)
             {
-                _logger.LogInformation("{ConnectionId} queued", connectionContext.ConnectionId);
+                _logger.LogInformation("{ConnectionId} queued", connectionContext.LocalEndPoint);
 
                 if (!await task.ConfigureAwait(false))
                 {
-                    _logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.ConnectionId);
+                    _logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.LocalEndPoint);
                     return;
                 }
             }

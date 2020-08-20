@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Net.Connections;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -652,13 +653,13 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol();
 
             async Task WritingTask()
             {
-                var writer = connection.Application.Output;
+                var writer = pair.Application.Output;
 
                 for (var i = 0; i < 3; i++)
                 {

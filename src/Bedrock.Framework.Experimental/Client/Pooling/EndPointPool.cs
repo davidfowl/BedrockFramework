@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Bedrock.Framework.Infrastructure;
@@ -11,19 +12,19 @@ namespace Bedrock.Framework
     internal class EndPointPool : IEndPointPool, IAsyncDisposable
     {
         private EndPoint _endPoint;
-        private List<ConnectionContext> _idleConnections;
-        private IConnectionFactory _connectionFactory;
+        private List<Connection> _idleConnections;
+        private ConnectionFactory _connectionFactory;
         private int _maxConnectionCount;
         private int _connectionCount;
 
         private object _syncObj = new object();
-        private Queue<TaskCompletionSourceWithCancellation<ConnectionContext>> _waiters;
+        private Queue<TaskCompletionSourceWithCancellation<Connection>> _waiters;
 
-        public EndPointPool(EndPoint endPoint, IConnectionFactory connectionFactory, int maxConnections)
+        public EndPointPool(EndPoint endPoint, ConnectionFactory connectionFactory, int maxConnections)
         {
             _endPoint = endPoint;
             _connectionFactory = connectionFactory;
-            _idleConnections = new List<ConnectionContext>();
+            _idleConnections = new List<Connection>();
             _maxConnectionCount = maxConnections;
         }
 
@@ -50,7 +51,7 @@ namespace Bedrock.Framework
             }
         }
 
-        public ValueTask ReturnAsync(ConnectionContext context)
+        public ValueTask ReturnAsync(Connection context)
         {
             // TODO handle context being invalid.
             lock (_syncObj)
@@ -68,11 +69,11 @@ namespace Bedrock.Framework
             return default;
         }
 
-        private bool TransferConnection(ConnectionContext connection)
+        private bool TransferConnection(Connection connection)
         {
             while (HasWaiter())
             {
-                TaskCompletionSource<ConnectionContext> waiter = DequeueWaiter();
+                TaskCompletionSource<Connection> waiter = DequeueWaiter();
 
                 // Try to complete the task. If it's been cancelled already, this will fail.
                 if (waiter.TrySetResult(connection))
@@ -91,17 +92,17 @@ namespace Bedrock.Framework
             _connectionCount++;
         }
 
-        public ValueTask<ConnectionContext> GetConnectionAsync(CancellationToken cancellationToken = default)
+        public ValueTask<Connection> GetConnectionAsync(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<ConnectionContext>(Task.FromCanceled<ConnectionContext>(cancellationToken));
+                return new ValueTask<Connection>(Task.FromCanceled<Connection>(cancellationToken));
             }
 
             // TODO figure out how to get a connection lifetime via settings.
             var list = _idleConnections;
-            List<ConnectionContext> _connectionsToDispose = null;
-            async ValueTask<ConnectionContext> DisposeConnectionsAndReturn(List<ConnectionContext> toDispose, ConnectionContext context)
+            List<Connection> _connectionsToDispose = null;
+            async ValueTask<Connection> DisposeConnectionsAndReturn(List<Connection> toDispose, Connection context)
             {
                 foreach (var disposeContext in toDispose)
                 {
@@ -110,17 +111,17 @@ namespace Bedrock.Framework
                 return context;
             }
 
-            async ValueTask<ConnectionContext> GetConnectionAsync(EndPoint endpoint, CancellationToken token)
+            async ValueTask<Connection> GetConnectionAsync(EndPoint endpoint, CancellationToken token)
             {
                 IncrementConnectionCount();
 
-                var connectionContext = new PooledConnectionContext(await _connectionFactory.ConnectAsync(_endPoint, cancellationToken), this);
-                if (connectionContext == null)
+                var Connection = new PooledConnectionContext(await _connectionFactory.ConnectAsync(_endPoint, options: null, cancellationToken: token), this);
+                if (Connection == null)
                 {
                     DecrementConnectionCount();
                 }
 
-                return connectionContext;
+                return Connection;
             }
 
             while (true)
@@ -131,31 +132,31 @@ namespace Bedrock.Framework
                     {
                         var cachedConnection = list[list.Count - 1];
                         list.RemoveAt(list.Count - 1);
-                        
-                        // TODO check if the connection is expired. 
-                        if (!cachedConnection.ConnectionClosed.IsCancellationRequested)
-                        {
-                            if (_connectionsToDispose != null)
-                            {
-                                return DisposeConnectionsAndReturn(_connectionsToDispose, cachedConnection);
-                            }
 
-                            return new ValueTask<ConnectionContext>(cachedConnection);
-                        }
-                        else
+                        // TODO check if the connection is expired. 
+                        //if (!cachedConnection.ConnectionClosed.IsCancellationRequested)
+                        //{
+                        //    if (_connectionsToDispose != null)
+                        //    {
+                        //        return DisposeConnectionsAndReturn(_connectionsToDispose, cachedConnection);
+                        //    }
+
+                        //    return new ValueTask<Connection>(cachedConnection);
+                        //}
+                        //else
+                        //{
+                        if (_connectionsToDispose == null)
                         {
-                            if (_connectionsToDispose == null)
-                            {
-                                _connectionsToDispose = new List<ConnectionContext>();
-                            }
-                            _connectionsToDispose.Add(cachedConnection);
+                            _connectionsToDispose = new List<Connection>();
                         }
+                        _connectionsToDispose.Add(cachedConnection);
+                        //}
                     }
                     else
                     {
                         if (_connectionCount < _maxConnectionCount)
                         {
-                            // TODO wrap connectionContext with a pooled version which returns to the pool.
+                            // TODO wrap Connection with a pooled version which returns to the pool.
                             return GetConnectionAsync(_endPoint, cancellationToken);
                         }
                         else
@@ -168,14 +169,14 @@ namespace Bedrock.Framework
             }
         }
 
-        private TaskCompletionSourceWithCancellation<ConnectionContext> EnqueueWaiter()
+        private TaskCompletionSourceWithCancellation<Connection> EnqueueWaiter()
         {
             if (_waiters == null)
             {
-                _waiters = new Queue<TaskCompletionSourceWithCancellation<ConnectionContext>>();
+                _waiters = new Queue<TaskCompletionSourceWithCancellation<Connection>>();
             }
 
-            var waiter = new TaskCompletionSourceWithCancellation<ConnectionContext>();
+            var waiter = new TaskCompletionSourceWithCancellation<Connection>();
             _waiters.Enqueue(waiter);
             return waiter;
         }
@@ -187,7 +188,7 @@ namespace Bedrock.Framework
 
         /// <summary>Dequeues a waiter from the waiters list.  The list must not be empty.</summary>
         /// <returns>The dequeued waiter.</returns>
-        private TaskCompletionSourceWithCancellation<ConnectionContext> DequeueWaiter()
+        private TaskCompletionSourceWithCancellation<Connection> DequeueWaiter()
         {
             return _waiters.Dequeue();
         }

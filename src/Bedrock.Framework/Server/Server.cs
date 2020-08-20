@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -16,6 +18,7 @@ namespace Bedrock.Framework
         private readonly List<RunningListener> _listeners = new List<RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TimerAwaitable _timerAwaitable;
+        private readonly CancellationTokenSource _stopAcceptingCts = new CancellationTokenSource();
         private Task _timerTask = Task.CompletedTask;
 
         internal Server(ServerBuilder builder)
@@ -31,7 +34,7 @@ namespace Bedrock.Framework
             {
                 foreach (var listener in _listeners)
                 {
-                    yield return listener.Listener.EndPoint;
+                    yield return listener.Listener.LocalEndPoint;
                 }
             }
         }
@@ -42,7 +45,7 @@ namespace Bedrock.Framework
             {
                 foreach (var binding in _builder.Bindings)
                 {
-                    await foreach (var listener in binding.BindAsync(cancellationToken).ConfigureAwait(false))
+                    await foreach (var listener in binding.ListenAsync(cancellationToken).ConfigureAwait(false))
                     {
                         var runningListener = new RunningListener(this, binding, listener);
                         _listeners.Add(runningListener);
@@ -79,12 +82,14 @@ namespace Bedrock.Framework
         {
             var tasks = new Task[_listeners.Count];
 
-            for (int i = 0; i < _listeners.Count; i++)
-            {
-                tasks[i] = _listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
-            }
+            //for (int i = 0; i < _listeners.Count; i++)
+            //{
+            //    tasks[i] = _listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
+            //}
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            _stopAcceptingCts.Cancel();
+
+            // await Task.WhenAll(tasks).ConfigureAwait(false);
 
             // Signal to all of the listeners that it's time to start the shutdown process
             // We call this after unbind so that we're not touching the listener anymore (each loop will dispose the listener)
@@ -120,7 +125,7 @@ namespace Bedrock.Framework
             private readonly ServerBinding _binding;
             private readonly ConcurrentDictionary<long, (ServerConnection Connection, Task ExecutionTask)> _connections = new ConcurrentDictionary<long, (ServerConnection, Task)>();
 
-            public RunningListener(Server server, ServerBinding binding, IConnectionListener listener)
+            public RunningListener(Server server, ServerBinding binding, ConnectionListener listener)
             {
                 _server = server;
                 _binding = binding;
@@ -132,7 +137,7 @@ namespace Bedrock.Framework
                 ExecutionTask = RunListenerAsync();
             }
 
-            public IConnectionListener Listener { get; }
+            public ConnectionListener Listener { get; }
             public Task ExecutionTask { get; private set; }
 
             public void TickHeartbeat()
@@ -160,17 +165,25 @@ namespace Bedrock.Framework
 
                         await connectionDelegate(connection).ConfigureAwait(false);
                     }
-                    catch (ConnectionResetException)
+                    catch (IOException)
                     {
-                        // Don't let connection aborted exceptions out
+
                     }
-                    catch (ConnectionAbortedException)
+                    catch (OperationCanceledException)
                     {
-                        // Don't let connection aborted exceptions out
+
                     }
+                    //catch (ConnectionResetException)
+                    //{
+                    //    // Don't let connection aborted exceptions out
+                    //}
+                    //catch (ConnectionAbortedException)
+                    //{
+                    //    // Don't let connection aborted exceptions out
+                    //}
                     catch (Exception ex)
                     {
-                        _server._logger.LogError(ex, "Unexpected exception from connection {ConnectionId}", connection.ConnectionId);
+                        _server._logger.LogError(ex, "Unexpected exception from connection {ConnectionId}", connection.LocalEndPoint.ToString());
                     }
                     finally
                     {
@@ -190,7 +203,7 @@ namespace Bedrock.Framework
                 {
                     try
                     {
-                        var connection = await listener.AcceptAsync().ConfigureAwait(false);
+                        var connection = await listener.AcceptAsync(cancellationToken: _server._stopAcceptingCts.Token).ConfigureAwait(false);
 
                         if (connection == null)
                         {
@@ -208,7 +221,7 @@ namespace Bedrock.Framework
                     }
                     catch (Exception ex)
                     {
-                        _server._logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", listener.EndPoint);
+                        _server._logger.LogCritical(ex, "Stopped accepting connections on {endpoint}", listener.LocalEndPoint);
                         break;
                     }
 
@@ -232,7 +245,7 @@ namespace Bedrock.Framework
                     // Abort all connections still in flight
                     foreach (var pair in _connections)
                     {
-                        pair.Value.Connection.TransportConnection.Abort();
+                        _ = pair.Value.Connection.TransportConnection.CloseAsync(ConnectionCloseMethod.Immediate);
                     }
 
                     await Task.WhenAll(tasks).ConfigureAwait(false);

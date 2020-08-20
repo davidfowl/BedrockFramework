@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -11,36 +13,28 @@ using Microsoft.Extensions.Logging;
 
 namespace Bedrock.Framework
 {
-    internal class ServerConnection : IConnectionHeartbeatFeature, IConnectionCompleteFeature, IConnectionLifetimeNotificationFeature, IConnectionEndPointFeature, IReadOnlyList<KeyValuePair<string, object>>
+    internal class ServerConnection : IConnectionProperties, IConnectionHeartbeatFeature, IConnectionCompleteFeature, IConnectionLifetimeNotificationFeature, IReadOnlyList<KeyValuePair<string, object>>
     {
         private List<(Action<object> handler, object state)> _heartbeatHandlers;
         private readonly object _heartbeatLock = new object();
 
         private Stack<KeyValuePair<Func<object, Task>, object>> _onCompleted;
         private bool _completed;
-        private string _cachedToString;
         private readonly CancellationTokenSource _connectionClosingCts = new CancellationTokenSource();
+        private Connection _connection;
 
-        public ServerConnection(long id, ConnectionContext connectionContext, ILogger logger)
+        public ServerConnection(long id, Connection connection, ILogger logger)
         {
             Id = id;
             Logger = logger;
-            TransportConnection = connectionContext;
-
-            connectionContext.Features.Set<IConnectionHeartbeatFeature>(this);
-            connectionContext.Features.Set<IConnectionCompleteFeature>(this);
-            connectionContext.Features.Set<IConnectionLifetimeNotificationFeature>(this);
-            var endpointFeature = connectionContext.Features.Get<IConnectionEndPointFeature>();
-            if (endpointFeature == null)
-            {
-                connectionContext.Features.Set<IConnectionEndPointFeature>(this);
-            }
+            _connection = connection;
+            TransportConnection = Connection.FromPipe(connection.Pipe, leaveOpen: false, this, connection.LocalEndPoint, connection.RemoteEndPoint);
             ConnectionClosedRequested = _connectionClosingCts.Token;
         }
 
         private ILogger Logger { get; }
         public long Id { get; }
-        public ConnectionContext TransportConnection { get; }
+        public Connection TransportConnection { get; }
 
         public CancellationToken ConnectionClosedRequested { get; set; }
 
@@ -162,7 +156,7 @@ namespace Bedrock.Framework
             {
                 if (index == 0)
                 {
-                    return new KeyValuePair<string, object>("ConnectionId", TransportConnection.ConnectionId);
+                    return new KeyValuePair<string, object>("ConnectionId", TransportConnection.LocalEndPoint.ToString());
                 }
 
                 throw new ArgumentOutOfRangeException(nameof(index));
@@ -174,12 +168,10 @@ namespace Bedrock.Framework
         public EndPoint LocalEndPoint
         {
             get => TransportConnection.LocalEndPoint;
-            set => TransportConnection.LocalEndPoint = value;
         }
         public EndPoint RemoteEndPoint
         {
             get => TransportConnection.RemoteEndPoint;
-            set => TransportConnection.RemoteEndPoint = value;
         }
 
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
@@ -195,17 +187,17 @@ namespace Bedrock.Framework
             return GetEnumerator();
         }
 
-        public override string ToString()
+        public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
         {
-            if (_cachedToString == null)
+            if (propertyKey == typeof(IConnectionHeartbeatFeature) ||
+                propertyKey == typeof(IConnectionCompleteFeature) ||
+                propertyKey == typeof(IConnectionLifetimeNotificationFeature))
             {
-                _cachedToString = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "ConnectionId:{0}",
-                    TransportConnection.ConnectionId);
+                property = this;
+                return true;
             }
-
-            return _cachedToString;
+            
+            return _connection.ConnectionProperties.TryGet(propertyKey, out property);
         }
     }
 }

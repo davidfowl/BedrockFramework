@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Connections;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
@@ -8,11 +9,11 @@ namespace Bedrock.Framework.Protocols
 {
     public class HttpClientProtocol
     {
-        private readonly ConnectionContext _connection;
+        private readonly Connection _connection;
         private readonly ProtocolReader _reader;
         private readonly Http1RequestMessageWriter _messageWriter;
 
-        public HttpClientProtocol(ConnectionContext connection)
+        public HttpClientProtocol(Connection connection)
         {
             _connection = connection;
             _reader = connection.CreateReader();
@@ -21,7 +22,7 @@ namespace Bedrock.Framework.Protocols
             {
                 UriEndPoint uriEndPoint => (uriEndPoint.Uri.Host, uriEndPoint.Uri.Port),
                 IPEndPoint ip => (ip.Address.ToString(), ip.Port),
-                NamedPipeEndPoint np => (np.PipeName, 80),
+                //NamedPipeEndPoint np => (np.PipeName, 80),
                 _ => throw new NotSupportedException($"{connection.RemoteEndPoint} not supported")
             };
             _messageWriter = new Http1RequestMessageWriter(host, port);
@@ -30,15 +31,15 @@ namespace Bedrock.Framework.Protocols
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage requestMessage, HttpCompletionOption completionOption = HttpCompletionOption.ResponseHeadersRead, System.Threading.CancellationToken cancellationToken = default)
         {
             // Write request message headers
-            _messageWriter.WriteMessage(requestMessage, _connection.Transport.Output);
+            _messageWriter.WriteMessage(requestMessage, _connection.Pipe.Output);
 
             // Write the body directly
             if (requestMessage.Content != null)
             {
-                await requestMessage.Content.CopyToAsync(_connection.Transport.Output.AsStream()).ConfigureAwait(false);
+                await requestMessage.Content.CopyToAsync(_connection.Pipe.Output.AsStream()).ConfigureAwait(false);
             }
 
-            await _connection.Transport.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await _connection.Pipe.Output.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             var content = new HttpBodyContent();
             var headerReader = new Http1ResponseMessageReader(content);

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Bedrock.Framework.Infrastructure;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
@@ -23,7 +23,7 @@ namespace Bedrock.Framework
 
         internal static object Key { get; } = new object();
 
-        private IConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
+        private ConnectionFactory ConnectionFactory { get; set; } = new ThrowConnectionFactory();
 
         public IServiceProvider ApplicationServices => _connectionBuilder.ApplicationServices;
 
@@ -43,9 +43,9 @@ namespace Bedrock.Framework
 
             _connectionBuilder.Run(connection =>
             {
-                if (connection is ConnectionContextWithDelegate connectionContextWithDelegate)
+                if (connection.ConnectionProperties.TryGet<ConnectionContextWithDelegate>(out var connectionContextWithDelegate))
                 {
-                    connectionContextWithDelegate.Initialized.TrySetResult(connectionContextWithDelegate);
+                    connectionContextWithDelegate.Initialized.TrySetResult(connection);
 
 
                     // This task needs to stay around until the connection is disposed
@@ -63,13 +63,13 @@ namespace Bedrock.Framework
             return new Client(ConnectionFactory, application);
         }
 
-        public ClientBuilder UseConnectionFactory(IConnectionFactory connectionFactory)
+        public ClientBuilder UseConnectionFactory(ConnectionFactory connectionFactory)
         {
             ConnectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             return this;
         }
 
-        public ClientBuilder Use(Func<IConnectionFactory, IConnectionFactory> middleware)
+        public ClientBuilder Use(Func<ConnectionFactory, ConnectionFactory> middleware)
         {
             ConnectionFactory = middleware(ConnectionFactory);
             return this;
@@ -85,9 +85,9 @@ namespace Bedrock.Framework
             return _connectionBuilder.Build();
         }
 
-        private class ThrowConnectionFactory : IConnectionFactory
+        private class ThrowConnectionFactory : ConnectionFactory
         {
-            public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("No transport configured. Set the ConnectionFactory property.");
             }

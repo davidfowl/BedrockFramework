@@ -1,6 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿using System.Net.Connections;
+using System.Threading.Tasks;
+using Bedrock.Framework;
 using Bedrock.Framework.Protocols;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using Protocols;
 
@@ -15,7 +16,7 @@ namespace ServerApplication
             _logger = logger;
         }
 
-        public override async Task OnConnectedAsync(ConnectionContext connection)
+        public override async Task OnConnectedAsync(Connection connection)
         {
             // Use a length prefixed protocol
             var protocol = new LengthPrefixedProtocol();

@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net.Connections;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework.Protocols;
@@ -17,13 +18,13 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             for (int i = 0; i < 3; i++)
             {
-                await connection.Application.Output.WriteAsync(data);
+                await pair.Application.Output.WriteAsync(data);
             }
-            connection.Application.Output.Complete();
+            pair.Application.Output.Complete();
 
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
@@ -52,7 +53,7 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
 
@@ -60,10 +61,10 @@ namespace Bedrock.Framework.Tests
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    await connection.Application.Output.WriteAsync(data);
+                    await pair.Application.Output.WriteAsync(data);
                 }
 
-                connection.Application.Output.Complete();
+                pair.Application.Output.Complete();
             }
 
             async Task ReadingTask()
@@ -103,7 +104,7 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
@@ -112,7 +113,7 @@ namespace Bedrock.Framework.Tests
             // Write byte by byte
             for (int i = 0; i < data.Length; i++)
             {
-                await connection.Application.Output.WriteAsync(data.AsMemory(i, 1));
+                await pair.Application.Output.WriteAsync(data.AsMemory(i, 1));
             }
 
             var result = await resultTask;
@@ -125,22 +126,22 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
             var resultTask = reader.ReadAsync(protocol);
 
-            connection.Application.Output.Write(data);
-            connection.Application.Output.Write(data.AsSpan(0, 5));
-            await connection.Application.Output.FlushAsync();
+            pair.Application.Output.Write(data);
+            pair.Application.Output.Write(data.AsSpan(0, 5));
+            await pair.Application.Output.FlushAsync();
 
             var result = await resultTask;
             Assert.Equal(data, result.Message);
             reader.Advance();
 
             resultTask = reader.ReadAsync(protocol);
-            await connection.Application.Output.WriteAsync(data.AsMemory(5));
+            await pair.Application.Output.WriteAsync(data.AsMemory(5));
             result = await resultTask;
             Assert.Equal(data, result.Message);
         }
@@ -150,13 +151,13 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
             var resultTask = reader.ReadAsync(protocol, maximumMessageSize: 5);
 
-            await connection.Application.Output.WriteAsync(data);
+            await pair.Application.Output.WriteAsync(data);
 
             await Assert.ThrowsAsync<InvalidDataException>(async () => await resultTask);
         }
@@ -166,12 +167,12 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
 
-            await connection.Application.Output.WriteAsync(data);
+            await pair.Application.Output.WriteAsync(data);
             var result = await reader.ReadAsync(protocol);
             Assert.Equal(data, result.Message);
 
@@ -183,19 +184,19 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
             var resultTask = reader.ReadAsync(protocol);
             
-            connection.Transport.Input.CancelPendingRead();
+            connection.Pipe.Input.CancelPendingRead();
 
             var result = await resultTask;
             Assert.True(result.IsCanceled);
             reader.Advance();
 
-            await connection.Application.Output.WriteAsync(data);
+            await pair.Application.Output.WriteAsync(data);
             result = await reader.ReadAsync(protocol);
             reader.Advance();
 
@@ -207,13 +208,13 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
 
-            connection.Transport.Input.CancelPendingRead();
-            await connection.Application.Output.WriteAsync(data);
+            connection.Pipe.Input.CancelPendingRead();
+            await pair.Application.Output.WriteAsync(data);
             var resultTask = reader.ReadAsync(protocol);
 
             var result = await resultTask;
@@ -232,12 +233,12 @@ namespace Bedrock.Framework.Tests
         {
             var options = new PipeOptions(useSynchronizationContext: false);
             var pair = DuplexPipe.CreateConnectionPair(options, options);
-            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            await using var connection = Connection.FromPipe(pair.Transport);
             var data = Encoding.UTF8.GetBytes("Hello World");
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
-            await connection.Application.Output.WriteAsync(data);
-            await connection.Application.Output.CompleteAsync();
+            await pair.Application.Output.WriteAsync(data);
+            await pair.Application.Output.CompleteAsync();
 
             var result = await reader.ReadAsync(protocol);
             Assert.False(result.IsCompleted);

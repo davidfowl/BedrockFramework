@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Connections;
 using System.Threading.Tasks;
-using Bedrock.Framework.Middleware.Tls;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.Extensions.Logging;
 
 namespace Bedrock.Framework
@@ -17,24 +18,22 @@ namespace Bedrock.Framework
             _logger = logger;
         }
 
-        public override async Task OnConnectedAsync(ConnectionContext connection)
+        public override async Task OnConnectedAsync(Connection connection)
         {
             try
             {
-                _logger.LogInformation("{ConnectionId} connected", connection.ConnectionId);
+                _logger.LogInformation("{ConnectionId} connected", connection.RemoteEndPoint);
 
-                var handshake = connection.Features.Get<ITlsHandshakeFeature>();
-                
-                if (handshake != null)
+                if (connection.ConnectionProperties.TryGet<ITlsHandshakeFeature>(out var handshake))
                 {
                     _logger.LogInformation("TLS enabled, TLS Verson={TLSVersion}, HashAlgorithm={HashAlgorithm}", handshake.Protocol, handshake.HashAlgorithm);
                 }
 
-                await connection.Transport.Input.CopyToAsync(connection.Transport.Output);
+                await connection.Pipe.Input.CopyToAsync(connection.Pipe.Output);
             }
             finally
             {
-                _logger.LogInformation("{ConnectionId} disconnected", connection.ConnectionId);
+                _logger.LogInformation("{ConnectionId} disconnected", connection.RemoteEndPoint);
             }
         }
     }

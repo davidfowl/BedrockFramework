@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.Net.Connections;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
@@ -6,12 +7,12 @@ namespace Bedrock.Framework.Protocols
 {
     public class HttpServerProtocol
     {
-        private readonly ConnectionContext _connection;
+        private readonly Connection _connection;
         private readonly ProtocolReader _reader;
 
         private readonly Http1ResponseMessageWriter _writer = new Http1ResponseMessageWriter();
 
-        public HttpServerProtocol(ConnectionContext connection)
+        public HttpServerProtocol(Connection connection)
         {
             _connection = connection;
             _reader = connection.CreateReader();
@@ -52,11 +53,11 @@ namespace Bedrock.Framework.Protocols
 
         public async ValueTask WriteResponseAsync(HttpResponseMessage responseMessage, System.Threading.CancellationToken cancellationToken = default)
         {
-            _writer.WriteMessage(responseMessage, _connection.Transport.Output);
+            _writer.WriteMessage(responseMessage, _connection.Pipe.Output);
 
             if (responseMessage.Content != null)
             {
-                await responseMessage.Content.CopyToAsync(_connection.Transport.Output.AsStream()).ConfigureAwait(false);
+                await responseMessage.Content.CopyToAsync(_connection.Pipe.Output.AsStream()).ConfigureAwait(false);
             }
         }
     }

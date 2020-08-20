@@ -2,9 +2,9 @@
 using System;
 using System.IO.Pipelines;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 using Xunit;
 
 namespace Bedrock.Framework.Experimental
@@ -69,13 +69,13 @@ namespace Bedrock.Framework.Experimental
             await connection2.DisposeAsync();
         }
 
-        private class TestConnectionFactory : IConnectionFactory
+        private class TestConnectionFactory : ConnectionFactory
         {
-            public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+            public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
             {
-                var options = new PipeOptions(useSynchronizationContext: false);
-                var pair = DuplexPipe.CreateConnectionPair(options, options);
-                return new ValueTask<ConnectionContext>(new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application));
+                var pipeOptions = new PipeOptions(useSynchronizationContext: false);
+                var pair = DuplexPipe.CreateConnectionPair(pipeOptions, pipeOptions);
+                return ValueTask.FromResult(Connection.FromPipe(pair.Application));
             }
         }
     }

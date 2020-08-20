@@ -1,22 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.IO.Pipelines;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
-    internal class ConnectionContextWithDelegate : ConnectionContext
+    internal class ConnectionContextWithDelegate : Connection, IConnectionProperties
     {
-        private readonly ConnectionContext _connection;
+        private readonly Connection _connection;
         private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private Task _middlewareTask;
         private ConnectionDelegate _connectionDelegate;
 
-        public ConnectionContextWithDelegate(ConnectionContext connection, ConnectionDelegate connectionDelegate)
+        public ConnectionContextWithDelegate(Connection connection, ConnectionDelegate connectionDelegate)
         {
             _connection = connection;
             _connectionDelegate = connectionDelegate;
@@ -42,65 +42,42 @@ namespace Bedrock.Framework
             }
         }
 
-        public TaskCompletionSource<ConnectionContext> Initialized { get; set; } = new TaskCompletionSource<ConnectionContext>();
+        public TaskCompletionSource<Connection> Initialized { get; set; } = new TaskCompletionSource<Connection>();
 
         public Task ExecutionTask => _executionTcs.Task;
 
-        public override string ConnectionId
+        protected override IDuplexPipe CreatePipe()
         {
-            get => _connection.ConnectionId;
-            set => _connection.ConnectionId = value;
+            return _connection.Pipe;
         }
 
-        public override IFeatureCollection Features => _connection.Features;
-
-        public override IDictionary<object, object> Items
+        protected override Stream CreateStream()
         {
-            get => _connection.Items;
-            set => _connection.Items = value;
+            return _connection.Stream;
         }
 
-        public override IDuplexPipe Transport
-        {
-            get => _connection.Transport;
-            set => _connection.Transport = value;
-        }
+        public override EndPoint RemoteEndPoint => _connection.RemoteEndPoint;
+        public override EndPoint LocalEndPoint => _connection.LocalEndPoint;
+        public override IConnectionProperties ConnectionProperties => this;
 
-        public override EndPoint LocalEndPoint
+        protected override async ValueTask CloseAsyncCore(ConnectionCloseMethod method, CancellationToken cancellationToken)
         {
-            get => _connection.LocalEndPoint;
-            set => _connection.LocalEndPoint = value;
-        }
-
-        public override EndPoint RemoteEndPoint
-        {
-            get => _connection.RemoteEndPoint;
-            set => _connection.RemoteEndPoint = value;
-        }
-
-        public override CancellationToken ConnectionClosed
-        {
-            get => _connection.ConnectionClosed;
-            set => _connection.ConnectionClosed = value;
-        }
-
-        public override void Abort()
-        {
-            _connection.Abort();
-        }
-
-        public override void Abort(ConnectionAbortedException abortReason)
-        {
-            _connection.Abort(abortReason);
-        }
-
-        public override async ValueTask DisposeAsync()
-        {
-            await _connection.DisposeAsync().ConfigureAwait(false);
+            await _connection.CloseAsync(method, cancellationToken).ConfigureAwait(false);
 
             _executionTcs.TrySetResult(null);
 
             await _middlewareTask.ConfigureAwait(false);
+        }
+
+        public bool TryGet(Type propertyKey, [NotNullWhen(true)] out object property)
+        {
+            if (propertyKey == typeof(ConnectionContextWithDelegate))
+            {
+                property = this;
+                return true;
+            }
+
+            return _connection.ConnectionProperties.TryGet(propertyKey, out property);
         }
     }
 }

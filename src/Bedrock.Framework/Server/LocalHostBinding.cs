@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
@@ -12,7 +12,7 @@ namespace Bedrock.Framework
     {
         private readonly ConnectionDelegate _application;
 
-        public LocalHostBinding(int port, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory)
+        public LocalHostBinding(int port, ConnectionDelegate application, ConnectionListenerFactory connectionListenerFactory)
         {
             Port = port;
             _application = application;
@@ -20,20 +20,20 @@ namespace Bedrock.Framework
         }
 
         private int Port { get; }
-        private IConnectionListenerFactory ConnectionListenerFactory { get; }
+        private ConnectionListenerFactory ConnectionListenerFactory { get; }
 
         public override ConnectionDelegate Application => _application;
 
-        public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken = default)
+        public override async IAsyncEnumerable<ConnectionListener> ListenAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var exceptions = new List<Exception>();
 
-            IConnectionListener ipv6Listener = null;
-            IConnectionListener ipv4Listener = null;
+            ConnectionListener ipv6Listener = null;
+            ConnectionListener ipv4Listener = null;
 
             try
             {
-                ipv6Listener = await ConnectionListenerFactory.BindAsync(new IPEndPoint(IPAddress.IPv6Loopback, Port), cancellationToken);
+                ipv6Listener = await ConnectionListenerFactory.ListenAsync(new IPEndPoint(IPAddress.IPv6Loopback, Port), options: null, cancellationToken);
             }
             catch (Exception ex) when (!(ex is IOException))
             {
@@ -47,7 +47,7 @@ namespace Bedrock.Framework
 
             try
             {
-                ipv4Listener = await ConnectionListenerFactory.BindAsync(new IPEndPoint(IPAddress.Loopback, Port), cancellationToken);
+                ipv4Listener = await ConnectionListenerFactory.ListenAsync(new IPEndPoint(IPAddress.Loopback, Port), options: null, cancellationToken);
             }
             catch (Exception ex) when (!(ex is IOException))
             {

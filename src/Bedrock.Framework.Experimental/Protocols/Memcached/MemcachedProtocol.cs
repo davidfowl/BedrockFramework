@@ -1,10 +1,8 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Memcached;
-using Bedrock.Framework.Protocols;
+﻿using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Net.Connections;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +12,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 {
     public class MemcachedProtocol
     {        
-        private readonly ConnectionContext _connection;
+        private readonly Connection _connection;
         private readonly MemcachedMessageWriter _memcachedMessageWriter;
         private readonly MemcachedMessageReader _memcachedMessageReader;
         private readonly ProtocolWriter _protocolWriter;
@@ -25,7 +23,7 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
         private readonly SemaphoreSlim _semaphore;
 
-        public MemcachedProtocol(ConnectionContext connection)
+        public MemcachedProtocol(Connection connection)
         {
             _connection = connection;
 

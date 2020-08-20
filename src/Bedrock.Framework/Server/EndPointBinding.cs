@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using System.Net.Connections;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
     public class EndPointBinding : ServerBinding
     {
         private readonly ConnectionDelegate _application;
-        public EndPointBinding(EndPoint endPoint, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory)
+        public EndPointBinding(EndPoint endPoint, ConnectionDelegate application, ConnectionListenerFactory connectionListenerFactory)
         {
             EndPoint = endPoint;
             _application = application;
@@ -17,13 +17,13 @@ namespace Bedrock.Framework
         }
 
         private EndPoint EndPoint { get; }
-        private IConnectionListenerFactory ConnectionListenerFactory { get; }
+        private ConnectionListenerFactory ConnectionListenerFactory { get; }
 
         public override ConnectionDelegate Application => _application;
 
-        public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken)
+        public override async IAsyncEnumerable<ConnectionListener> ListenAsync([EnumeratorCancellation]CancellationToken cancellationToken)
         {
-            yield return await ConnectionListenerFactory.BindAsync(EndPoint, cancellationToken);
+            yield return await ConnectionListenerFactory.ListenAsync(EndPoint, null, cancellationToken);
         }
 
         public override string ToString()

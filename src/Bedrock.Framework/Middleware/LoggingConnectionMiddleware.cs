@@ -3,9 +3,9 @@
 
 using System;
 using System.IO.Pipelines;
+using System.Net.Connections;
 using System.Threading.Tasks;
 using Bedrock.Framework.Infrastructure;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
 namespace Bedrock.Framework
@@ -23,23 +23,13 @@ namespace Bedrock.Framework
             _loggingFormatter = loggingFormatter;
         }
 
-        public async Task OnConnectionAsync(ConnectionContext context)
+        public async Task OnConnectionAsync(Connection connection)
         {
-            var oldTransport = context.Transport;
+            await using var loggingDuplexPipe = new LoggingDuplexPipe(connection.Pipe, _logger, _loggingFormatter);
 
-            try
-            {
-                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, _loggingFormatter))
-                {
-                    context.Transport = loggingDuplexPipe;
+            var loggingConnection = Connection.FromPipe(loggingDuplexPipe, leaveOpen: true, connection.ConnectionProperties, connection.LocalEndPoint, connection.RemoteEndPoint); ;
 
-                    await _next(context).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                context.Transport = oldTransport;
-            }
+            await _next(loggingConnection).ConfigureAwait(false);
         }
 
         private class LoggingDuplexPipe : DuplexPipeStreamAdapter<LoggingStream>

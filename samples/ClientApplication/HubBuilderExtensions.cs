@@ -18,17 +18,17 @@ namespace Microsoft.AspNetCore.SignalR.Client
             return hubConnectionBuilder;
         }
 
-        public static IHubConnectionBuilder WithClientBuilder(this IHubConnectionBuilder hubConnectionBuilder, EndPoint endPoint, Action<ClientBuilder> configure)
-        {
-            hubConnectionBuilder.Services.AddSingleton<IConnectionFactory>(sp =>
-            {
-                var builder = new ClientBuilder(sp);
-                configure(builder);
-                return builder.Build();
-            });
+        //public static IHubConnectionBuilder WithClientBuilder(this IHubConnectionBuilder hubConnectionBuilder, EndPoint endPoint, Action<ClientBuilder> configure)
+        //{
+        //    hubConnectionBuilder.Services.AddSingleton<IConnectionFactory>(sp =>
+        //    {
+        //        var builder = new ClientBuilder(sp);
+        //        configure(builder);
+        //        return builder.Build();
+        //    });
 
-            hubConnectionBuilder.Services.AddSingleton(endPoint);
-            return hubConnectionBuilder;
-        }
+        //    hubConnectionBuilder.Services.AddSingleton(endPoint);
+        //    return hubConnectionBuilder;
+        //}
     }
 }

@@ -1,8 +1,5 @@
 ﻿using Bedrock.Framework.Protocols;
-using Microsoft.AspNetCore.Connections;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Net.Connections;
 using System.Threading.Tasks;
 
 namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
@@ -13,7 +10,7 @@ namespace Bedrock.Framework.Experimental.Protocols.RabbitMQ
         private readonly ProtocolReader _reader;
         private readonly RabbitMQMessageFormatter _formatter;
 
-        public RabbitMQClientProtocol(ConnectionContext connection)
+        public RabbitMQClientProtocol(Connection connection)
         {             
             _writer = connection.CreateWriter();
             _reader = connection.CreateReader();

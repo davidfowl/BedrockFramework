@@ -1,24 +1,24 @@
 ﻿using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
-    public class Client : IConnectionFactory
+    public class Client : ConnectionFactory
     {
-        private readonly IConnectionFactory _connectionFactory;
+        private readonly ConnectionFactory _connectionFactory;
         private readonly ConnectionDelegate _application;
 
-        public Client(IConnectionFactory connectionFactory, ConnectionDelegate application)
+        public Client(ConnectionFactory connectionFactory, ConnectionDelegate application)
         {
             _connectionFactory = connectionFactory;
             _application = application;
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
-            var connection = await _connectionFactory.ConnectAsync(endpoint, cancellationToken).ConfigureAwait(false);
+            var connection = await _connectionFactory.ConnectAsync(endPoint, options, cancellationToken).ConfigureAwait(false);
 
             // Since nothing is being returned from this middleware, we need to wait for the last middleware to run
             // until we yield this call. Stash a tcs in the items bag that allows this code to get notified

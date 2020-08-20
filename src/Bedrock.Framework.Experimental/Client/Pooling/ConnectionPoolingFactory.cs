@@ -1,33 +1,28 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
-    public class ConnectionPoolingFactory : IConnectionFactory
+    public class ConnectionPoolingFactory : ConnectionFactory
     {
         // Represents a mapping from an individual endpoint to a pool of connections
         // Every endpoint can have multiple connections associated with it.
         private ConcurrentDictionary<EndPoint, EndPointPool> _pool;
 
         // The factory to create connections from
-        private IConnectionFactory _innerFactory;
+        private ConnectionFactory _innerFactory;
 
-        public ConnectionPoolingFactory(IConnectionFactory innerFactory)
+        public ConnectionPoolingFactory(ConnectionFactory innerFactory)
         {
             _innerFactory = innerFactory;
             _pool = new ConcurrentDictionary<EndPoint, EndPointPool>();
         }
 
-        public ValueTask DisposeAsync()
-        {
-            // Dispose all connections
-            return default;
-        }
-
-        public ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public override ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             var endPointPool = _pool.GetOrAdd(
                 endPoint,

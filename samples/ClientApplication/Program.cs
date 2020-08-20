@@ -59,7 +59,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D3)
                 {
                     Console.WriteLine("Running SignalR example");
-                    await SignalR();
+                    //await SignalR();
                 }
                 else if (keyInfo.Key == ConsoleKey.D4)
                 {
@@ -79,7 +79,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
                     Console.WriteLine("Talk to local docker daemon");
-                    await DockerDaemon(serviceProvider);
+                    // await DockerDaemon(serviceProvider);
                 }
                 else if (keyInfo.Key == ConsoleKey.D8)
                 {
@@ -174,8 +174,8 @@ namespace ClientApplication
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
-            var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
-            var writes = connection.Transport.Input.CopyToAsync(Stream.Null);
+            var reads = Console.OpenStandardInput().CopyToAsync(connection.Pipe.Output);
+            var writes = connection.Pipe.Input.CopyToAsync(Stream.Null);
 
             await reads;
             await writes;
@@ -225,35 +225,35 @@ namespace ClientApplication
             }
         }
 
-        private static async Task SignalR()
-        {
-            var hubConnection = new HubConnectionBuilder()
-                                .WithClientBuilder(new IPEndPoint(IPAddress.Loopback, 5002), builder =>
-                                {
-                                    builder.UseSockets()
-                                           .UseConnectionLogging();
-                                })
-                                .ConfigureLogging(builder =>
-                                {
-                                    builder.SetMinimumLevel(LogLevel.Debug);
-                                    builder.AddConsole();
-                                })
-                                .WithAutomaticReconnect()
-                                .Build();
+        //private static async Task SignalR()
+        //{
+        //    var hubConnection = new HubConnectionBuilder()
+        //                        .WithClientBuilder(new IPEndPoint(IPAddress.Loopback, 5002), builder =>
+        //                        {
+        //                            builder.UseSockets()
+        //                                   .UseConnectionLogging();
+        //                        })
+        //                        .ConfigureLogging(builder =>
+        //                        {
+        //                            builder.SetMinimumLevel(LogLevel.Debug);
+        //                            builder.AddConsole();
+        //                        })
+        //                        .WithAutomaticReconnect()
+        //                        .Build();
 
-            hubConnection.On<string>("Send", data =>
-            {
-                // The connection logging will dump the raw payload on the wire
-            });
+        //    hubConnection.On<string>("Send", data =>
+        //    {
+        //        // The connection logging will dump the raw payload on the wire
+        //    });
 
-            await hubConnection.StartAsync();
+        //    await hubConnection.StartAsync();
 
-            while (true)
-            {
-                var line = Console.ReadLine();
-                await hubConnection.InvokeAsync("Send", line);
-            }
-        }
+        //    while (true)
+        //    {
+        //        var line = Console.ReadLine();
+        //        await hubConnection.InvokeAsync("Send", line);
+        //    }
+        //}
 
 
         private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
@@ -261,7 +261,7 @@ namespace ClientApplication
             var client = new ClientBuilder(serviceProvider)
                                     .UseSockets()
                                     .UseConnectionLogging()
-                                    .UseClientTls(options =>
+                                    /*.UseClientTls(options =>
                                     {
                                         options.OnAuthenticateAsClient = (connection, o) =>
                                         {
@@ -272,15 +272,15 @@ namespace ClientApplication
 
                                         // NOTE: Do not do this in a production environment
                                         options.AllowAnyRemoteCertificate();
-                                    })
+                                    })*/
                                     .Build();
 
             var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5004));
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
-            var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
-            var writes = connection.Transport.Input.CopyToAsync(Stream.Null);
+            var reads = Console.OpenStandardInput().CopyToAsync(connection.Pipe.Output);
+            var writes = connection.Pipe.Input.CopyToAsync(Stream.Null);
 
             await reads;
             await writes;
@@ -291,26 +291,26 @@ namespace ClientApplication
             var memoryTransport = new MemoryTransport();
 
             var client = new ClientBuilder(serviceProvider)
-                                    .UseConnectionFactory(memoryTransport)
+                                    .UseConnectionFactory(memoryTransport.ConnectionFactory)
                                     .UseConnectionLogging("Client")
                                     .Build();
 
             var server = new ServerBuilder(serviceProvider)
-                        .Listen(endPoint: null, memoryTransport, builder =>
+                        .Listen(endPoint: null, memoryTransport.ConnectionListenerFactory, builder =>
                         {
-                            builder.UseConnectionLogging("Server").Run(connection => connection.Transport.Input.CopyToAsync(connection.Transport.Output));
+                            builder.UseConnectionLogging("Server").Run(connection => connection.Pipe.Input.CopyToAsync(connection.Pipe.Output));
                         })
                         .Build();
 
             await server.StartAsync();
             Console.WriteLine("Started Server");
 
-            var connection = await client.ConnectAsync(endpoint: null);
+            var connection = await client.ConnectAsync(endPoint: null);
             Console.WriteLine($"Connected to {connection.LocalEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
-            var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
-            var writes = connection.Transport.Input.CopyToAsync(Stream.Null);
+            var reads = Console.OpenStandardInput().CopyToAsync(connection.Pipe.Output);
+            var writes = connection.Pipe.Input.CopyToAsync(Stream.Null);
 
             await reads;
             await writes;
@@ -353,45 +353,45 @@ namespace ClientApplication
             }
         }
 
-        private static async Task DockerDaemon(IServiceProvider serviceProvider)
-        {
-            var client = new ClientBuilder(serviceProvider)
-                        .UseConnectionFactory(new NamedPipeConnectionFactory())
-                        .UseConnectionLogging()
-                        .Build();
+        //private static async Task DockerDaemon(IServiceProvider serviceProvider)
+        //{
+        //    var client = new ClientBuilder(serviceProvider)
+        //                .UseConnectionFactory(new NamedPipeConnectionFactory())
+        //                .UseConnectionLogging()
+        //                .Build();
 
-            await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
+        //    await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
 
-            // Use the HTTP/1.1 protocol
-            var httpProtocol = new HttpClientProtocol(connection);
+        //    // Use the HTTP/1.1 protocol
+        //    var httpProtocol = new HttpClientProtocol(connection);
 
-            while (true)
-            {
-                // Console.Write("http1.1> ");
-                var path = Console.ReadLine();
+        //    while (true)
+        //    {
+        //        // Console.Write("http1.1> ");
+        //        var path = Console.ReadLine();
 
-                if (path == null)
-                {
-                    break;
-                }
+        //        if (path == null)
+        //        {
+        //            break;
+        //        }
 
-                // Console.WriteLine();
+        //        // Console.WriteLine();
 
-                if (path == string.Empty)
-                {
-                    path = "/";
-                }
+        //        if (path == string.Empty)
+        //        {
+        //            path = "/";
+        //        }
 
-                var request = new HttpRequestMessage(HttpMethod.Get, path);
-                request.Headers.Host = "localhost";
+        //        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        //        request.Headers.Host = "localhost";
 
-                var response = await httpProtocol.SendAsync(request);
+        //        var response = await httpProtocol.SendAsync(request);
 
-                await response.Content.CopyToAsync(Console.OpenStandardOutput());
+        //        await response.Content.CopyToAsync(Console.OpenStandardOutput());
 
-                Console.WriteLine();
-            }
-        }
+        //        Console.WriteLine();
+        //    }
+        //}
     }
 
     // Property bag needed on ConnectAsync and BindAsync

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Net.Connections;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 
 namespace Bedrock.Framework
 {
@@ -9,6 +9,6 @@ namespace Bedrock.Framework
     {
         public virtual ConnectionDelegate Application { get; }
 
-        public abstract IAsyncEnumerable<IConnectionListener> BindAsync(CancellationToken cancellationToken = default);
+        public abstract IAsyncEnumerable<ConnectionListener> ListenAsync(CancellationToken cancellationToken = default);
     }
 }

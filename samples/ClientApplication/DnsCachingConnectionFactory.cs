@@ -2,10 +2,10 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Bedrock.Framework;
+using System.Net.Connections;
 
 namespace ClientApplication
 {
@@ -20,7 +20,7 @@ namespace ClientApplication
         }
     }
 
-    public class DnsCachingConnectionFactory : IConnectionFactory
+    public class DnsCachingConnectionFactory : ConnectionFactory
     {
         private readonly TimeSpan _timeout;
         private readonly MemoryCache _memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
@@ -30,23 +30,23 @@ namespace ClientApplication
             _timeout = timeout;
         }
 
-        public IConnectionFactory ConnectionFactory { get; set; }
+        public ConnectionFactory ConnectionFactory { get; set; }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
+        public override async ValueTask<Connection> ConnectAsync(EndPoint endPoint, IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
-            if (endpoint is DnsEndPoint dnsEndPoint)
+            if (endPoint is DnsEndPoint dnsEndPoint)
             {
                 // TODO: Lock etc
 
                 // See if we have an IPEndPoint cached
-                var resolvedEndPoint = _memoryCache.Get<IPEndPoint>(dnsEndPoint.Host);
+                var (resolvedEndPoint, resolvedOptions) = _memoryCache.Get<(IPEndPoint, IConnectionProperties)>(dnsEndPoint.Host);
 
                 if (resolvedEndPoint != null)
                 {
                     // If it's cached, try to connect
                     try
                     {
-                        return await ConnectionFactory.ConnectAsync(resolvedEndPoint);
+                        return await ConnectionFactory.ConnectAsync(resolvedEndPoint, resolvedOptions, cancellationToken);
                     }
                     catch (Exception)
                     {
@@ -54,7 +54,7 @@ namespace ClientApplication
                     }
                 }
 
-                ConnectionContext connectionContext = null;
+                Connection connection = null;
 
                 // Resolve the DNS entry
                 var entry = await Dns.GetHostEntryAsync(dnsEndPoint.Host);
@@ -66,7 +66,7 @@ namespace ClientApplication
 
                     try
                     {
-                        connectionContext = await ConnectionFactory.ConnectAsync(resolvedEndPoint);
+                        connection = await ConnectionFactory.ConnectAsync(resolvedEndPoint, options);
                         break;
                     }
                     catch (Exception)
@@ -75,14 +75,14 @@ namespace ClientApplication
                     }
                 }
 
-                if (connectionContext != null)
+                if (connection != null)
                 {
                     _memoryCache.Set(dnsEndPoint.Host, resolvedEndPoint, new MemoryCacheEntryOptions
                     {
                         AbsoluteExpirationRelativeToNow = _timeout
                     });
 
-                    return connectionContext;
+                    return connection;
                 }
 
                 throw new InvalidOperationException($"Unable to resolve {dnsEndPoint.Host} on port {dnsEndPoint.Port}");
@@ -90,7 +90,7 @@ namespace ClientApplication
             }
             else
             {
-                return await ConnectionFactory.ConnectAsync(endpoint);
+                return await ConnectionFactory.ConnectAsync(endPoint);
             }
         }
     }
