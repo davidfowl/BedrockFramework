@@ -22,7 +22,8 @@ namespace Bedrock.Framework.Protocols
             {
                 UriEndPoint uriEndPoint => (uriEndPoint.Uri.Host, uriEndPoint.Uri.Port),
                 IPEndPoint ip => (ip.Address.ToString(), ip.Port),
-                //NamedPipeEndPoint np => (np.PipeName, 80),
+                NamedPipeEndPoint np => (np.PipeName, 80),
+                DnsEndPoint dns => (dns.Host, dns.Port),
                 _ => throw new NotSupportedException($"{connection.RemoteEndPoint} not supported")
             };
             _messageWriter = new Http1RequestMessageWriter(host, port);
