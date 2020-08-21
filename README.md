@@ -4,7 +4,7 @@
 
 [![Gitter](https://badges.gitter.im/BedrockFramework/BedrockFramework.svg)](https://gitter.im/BedrockFramework/BedrockFramework?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-[Project Bedrock](https://github.com/aspnet/AspNetCore/issues/4772) is a set of .NET Core APIs for doing transport agnostic networking. In .NET Core 5.0 we've introduced some new abstractions
+[Project Bedrock](https://github.com/aspnet/AspNetCore/issues/4772) is a set of .NET 5 APIs for doing transport agnostic networking. In .NET Core 5.0 we've introduced some new abstractions
 as part of [System.Net.Connections](https://github.com/dotnet/runtime/issues/1793) for client-server communication. 
 
 See the presentation [here](https://speakerdeck.com/davidfowl/project-bedrock)
