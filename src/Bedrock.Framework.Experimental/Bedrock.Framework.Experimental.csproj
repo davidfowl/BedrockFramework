@@ -15,6 +15,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\Bedrock.Framework\Bedrock.Framework.csproj" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
