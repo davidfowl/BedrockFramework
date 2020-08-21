@@ -236,7 +236,7 @@ namespace Bedrock.Framework
 
                 foreach (var pair in _connections)
                 {
-                    pair.Value.Connection.RequestClose();
+                    _ = pair.Value.Connection.TransportConnection.CloseAsync();
                     tasks.Add(pair.Value.ExecutionTask);
                 }
 
@@ -245,7 +245,7 @@ namespace Bedrock.Framework
                     // Abort all connections still in flight
                     foreach (var pair in _connections)
                     {
-                        _ = pair.Value.Connection.TransportConnection.CloseAsync(ConnectionCloseMethod.Immediate);
+                        _ = pair.Value.Connection.TransportConnection.CloseAsync(ConnectionCloseMethod.Abort);
                     }
 
                     await Task.WhenAll(tasks).ConfigureAwait(false);

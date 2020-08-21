@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Net;
@@ -7,8 +6,6 @@ using System.Net.Connections;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -40,7 +37,7 @@ namespace Bedrock.Framework
 
         public override IConnectionProperties ListenerProperties => this;
 
-        public override EndPoint LocalEndPoint => null;
+        public override EndPoint LocalEndPoint => EndPoint;
 
         public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
@@ -73,7 +70,7 @@ namespace Bedrock.Framework
             // Flush the headers so that the client can start sending
             await context.Response.Body.FlushAsync();
 
-            var httpConnectionContext = new HttpConnectionContext(context);
+            var httpConnectionContext = new HttpConnection(context);
             _acceptQueue.Writer.TryWrite(httpConnectionContext);
             await httpConnectionContext.ExecutionTask;
         }
@@ -98,12 +95,12 @@ namespace Bedrock.Framework
             return property != null;
         }
 
-        private class HttpConnectionContext : Connection, IDuplexPipe, IConnectionProperties
+        private class HttpConnection : Connection, IDuplexPipe, IConnectionProperties
         {
             private readonly HttpContext _httpContext;
             private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            public HttpConnectionContext(HttpContext httpContext)
+            public HttpConnection(HttpContext httpContext)
             {
                 _httpContext = httpContext;
                 Transport = this;

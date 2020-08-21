@@ -51,9 +51,9 @@ namespace Bedrock.Framework
                     return connectionWithDelegate.ExecutionTask;
                 }
 
-                // REVIEW: Do we throw in this case? It's edgy but possible to call next with a differnt
-                // connection delegate that originally given
-                return Task.CompletedTask;
+                // REVIEW: It's edgy but possible to call the next middlware in the chain without preserving
+                // properties
+                throw new InvalidOperationException("Unable to resolve connection initializer");
             });
 
             var application = _connectionBuilder.Build();
