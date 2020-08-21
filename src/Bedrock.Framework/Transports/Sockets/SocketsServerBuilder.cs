@@ -38,7 +38,7 @@ namespace Bedrock.Framework
 
         internal void Apply(ServerBuilder builder)
         {
-            var socketTransportFactory = new SocketsTransport();
+            var socketTransportFactory = new SocketsConnectionListenerFactory();
 
             foreach (var binding in _bindings)
             {
@@ -46,12 +46,12 @@ namespace Bedrock.Framework
                 {
                     var connectionBuilder = new ConnectionBuilder(builder.ApplicationServices);
                     binding.Application(connectionBuilder);
-                    builder.Bindings.Add(new LocalHostBinding(binding.Port, connectionBuilder.Build(), socketTransportFactory.ConnectionListenerFactory));
+                    builder.Bindings.Add(new LocalHostBinding(binding.Port, connectionBuilder.Build(), socketTransportFactory));
                 }
                 else
                 {
 
-                    builder.Listen(binding.EndPoint, socketTransportFactory.ConnectionListenerFactory, binding.Application);
+                    builder.Listen(binding.EndPoint, socketTransportFactory, binding.Application);
                 }
             }
         }
