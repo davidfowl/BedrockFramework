@@ -62,7 +62,6 @@ namespace Bedrock.Framework
 
         public override EndPoint LocalEndPoint => EndPoint;
 
-
         public override async ValueTask<Connection> AcceptAsync(IConnectionProperties options = null, CancellationToken cancellationToken = default)
         {
             while (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
