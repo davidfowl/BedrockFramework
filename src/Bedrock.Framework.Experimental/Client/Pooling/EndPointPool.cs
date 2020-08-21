@@ -96,7 +96,7 @@ namespace Bedrock.Framework
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                return new ValueTask<Connection>(Task.FromCanceled<Connection>(cancellationToken));
+                return ValueTask.FromCanceled<Connection>(cancellationToken);
             }
 
             // TODO figure out how to get a connection lifetime via settings.
