@@ -41,6 +41,7 @@ namespace ClientApplication
             Console.WriteLine("6. Length prefixed custom binary protocol");
             Console.WriteLine("7. Talk to local docker dameon");
             Console.WriteLine("8. Memcached protocol");
+            Console.WriteLine("9. RebbitMQ protocol");
 
             while (true)
             {
@@ -91,7 +92,6 @@ namespace ClientApplication
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
                 }
-                await RabbitMQProtocol(serviceProvider);
             }
         }
 
