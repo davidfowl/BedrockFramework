@@ -83,40 +83,35 @@ namespace Bedrock.Framework.Experimental.Protocols.Memcached
 
         public Task<byte[]> Get(string key)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Get, keyBytes, NextOpaque);
+            var request = new MemcachedRequest(Enums.Opcode.Get, key, NextOpaque);
 
             return CommandWithResult(request);
         }
 
         public Task Delete(string key)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Delete, keyBytes, NextOpaque);
+            var request = new MemcachedRequest(Enums.Opcode.Delete, key, NextOpaque);
 
             return CommandWithNoResult(request);
         }
 
         public Task Set(string key, byte[] value, TimeSpan? expireIn)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Set, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
+            var request = new MemcachedRequest(Enums.Opcode.Set, key, NextOpaque, value, TypeCode.Object, expireIn);
 
             return CommandWithNoResult(request);
         }
 
         public Task Add(string key, byte[] value, TimeSpan? expireIn)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Add, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
+            var request = new MemcachedRequest(Enums.Opcode.Add, key, NextOpaque, value, TypeCode.Object, expireIn);
 
             return CommandWithNoResult(request);
         }
 
         public Task Replace(string key, byte[] value, TimeSpan? expireIn)
         {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var request = new MemcachedRequest(Enums.Opcode.Replace, keyBytes, NextOpaque, value, TypeCode.Object, expireIn);
+            var request = new MemcachedRequest(Enums.Opcode.Replace, key, NextOpaque, value, TypeCode.Object, expireIn);
 
             return CommandWithNoResult(request);
         }
