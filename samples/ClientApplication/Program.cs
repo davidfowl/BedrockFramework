@@ -41,6 +41,7 @@ namespace ClientApplication
             Console.WriteLine("6. Length prefixed custom binary protocol");
             Console.WriteLine("7. Talk to local docker dameon");
             Console.WriteLine("8. Memcached protocol");
+            Console.WriteLine("9. RebbitMQ protocol");
 
             while (true)
             {
@@ -91,7 +92,6 @@ namespace ClientApplication
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
                 }
-                await RabbitMQProtocol(serviceProvider);
             }
         }
 
@@ -115,7 +115,7 @@ namespace ClientApplication
             await rabbitMqClientProtocol.SendAsync(new RabbitMQProtocolVersionHeader());
             var connectionStart = await rabbitMqClientProtocol.ReceiveAsync<ConnectionStart>();
             //           
-            byte[] credentials = Encoding.UTF8.GetBytes("\0guest"  + "\0guest");
+            byte[] credentials = Encoding.UTF8.GetBytes("\0guest" + "\0guest");
 
             await rabbitMqClientProtocol.SendAsync(new ConnectionOk(connectionStart.SecurityMechanims, new ReadOnlyMemory<byte>(credentials), connectionStart.Locale));
             var connectionTune = await rabbitMqClientProtocol.ReceiveAsync<ConnectionTune>();
@@ -132,7 +132,7 @@ namespace ClientApplication
 
             await rabbitMqClientProtocol.SendAsync(new QueueDeclare(channelId, 0, "queue_test"));
             var queueDeclareOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeclareOk>();
-            
+
             await rabbitMqClientProtocol.SendAsync(new QueueDelete(channelId, 0, "queue_test"));
             var queueDeleteOk = await rabbitMqClientProtocol.ReceiveAsync<QueueDeleteOk>();
         }
@@ -153,7 +153,7 @@ namespace ClientApplication
             var ipAddress = IPAddress.Parse("127.0.0.1");
             var connection = await client.ConnectAsync(new IPEndPoint(ipAddress, 11211));
             MemcachedProtocol memcachedProtocol = new MemcachedProtocol(connection);
-            
+
             await memcachedProtocol.Set("Hello", Encoding.UTF8.GetBytes("World"), TimeSpan.FromMinutes(30));
             var checkSet = await memcachedProtocol.Get("Hello");
             Console.WriteLine($"checkSet result :{Encoding.UTF8.GetString(checkSet)}");
