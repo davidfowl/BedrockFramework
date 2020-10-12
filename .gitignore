@@ -40,3 +40,6 @@ launchSettings.json
 msbuild.ProjectImports.zip
 StyleCop.Cache
 UpgradeLog.htm
+
+# DocFX site generation (for now)
+_site/
