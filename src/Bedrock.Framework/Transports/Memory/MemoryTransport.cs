@@ -38,7 +38,7 @@ namespace Bedrock.Framework.Transports.Memory
 
             var pair = DuplexPipe.CreateConnectionPair(new PipeOptions(), new PipeOptions());
 
-            var serverConnection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application)
+            var serverConnection = new MemoryConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application)
             {
                 LocalEndPoint = endpoint,
                 RemoteEndPoint = endpoint
@@ -52,6 +52,24 @@ namespace Bedrock.Framework.Transports.Memory
 
             listener.AcceptQueue.Writer.TryWrite(serverConnection);
             return new ValueTask<ConnectionContext>(clientConnection);
+        }
+
+        private class MemoryConnectionContext : DefaultConnectionContext
+        {
+            public MemoryConnectionContext(string id, IDuplexPipe transport, IDuplexPipe application)
+                : base(id, transport, application)
+            { }
+
+            public override async ValueTask DisposeAsync()
+            {
+                if (Transport != null)
+                {
+                    await Transport.Output.CompleteAsync().ConfigureAwait(false);
+                    await Transport.Input.CompleteAsync().ConfigureAwait(false);
+                }
+
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         private class MemoryConnectionListener : IConnectionListener
