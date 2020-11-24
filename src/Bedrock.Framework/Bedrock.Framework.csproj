@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <PackageDescription>High performance, low level networking APIs for building custom severs and clients.</PackageDescription>
     <Authors>David Fowler</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,6 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
+    <PackageReference Include="System.IO.Pipelines" Version="5.0.0" />
   </ItemGroup>
 </Project>
