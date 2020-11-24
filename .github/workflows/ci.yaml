@@ -11,9 +11,9 @@ jobs:
     - uses: actions/checkout@v1
       
     - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1
       with:
-        version: 5.0.100
+        dotnet-version: '5.0.x'
      
     - name: dotnet build
       run: dotnet build BedrockFramework.sln -c Release
