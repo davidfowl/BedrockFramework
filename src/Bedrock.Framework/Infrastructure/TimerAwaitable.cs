@@ -94,7 +94,7 @@ namespace Bedrock.Framework
             Tick();
         }
 
-        void IDisposable.Dispose()
+        public void Dispose()
         {
             lock (_lockObj)
             {
