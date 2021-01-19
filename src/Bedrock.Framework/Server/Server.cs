@@ -63,14 +63,11 @@ namespace Bedrock.Framework
 
         private async Task StartTimerAsync()
         {
-            using (_timerAwaitable)
+            while (await _timerAwaitable)
             {
-                while (await _timerAwaitable)
+                foreach (var listener in _listeners)
                 {
-                    foreach (var listener in _listeners)
-                    {
-                        listener.TickHeartbeat();
-                    }
+                    listener.TickHeartbeat();
                 }
             }
         }
@@ -111,6 +108,8 @@ namespace Bedrock.Framework
                 _timerAwaitable.Stop();
 
                 await _timerTask.ConfigureAwait(false);
+
+                _timerAwaitable.Dispose();
             }
         }
 
