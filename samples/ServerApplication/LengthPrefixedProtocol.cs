@@ -10,7 +10,7 @@ namespace Protocols
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out Message message)
         {
             var reader = new SequenceReader<byte>(input);
-            if (!reader.TryReadBigEndian(out int length) || input.Length < length)
+            if (!reader.TryReadBigEndian(out int length) || reader.Remaining < length)
             {
                 message = default;
                 return false;
