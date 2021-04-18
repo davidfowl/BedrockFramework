@@ -26,7 +26,7 @@ jobs:
 
     - name: setup nuget
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: NuGet/setup-nuget@v1.0.2
+      uses: NuGet/setup-nuget@v1.0.5
       with:
         nuget-version: latest
 
