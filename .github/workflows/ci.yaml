@@ -9,9 +9,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-      
+
+    - uses: aarnott/nbgv@v0.4.0
+      with:
+        setAllVars: true
+
     - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v1.4.0
+      uses: actions/setup-dotnet@v1.7.2
       with:
         version: 3.1.100
      
@@ -26,7 +30,7 @@ jobs:
 
     - name: setup nuget
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: NuGet/setup-nuget@v1.0.2
+      uses: NuGet/setup-nuget@v1.0.5
       with:
         nuget-version: latest
 
