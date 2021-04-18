@@ -9,7 +9,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-      
+
+    - uses: aarnott/nbgv@v0.4.0
+      with:
+        setAllVars: true
+
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v1.7.2
       with:
