@@ -3,6 +3,7 @@ using System.Buffers;
 using System.IO;
 using System.IO.Pipelines;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
@@ -188,7 +189,7 @@ namespace Bedrock.Framework.Tests
             var protocol = new TestProtocol(data.Length);
             var reader = connection.CreateReader();
             var resultTask = reader.ReadAsync(protocol);
-            
+
             connection.Transport.Input.CancelPendingRead();
 
             var result = await resultTask;
@@ -252,6 +253,33 @@ namespace Bedrock.Framework.Tests
 
             result = await reader.ReadAsync(protocol);
             Assert.True(result.IsCompleted);
+            reader.Advance();
+        }
+
+        [Fact]
+        public async Task ReadAfterCancellationTokenFiresWorks()
+        {
+            var options = new PipeOptions(useSynchronizationContext: false);
+            var pair = DuplexPipe.CreateConnectionPair(options, options);
+            await using var connection = new DefaultConnectionContext(Guid.NewGuid().ToString(), pair.Transport, pair.Application);
+            var data = Encoding.UTF8.GetBytes("Hello World");
+            var protocol = new TestProtocol(data.Length);
+            var reader = connection.CreateReader();
+
+            await connection.Application.Output.WriteAsync(data);
+
+            var result = await reader.ReadAsync(protocol);
+            Assert.Equal(data.Length, result.Message.Length);
+            reader.Advance();
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await reader.ReadAsync(protocol, cts.Token));
+
+            await connection.Application.Output.WriteAsync(data);
+
+            result = await reader.ReadAsync(protocol);
+            Assert.Equal(data.Length, result.Message.Length);
             reader.Advance();
         }
 

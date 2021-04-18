@@ -18,7 +18,7 @@ namespace Bedrock.Framework.Protocols
         private bool _hasMessage;
         private bool _disposed;
 
-        public ProtocolReader(Stream stream) : 
+        public ProtocolReader(Stream stream) :
             this(PipeReader.Create(stream))
         {
 
@@ -67,6 +67,11 @@ namespace Bedrock.Framework.Protocols
             {
                 // We couldn't parse the message so advance the input so we can read
                 _reader.AdvanceTo(_consumed, _examined);
+
+                // Reset the state since we're done consuming this buffer
+                _buffer = default;
+                _consumed = default;
+                _examined = default;
             }
 
             if (_isCompleted)
@@ -160,6 +165,11 @@ namespace Bedrock.Framework.Protocols
             else
             {
                 _reader.AdvanceTo(_consumed, _examined);
+
+                // Reset the state since we're done consuming this buffer
+                _buffer = default;
+                _consumed = default;
+                _examined = default;
             }
 
             if (_isCompleted)
