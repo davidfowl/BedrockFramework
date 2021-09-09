@@ -23,7 +23,7 @@ namespace Bedrock.Framework
 
         public SocketConnection(EndPoint endPoint)
         {
-            _socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            _socket = new Socket(endPoint.AddressFamily, SocketType.Stream, DetermineProtocolType(endPoint));
             _endPoint = endPoint;
 
             _sender = new SocketSender(_socket, PipeScheduler.ThreadPool);
@@ -248,6 +248,17 @@ namespace Bedrock.Framework
                 {
                     break;
                 }
+            }
+        }
+
+        private static ProtocolType DetermineProtocolType(EndPoint endPoint)
+        {
+            switch (endPoint)
+            {
+                case UnixDomainSocketEndPoint _:
+                    return ProtocolType.Unspecified;
+                default:
+                    return ProtocolType.Tcp;
             }
         }
     }
