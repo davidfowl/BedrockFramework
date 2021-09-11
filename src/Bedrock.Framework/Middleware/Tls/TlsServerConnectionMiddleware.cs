@@ -159,7 +159,8 @@ namespace Bedrock.Framework.Middleware.Tls
                         ClientCertificateRequired = certificateRequired,
                         EnabledSslProtocols = _options.SslProtocols,
                         CertificateRevocationCheckMode = _options.CheckCertificateRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck,
-                        ApplicationProtocols = new List<SslApplicationProtocol>()
+                        ApplicationProtocols = new List<SslApplicationProtocol>(),
+                        CipherSuitesPolicy = _options.CipherSuitesPolicy
                     };
 
                     _options.OnAuthenticateAsServer?.Invoke(context, sslOptions);
