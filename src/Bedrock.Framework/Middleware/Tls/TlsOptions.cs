@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#nullable enable
+using System;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using Microsoft.AspNetCore.Connections;
 
@@ -51,7 +50,7 @@ namespace Bedrock.Framework.Middleware.Tls
         /// <summary>
         /// Specifies the remote endpoint certificate requirements for a TLS connection. Defaults to <see cref="RemoteCertificateMode.RequireCertificate"/>.
         /// </summary>
-        public RemoteCertificateMode RemoteCertificateMode { get; set; } = RemoteCertificateMode.RequireCertificate;
+        public RemoteCertificateMode RemoteCertificateMode { get; set; }
 
         /// <summary>
         /// Specifies a callback for additional remote certificate validation that will be invoked during authentication. This will be ignored
@@ -60,7 +59,7 @@ namespace Bedrock.Framework.Middleware.Tls
         public RemoteCertificateValidator RemoteCertificateValidation { get; set; }
 
         /// <summary>
-        /// Specifies allowable SSL protocols. Defaults to <see cref="SslProtocols.Tls12" /> and <see cref="SslProtocols.Tls11"/>.
+        /// Specifies allowable SSL protocols. Defaults to <see cref="System.Security.Authentication.SslProtocols.Tls12" /> and <see cref="System.Security.Authentication.SslProtocols.Tls11"/>.
         /// </summary>
         public SslProtocols SslProtocols { get; set; }
 
@@ -68,6 +67,11 @@ namespace Bedrock.Framework.Middleware.Tls
         /// Specifies whether the certificate revocation list is checked during authentication.
         /// </summary>
         public bool CheckCertificateRevocation { get; set; }
+
+        /// <summary>
+        /// Specifies the cipher suites allowed for TLS. When set to null, the operating system default is used.
+        /// </summary>
+        public CipherSuitesPolicy? CipherSuitesPolicy { get; set; }
 
         /// <summary>
         /// Overrides the current <see cref="RemoteCertificateValidation"/> callback and allows any client certificate.
