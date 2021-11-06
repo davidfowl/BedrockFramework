@@ -274,7 +274,7 @@ namespace Bedrock.Framework.Tests
 
             var cts = new CancellationTokenSource();
             cts.Cancel();
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await reader.ReadAsync(protocol, cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await reader.ReadAsync(protocol, cts.Token));
 
             await connection.Application.Output.WriteAsync(data);
 

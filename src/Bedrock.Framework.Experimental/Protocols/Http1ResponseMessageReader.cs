@@ -59,7 +59,7 @@ namespace Bedrock.Framework.Protocols
                     goto case State.Headers;
 
                 case State.Headers:
-                    while (sequenceReader.TryReadTo(out var headerLine, NewLine))
+                    while (sequenceReader.TryReadTo(out ReadOnlySequence<byte> headerLine, NewLine))
                     {
                         if (headerLine.Length == 0)
                         {
