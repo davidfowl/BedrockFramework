@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net;
@@ -171,7 +170,7 @@ namespace ClientApplication
                                     .Build();
 
             var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5000));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -255,7 +254,6 @@ namespace ClientApplication
             }
         }
 
-
         private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
@@ -276,7 +274,7 @@ namespace ClientApplication
                                     .Build();
 
             var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5004));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -306,7 +304,7 @@ namespace ClientApplication
             Console.WriteLine("Started Server");
 
             var connection = await client.ConnectAsync(endpoint: null);
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -332,7 +330,7 @@ namespace ClientApplication
                                     .Build();
 
             await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             var protocol = new LengthPrefixedProtocol();
             var reader = connection.CreateReader();
