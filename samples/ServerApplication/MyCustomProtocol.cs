@@ -17,6 +17,8 @@ namespace ServerApplication
 
         public override async Task OnConnectedAsync(ConnectionContext connection)
         {
+            _logger.LogInformation("{ConnectionId} connected.", connection.ConnectionId);
+
             // Use a length prefixed protocol
             var protocol = new LengthPrefixedProtocol();
             var reader = connection.CreateReader();
@@ -43,6 +45,8 @@ namespace ServerApplication
                     reader.Advance();
                 }
             }
+
+            _logger.LogInformation("{ConnectionId} disconnected.", connection.ConnectionId);
         }
     }
 }
