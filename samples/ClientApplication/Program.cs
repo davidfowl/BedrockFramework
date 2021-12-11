@@ -97,7 +97,7 @@ namespace ClientApplication
 
         private static async Task RabbitMQProtocol(IServiceProvider serviceProvider)
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Error);
                 builder.AddConsole();
@@ -139,7 +139,7 @@ namespace ClientApplication
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Error);
                 builder.AddConsole();
@@ -320,7 +320,7 @@ namespace ClientApplication
 
         private static async Task CustomProtocol()
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddConsole();
