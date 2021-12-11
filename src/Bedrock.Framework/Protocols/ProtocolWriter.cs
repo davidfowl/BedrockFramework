@@ -95,6 +95,26 @@ namespace Bedrock.Framework.Protocols
             }
         }
 
+        public void CancelPendingFlush()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _writer.CancelPendingFlush();
+        }
+
+        public async ValueTask CompleteAsync()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            await _writer.CompleteAsync();
+        }
+
         public async ValueTask DisposeAsync()
         {
             await _semaphore.WaitAsync().ConfigureAwait(false);
