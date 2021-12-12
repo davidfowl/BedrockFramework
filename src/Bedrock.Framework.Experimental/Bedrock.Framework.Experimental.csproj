@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+	<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageDescription>Experimental protocols and transports for Bedrock.Framework.</PackageDescription>
     <Authors>David Fowler</Authors>
@@ -18,10 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="5.0.12" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageReference Update="Nerdbank.GitVersioning" Version="3.4.244" />
   </ItemGroup>
 </Project>
