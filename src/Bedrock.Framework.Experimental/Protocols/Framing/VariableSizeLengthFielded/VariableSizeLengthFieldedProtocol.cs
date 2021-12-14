@@ -64,8 +64,8 @@ namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFie
 
         private bool TryParsePayload(in ReadOnlySequence<byte> input, out ReadOnlySequence<byte> payloadSequence)
         {
-            int messageLength = _headerLength + _header.PayloadLength;
-            if (input.Length < messageLength)
+            int frameLength = _headerLength + _header.PayloadLength;
+            if (input.Length < frameLength)
             {
                 payloadSequence = default;
                 return false;
@@ -77,13 +77,13 @@ namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFie
         #endregion
 
         #region IMessageWriter
-        public void WriteMessage(Frame message, IBufferWriter<byte> output)
+        public void WriteMessage(Frame frame, IBufferWriter<byte> output)
         {
             // Header
-            output.Write(message.Header.AsSpan());
+            output.Write(frame.Header.AsSpan());
 
             // Payload
-            foreach (var payloadSegment in message.Payload)
+            foreach (var payloadSegment in frame.Payload)
             {
                 output.Write(payloadSegment.Span);
             }
