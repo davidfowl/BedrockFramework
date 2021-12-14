@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net;
@@ -32,20 +31,21 @@ namespace ClientApplication
             })
             .BuildServiceProvider();
 
-            Console.WriteLine("Samples: ");
-            Console.WriteLine("1. Echo Server");
-            Console.WriteLine("2. HttpClient");
-            Console.WriteLine("3. SignalR");
-            Console.WriteLine("4. Echo Server With TLS enabled");
-            Console.WriteLine("5. In Memory Transport Echo Server and client");
-            Console.WriteLine("6. Length prefixed custom binary protocol");
-            Console.WriteLine("7. Talk to local docker dameon");
-            Console.WriteLine("8. Memcached protocol");
-            Console.WriteLine("9. RebbitMQ protocol");
-
             while (true)
             {
+                Console.WriteLine("Samples: ");
+                Console.WriteLine("1. Echo Server");
+                Console.WriteLine("2. HttpClient");
+                Console.WriteLine("3. SignalR");
+                Console.WriteLine("4. Echo Server With TLS enabled");
+                Console.WriteLine("5. In Memory Transport Echo Server and client");
+                Console.WriteLine("6. Length prefixed custom binary protocol");
+                Console.WriteLine("7. Talk to local docker dameon");
+                Console.WriteLine("8. Memcached protocol");
+                Console.WriteLine("9. RebbitMQ protocol");
+
                 var keyInfo = Console.ReadKey();
+                Console.Clear();
 
                 if (keyInfo.Key == ConsoleKey.D1)
                 {
@@ -92,12 +92,14 @@ namespace ClientApplication
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
                 }
+
+                Console.Clear();
             }
         }
 
         private static async Task RabbitMQProtocol(IServiceProvider serviceProvider)
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Error);
                 builder.AddConsole();
@@ -139,7 +141,7 @@ namespace ClientApplication
 
         private static async Task MemcachedProtocol(IServiceProvider serviceProvider)
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Error);
                 builder.AddConsole();
@@ -171,7 +173,7 @@ namespace ClientApplication
                                     .Build();
 
             var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5000));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -255,7 +257,6 @@ namespace ClientApplication
             }
         }
 
-
         private static async Task EchoServerWithTls(ServiceProvider serviceProvider)
         {
             var client = new ClientBuilder(serviceProvider)
@@ -276,7 +277,7 @@ namespace ClientApplication
                                     .Build();
 
             var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5004));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -306,7 +307,7 @@ namespace ClientApplication
             Console.WriteLine("Started Server");
 
             var connection = await client.ConnectAsync(endpoint: null);
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
 
             Console.WriteLine("Echo server running, type into the console");
             var reads = Console.OpenStandardInput().CopyToAsync(connection.Transport.Output);
@@ -320,7 +321,7 @@ namespace ClientApplication
 
         private static async Task CustomProtocol()
         {
-            var loggerFactory = LoggerFactory.Create(builder =>
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddConsole();
@@ -332,25 +333,39 @@ namespace ClientApplication
                                     .Build();
 
             await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5005));
-            Console.WriteLine($"Connected to {connection.LocalEndPoint}");
+          
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
+            Console.WriteLine("Enter 'c' to close the connection.");
 
             var protocol = new LengthPrefixedProtocol();
-            var reader = connection.CreateReader();
-            var writer = connection.CreateWriter();
+            await using var reader = connection.CreateReader();
+            await using var writer = connection.CreateWriter();
 
             while (true)
             {
                 var line = Console.ReadLine();
+                if (line.Equals("c"))
+                {
+                    await reader.CompleteAsync();
+                    await writer.CompleteAsync();
+                    break;
+                }
+
                 await writer.WriteAsync(protocol, new Message(Encoding.UTF8.GetBytes(line)));
                 var result = await reader.ReadAsync(protocol);
 
-                if (result.IsCompleted)
+                if (result.IsCompleted || result.IsCanceled)
                 {
                     break;
                 }
 
                 reader.Advance();
             }
+
+            connection.Abort();
+
+            // If the DisposeAsync not called explicitly, the connection won't close.
+            await connection.DisposeAsync();
         }
 
         private static async Task DockerDaemon(IServiceProvider serviceProvider)
