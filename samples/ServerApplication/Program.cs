@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ServerApplication.Framing.VariableSizeLengthFielded;
 
 namespace ServerApplication
 {
@@ -21,8 +22,9 @@ namespace ServerApplication
                 builder.SetMinimumLevel(LogLevel.Debug);
                 builder.AddConsole();
             });
-
+            
             services.AddSignalR();
+            services.AddSingleton<HeaderFactory>();
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -46,18 +48,23 @@ namespace ServerApplication
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MqttApplication>());
 
                             // Echo Server with TLS
-                            sockets.Listen(IPAddress.Loopback, 5004,
-                                builder => builder.UseServerTls(options =>
-                                {
-                                    options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
+                            //sockets.Listen(IPAddress.Loopback, 5004,
+                            //    builder => builder.UseServerTls(options =>
+                            //    {
+                            //        options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
 
-                                    // NOTE: Do not do this in a production environment
-                                    options.AllowAnyRemoteCertificate();
-                                })
-                                .UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
+                            //        // NOTE: Do not do this in a production environment
+                            //        options.AllowAnyRemoteCertificate();
+                            //    })
+                            //    .UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
 
+                            // Lenght prefixed server
                             sockets.Listen(IPAddress.Loopback, 5005,
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MyCustomProtocol>());
+
+                            // Header prefixed server
+                            sockets.Listen(IPAddress.Loopback, 5006,
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<HeaderPrefixedApplication>());
                         })
                         .Build();
 
