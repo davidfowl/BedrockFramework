@@ -362,6 +362,8 @@ namespace ClientApplication
                 reader.Advance();
             }
 
+            connection.Abort();
+
             // If the DisposeAsync not called explicitly, the connection won't close.
             await connection.DisposeAsync();
         }
