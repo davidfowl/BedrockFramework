@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
-using Bedrock.Framework.Infrastructure;
 using Bedrock.Framework.Middleware.Tls;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Bedrock.Framework
 {
@@ -17,11 +16,16 @@ namespace Bedrock.Framework
         /// <summary>
         /// Emits verbose logs for bytes read from and written to the connection.
         /// </summary>
-        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string loggerName = null, ILoggerFactory loggerFactory = null, LoggingFormatter loggingFormatter = null) where TBuilder : IConnectionBuilder
+        public static TBuilder UseConnectionLogging<TBuilder>(this TBuilder builder, string loggerName = null, ILoggerFactory loggerFactory = null, ObjectPool<StringBuilder> stringBuilderPool = null, LoggingFormatter loggingFormatter = null) where TBuilder : IConnectionBuilder
         {
             loggerFactory ??= builder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerName == null ? loggerFactory.CreateLogger<LoggingConnectionMiddleware>() : loggerFactory.CreateLogger(loggerName);
-            builder.Use(next => new LoggingConnectionMiddleware(next, logger, loggingFormatter).OnConnectionAsync);
+            if (stringBuilderPool == null)
+            {
+                var objectPoolProvider = new DefaultObjectPoolProvider();
+                stringBuilderPool = objectPoolProvider.CreateStringBuilderPool();
+            }
+            builder.Use(next => new LoggingConnectionMiddleware(next, logger, stringBuilderPool, loggingFormatter).OnConnectionAsync);
             return builder;
         }
 
