@@ -1,7 +1,8 @@
-﻿using Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded;
+using Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded;
 using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
+using System.Buffers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -34,7 +35,7 @@ namespace ServerApplication.Framing.VariableSizeLengthFielded
                     var result = await reader.ReadAsync(protocol);
                     var message = result.Message;
 
-                    _logger.LogInformation("Message received - Header: ({Header}) -  Payload: ({Payload})", message.Header, Encoding.UTF8.GetString(message.Payload));
+                    _logger.LogInformation("Message received - Header: ({Header}) -  Payload: ({Payload})", message.Header, Encoding.UTF8.GetString(message.Payload.ToArray()));
 
                     if (result.IsCompleted)
                     {
