@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 
 namespace ServerApplication.Framing.VariableSizeLengthFielded
@@ -21,6 +21,6 @@ namespace ServerApplication.Framing.VariableSizeLengthFielded
             }
         }
 
-        public Header CreateHeader(in ReadOnlySpan<byte> headerData) => new(headerData);
+        public Header CreateHeader(in ReadOnlySpan<byte> headerData) => new Header(headerData);
     }
 }
