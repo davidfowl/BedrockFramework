@@ -10,6 +10,10 @@ namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFie
         public Frame(IHeader header, byte[] payload) : this(header, new ReadOnlySequence<byte>(payload))
         {
         }
+        
+        public Frame(IHeader header, ReadOnlyMemory<byte> payload) : this(header, new ReadOnlySequence<byte>(payload))
+        {
+        }
 
         public Frame(IHeader header, ReadOnlySequence<byte> payload)
         {
