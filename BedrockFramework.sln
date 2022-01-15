@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29112.163
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientApplication", "samples\ClientApplication\ClientApplication.csproj", "{44A257ED-D3A7-4170-BE67-4392F2A6FE18}"
 EndProject
@@ -25,6 +25,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework.Experimental", "src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj", "{B77439AE-01C0-4877-AF91-180D521F6E55}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bedrock.Framework.Benchmarks", "tests\Bedrock.Framework.Benchmarks\Bedrock.Framework.Benchmarks.csproj", "{E4532856-96A9-47F1-9718-9FD596362493}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UdpServerApplication", "UdpServerApplication\UdpServerApplication.csproj", "{130151E8-8A8E-4B66-A667-46BE2AEE0193}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,6 +58,10 @@ Global
 		{E4532856-96A9-47F1-9718-9FD596362493}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4532856-96A9-47F1-9718-9FD596362493}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4532856-96A9-47F1-9718-9FD596362493}.Release|Any CPU.Build.0 = Release|Any CPU
+		{130151E8-8A8E-4B66-A667-46BE2AEE0193}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{130151E8-8A8E-4B66-A667-46BE2AEE0193}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{130151E8-8A8E-4B66-A667-46BE2AEE0193}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{130151E8-8A8E-4B66-A667-46BE2AEE0193}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -67,6 +73,7 @@ Global
 		{37FED75D-A02F-43AF-B888-F331634C3FA7} = {1F47B42E-790F-48AA-8BFB-AD1986D05A67}
 		{B77439AE-01C0-4877-AF91-180D521F6E55} = {BE56BD3F-A489-42F7-A3E3-93AE5A0A54E2}
 		{E4532856-96A9-47F1-9718-9FD596362493} = {1F47B42E-790F-48AA-8BFB-AD1986D05A67}
+		{130151E8-8A8E-4B66-A667-46BE2AEE0193} = {B0C0F79A-2A88-4ADB-9E15-62C1EA26A96D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {05222274-E7CB-4ABA-9ADF-4A3DBB1D0417}
