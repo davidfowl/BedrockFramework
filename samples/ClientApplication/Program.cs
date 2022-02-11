@@ -39,9 +39,9 @@ namespace ClientApplication
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
             Console.WriteLine("6. Length prefixed custom binary protocol");
-            Console.WriteLine("7. Talk to local docker dameon");
+            Console.WriteLine("7. Talk to local docker daemon");
             Console.WriteLine("8. Memcached protocol");
-            Console.WriteLine("9. RebbitMQ protocol");
+            Console.WriteLine("9. RabbitMQ protocol");
 
             while (true)
             {
