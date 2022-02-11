@@ -7,76 +7,42 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Bedrock.Framework.Infrastructure
 {
-    internal sealed class LoggingStream : Stream
+    public sealed class LoggingStream : Stream
     {
         private readonly Stream _inner;
         private readonly ILogger _logger;
+        private readonly ObjectPool<StringBuilder> _stringBuilderPool;
         private readonly LoggingFormatter _logFormatter;
 
-        public LoggingStream(Stream inner, ILogger logger, LoggingFormatter logFormatter = null)
+        public LoggingStream(Stream inner, ILogger logger, ObjectPool<StringBuilder> stringBuilderPool, LoggingFormatter logFormatter = null)
         {
             _inner = inner;
             _logger = logger;
+            _stringBuilderPool = stringBuilderPool;
             _logFormatter = logFormatter;
         }
 
-        public override bool CanRead
-        {
-            get
-            {
-                return _inner.CanRead;
-            }
-        }
+        public override bool CanRead => _inner.CanRead;
 
-        public override bool CanSeek
-        {
-            get
-            {
-                return _inner.CanSeek;
-            }
-        }
+        public override bool CanSeek => _inner.CanSeek;
 
-        public override bool CanWrite
-        {
-            get
-            {
-                return _inner.CanWrite;
-            }
-        }
+        public override bool CanWrite => _inner.CanWrite;
 
-        public override long Length
-        {
-            get
-            {
-                return _inner.Length;
-            }
-        }
+        public override long Length => _inner.Length;
 
         public override long Position
         {
-            get
-            {
-                return _inner.Position;
-            }
-
-            set
-            {
-                _inner.Position = value;
-            }
+            get => _inner.Position;
+            set => _inner.Position = value;
         }
 
-        public override void Flush()
-        {
-            _inner.Flush();
-        }
+        public override void Flush() => _inner.Flush();
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            return _inner.FlushAsync(cancellationToken);
-        }
+        public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -92,7 +58,7 @@ namespace Bedrock.Framework.Infrastructure
             return read;
         }
 
-        public async override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             int read = await _inner.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             Log("ReadAsync", new ReadOnlySpan<byte>(buffer, offset, read));
@@ -140,7 +106,7 @@ namespace Bedrock.Framework.Infrastructure
             return _inner.WriteAsync(source, cancellationToken);
         }
 
-        private void Log(string method, ReadOnlySpan<byte> buffer)
+        private void Log(in string method, in ReadOnlySpan<byte> buffer)
         {
             if (_logFormatter != null)
             {
@@ -153,20 +119,20 @@ namespace Bedrock.Framework.Infrastructure
                 return;
             }
 
-            var builder = new StringBuilder();
+            var builder = _stringBuilderPool.Get();
             builder.AppendLine($"{method}[{buffer.Length}]");
-            var charBuilder = new StringBuilder();
+            var charBuilder = _stringBuilderPool.Get();
 
             // Write the hex
             for (int i = 0; i < buffer.Length; i++)
             {
                 builder.Append(buffer[i].ToString("X2"));
-                builder.Append(" ");
+                builder.Append(' ');
 
                 var bufferChar = (char)buffer[i];
                 if (char.IsControl(bufferChar))
                 {
-                    charBuilder.Append(".");
+                    charBuilder.Append('.');
                 }
                 else
                 {
@@ -175,15 +141,15 @@ namespace Bedrock.Framework.Infrastructure
 
                 if ((i + 1) % 16 == 0)
                 {
-                    builder.Append("  ");
-                    builder.Append(charBuilder.ToString());
+                    builder.Append(' ', 2);
+                    builder.Append(charBuilder);
                     builder.AppendLine();
                     charBuilder.Clear();
                 }
                 else if ((i + 1) % 8 == 0)
                 {
-                    builder.Append(" ");
-                    charBuilder.Append(" ");
+                    builder.Append(' ');
+                    charBuilder.Append(' ');
                 }
             }
 
@@ -193,32 +159,25 @@ namespace Bedrock.Framework.Infrastructure
                 builder.Append(string.Empty.PadRight(2 + (3 * (16 - charBuilder.Length))));
                 // extra for space after 8th byte
                 if (charBuilder.Length < 8)
-                    builder.Append(" ");
-                builder.Append(charBuilder.ToString());
+                {
+                    builder.Append(' ');
+                }
+                builder.Append(charBuilder);
             }
 
             _logger.LogDebug(builder.ToString());
+
+            _stringBuilderPool.Return(builder);
+            _stringBuilderPool.Return(charBuilder);
         }
 
         // The below APM methods call the underlying Read/WriteAsync methods which will still be logged.
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
-        {
-            return TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
-        }
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
 
-        public override int EndRead(IAsyncResult asyncResult)
-        {
-            return TaskToApm.End<int>(asyncResult);
-        }
+        public override int EndRead(IAsyncResult asyncResult) => TaskToApm.End<int>(asyncResult);
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
-        {
-            return TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
-        }
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state) => TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
 
-        public override void EndWrite(IAsyncResult asyncResult)
-        {
-            TaskToApm.End(asyncResult);
-        }
+        public override void EndWrite(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
     }
 }
