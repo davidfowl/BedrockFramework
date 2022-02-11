@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded
+namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded
 {
     public readonly struct Frame
     {

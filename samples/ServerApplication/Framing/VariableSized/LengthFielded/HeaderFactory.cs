@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 
-namespace ServerApplication.Framing.VariableSizeLengthFielded
+namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
     internal class HeaderFactory
     {

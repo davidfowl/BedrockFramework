@@ -1,4 +1,4 @@
-﻿namespace ServerApplication.Framing.VariableSizeLengthFielded
+﻿namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
     internal static class Helper
     {

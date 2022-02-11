@@ -2,16 +2,16 @@
 using System.Buffers;
 using Bedrock.Framework.Protocols;
 
-namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded
+namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded
 {
-    public class VariableSizeLengthFieldedProtocol : IMessageReader<Frame>, IMessageWriter<Frame>
+    public class LengthFieldedProtocol : IMessageReader<Frame>, IMessageWriter<Frame>
     {
         private readonly int _headerLength;
         private readonly Func<ReadOnlySequence<byte>, IHeader> _createHeader;
 
-        private IHeader? _header;
+        private IHeader _header;
 
-        public VariableSizeLengthFieldedProtocol(int headerLength, Func<ReadOnlySequence<byte>, IHeader> createHeader)
+        public LengthFieldedProtocol(int headerLength, Func<ReadOnlySequence<byte>, IHeader> createHeader)
         {
             if (headerLength <= 0)
             {

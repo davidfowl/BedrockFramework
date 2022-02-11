@@ -1,12 +1,12 @@
 ﻿using System.Buffers;
 using System.Text;
 using System.Threading.Tasks;
-using Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded;
+using Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded;
 using Bedrock.Framework.Protocols;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
-namespace ServerApplication.Framing.VariableSizeLengthFielded
+namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
     internal class HeaderPrefixedApplication : ConnectionHandler
     {
@@ -24,7 +24,7 @@ namespace ServerApplication.Framing.VariableSizeLengthFielded
             _logger.LogInformation("{ConnectionId} connected.", connection.ConnectionId);
 
             // Use a header prefixed protocol
-            var protocol = new VariableSizeLengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => _headerFactory.CreateHeader(headerSequence));
+            var protocol = new LengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => _headerFactory.CreateHeader(headerSequence));
             var reader = connection.CreateReader();
             var writer = connection.CreateWriter();
 

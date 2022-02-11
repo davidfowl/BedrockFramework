@@ -1,7 +1,7 @@
 ﻿using System;
-using Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded;
+using Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded;
 
-namespace ServerApplication.Framing.VariableSizeLengthFielded
+namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
     internal class Header : IHeader
     {
