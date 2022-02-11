@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ServerApplication.Framing.VariableSizeLengthFielded;
 
 namespace ServerApplication
 {
@@ -23,6 +24,7 @@ namespace ServerApplication
             });
 
             services.AddSignalR();
+            services.AddSingleton<HeaderFactory>();
 
             var serviceProvider = services.BuildServiceProvider();
 
@@ -56,8 +58,13 @@ namespace ServerApplication
                                 })
                                 .UseConnectionLogging().UseConnectionHandler<EchoServerApplication>());
 
+                            // Length prefixed server
                             sockets.Listen(IPAddress.Loopback, 5005,
                                 builder => builder.UseConnectionLogging().UseConnectionHandler<MyCustomProtocol>());
+
+                            // Header prefixed server
+                            sockets.Listen(IPAddress.Loopback, 5006,
+                                builder => builder.UseConnectionLogging().UseConnectionHandler<HeaderPrefixedApplication>());
                         })
                         .Build();
 
