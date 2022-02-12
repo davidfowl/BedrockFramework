@@ -83,7 +83,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
                     Console.WriteLine("Variable size length fielded protocol.");
-                    await VariableSizeLengthFieldedProtocol();
+                    await VariableSizedLengthFieldedProtocol();
                 }
                 else if (keyInfo.Key == ConsoleKey.D8)
                 {
@@ -361,7 +361,7 @@ namespace ClientApplication
             }
         }
 
-        private static async Task VariableSizeLengthFieldedProtocol()
+        private static async Task VariableSizedLengthFieldedProtocol()
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
