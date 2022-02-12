@@ -3,7 +3,7 @@ using Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthField
 
 namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
-    internal class Header : IHeader
+    internal class Header : IHeader, IEquatable<Header>
     {
         public int PayloadLength { get; }
         public int SomeCustomData { get; }
@@ -38,5 +38,17 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
         }
 
         public override string ToString() => $"Payload length: {PayloadLength} - Some custom data: {SomeCustomData}";
+
+        #region IEquatable
+        public override bool Equals(object obj) => Equals((Header)obj);
+
+        public override int GetHashCode() => HashCode.Combine(PayloadLength, SomeCustomData);
+
+        public bool Equals(Header other) => PayloadLength == other.PayloadLength && SomeCustomData.Equals(other.SomeCustomData);
+
+        public static bool operator ==(Header left, Header right) => left.Equals(right);
+
+        public static bool operator !=(Header left, Header right) => !(left == right);
+        #endregion
     }
 }
