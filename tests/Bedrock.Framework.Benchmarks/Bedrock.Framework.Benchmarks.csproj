@@ -14,4 +14,8 @@
     <ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Framing\VariableSized\LengthFielded\" />
+  </ItemGroup>
+
 </Project>
