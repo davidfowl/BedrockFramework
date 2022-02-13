@@ -7,6 +7,7 @@ using ServerApplication.Framing.VariableSized.LengthFielded;
 using Bedrock.Framework.Protocols;
 using System.IO;
 using System.IO.Pipelines;
+using System.Buffers;
 
 namespace Bedrock.Framework.Tests.Protocols.Framing.VariableSized.LengthFielded
 {
