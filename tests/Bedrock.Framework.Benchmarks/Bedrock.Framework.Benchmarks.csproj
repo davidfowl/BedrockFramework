@@ -6,16 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Framing\VariableSized\LengthFielded\Header.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Framing\VariableSized\LengthFielded\Helper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.12.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
     <ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Framing\VariableSized\LengthFielded\" />
   </ItemGroup>
 
 </Project>
