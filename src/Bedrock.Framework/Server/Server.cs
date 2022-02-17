@@ -114,6 +114,14 @@ namespace Bedrock.Framework
             }
         }
 
+        public async Task DropClientsAsync()
+        {
+            foreach (var listener in _listeners)
+            {
+                await listener.DropClientsAsync().ConfigureAwait(false);
+            }
+        }
+
         private class RunningListener
         {
             private readonly Server _server;
@@ -218,6 +226,13 @@ namespace Bedrock.Framework
                 // Don't shut down connections until entire server is shutting down
                 await _server._shutdownTcs.Task.ConfigureAwait(false);
 
+                await DropClientsAsync().ConfigureAwait(false);
+
+                await listener.DisposeAsync().ConfigureAwait(false);
+            }
+
+            public async Task DropClientsAsync()
+            {
                 // Give connections a chance to close gracefully
                 var tasks = new List<Task>(_connections.Count);
 
@@ -237,10 +252,7 @@ namespace Bedrock.Framework
 
                     await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
-
-                await listener.DisposeAsync().ConfigureAwait(false);
             }
-
 
             private IDisposable BeginConnectionScope(ServerConnection connection)
             {
