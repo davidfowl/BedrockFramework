@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
@@ -13,7 +12,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <summary>
         /// An instance of a thread-safe and cryptographically sound random number generator.
         /// </summary>
-        private readonly static RandomNumberGenerator _rng = new RNGCryptoServiceProvider();
+        private readonly static RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         /// <summary>
         /// Whether or not this is the final frame in the message.
