@@ -8,7 +8,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework;
-using Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded;
 using Bedrock.Framework.Experimental.Protocols.RabbitMQ;
 using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
@@ -19,7 +18,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
 using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
-using ServerApplication.Framing.VariableSizeLengthFielded;
+using ServerApplication.Framing.VariableSized.LengthFielded;
+using Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded;
 
 namespace ClientApplication
 {
@@ -83,7 +83,7 @@ namespace ClientApplication
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
                     Console.WriteLine("Variable size length fielded protocol.");
-                    await VariableSizeLengthFieldedProtocol();
+                    await VariableSizedLengthFieldedProtocol();
                 }
                 else if (keyInfo.Key == ConsoleKey.D8)
                 {
@@ -361,7 +361,7 @@ namespace ClientApplication
             }
         }
 
-        private static async Task VariableSizeLengthFieldedProtocol()
+        private static async Task VariableSizedLengthFieldedProtocol()
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -379,7 +379,8 @@ namespace ClientApplication
             Console.WriteLine("Enter 'c' to close the connection.");
 
             var headerFactory = new HeaderFactory();
-            var protocol = new VariableSizeLengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
+
+            var protocol = new LengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
             await using var writer = connection.CreateWriter();
 
             while (true)

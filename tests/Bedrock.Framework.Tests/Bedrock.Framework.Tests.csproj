@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Header.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Protocols\Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Helper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />

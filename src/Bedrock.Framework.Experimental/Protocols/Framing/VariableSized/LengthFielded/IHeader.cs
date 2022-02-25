@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSizeLengthFielded
+namespace Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded
 {
     public interface IHeader
     {
