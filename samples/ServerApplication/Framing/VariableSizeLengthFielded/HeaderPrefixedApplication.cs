@@ -24,7 +24,8 @@ namespace ServerApplication.Framing.VariableSizeLengthFielded
             _logger.LogInformation("{ConnectionId} connected.", connection.ConnectionId);
 
             // Use a header prefixed protocol
-            var protocol = new VariableSizeLengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => _headerFactory.CreateHeader(headerSequence));
+            var headerFactory = _headerFactory; // Capturing members in anonymous methods results memory leak, that's why we introduce a local variable.
+            var protocol = new VariableSizeLengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
             var reader = connection.CreateReader();
             var writer = connection.CreateWriter();
 
