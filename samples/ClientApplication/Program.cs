@@ -379,7 +379,6 @@ namespace ClientApplication
             Console.WriteLine("Enter 'c' to close the connection.");
 
             var headerFactory = new HeaderFactory();
-
             var protocol = new LengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
             await using var writer = connection.CreateWriter();
 
