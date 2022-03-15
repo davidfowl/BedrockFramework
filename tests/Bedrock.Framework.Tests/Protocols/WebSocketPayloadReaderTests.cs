@@ -15,7 +15,7 @@ namespace Bedrock.Framework.Protocols.WebSockets.Tests
 {
     public class WebSocketPayloadReaderTests
     {
-        private RNGCryptoServiceProvider _rng = new RNGCryptoServiceProvider();
+        private RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
         [Fact]
         public void SingleSegmentSequenceWorks()
