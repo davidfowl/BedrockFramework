@@ -386,7 +386,7 @@ namespace ClientApplication
             {
                 Console.WriteLine("Enter the text: ");
                 var line = Console.ReadLine();
-                if (line.Equals("c"))
+                if (line.Equals("c", StringComparison.Ordinal))
                 {
                     break;
                 }
