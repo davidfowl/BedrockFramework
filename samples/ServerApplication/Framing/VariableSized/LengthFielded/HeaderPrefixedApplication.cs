@@ -20,7 +20,7 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
             LoggerMessage.Define<string>(logLevel: LogLevel.Information, eventId: 0, formatString: "{ConnectionId} connected.");
 
         private static readonly Action<ILogger, IHeader, string, Exception?> _logMessageReceived =
-            LoggerMessage.Define<IHeader, string>(logLevel: LogLevel.Information, eventId: 0, formatString: "Message received - Header: ({Header}) -  Payload: ({Payload})");
+            LoggerMessage.Define<IHeader, string>(logLevel: LogLevel.Information, eventId: 0, formatString: "Message received - Header: ({Header}) - Payload: ({Payload})");
 
         private static readonly Action<ILogger, string, Exception?> _logDisconnected =
             LoggerMessage.Define<string>(logLevel: LogLevel.Information, eventId: 0, formatString: "{ConnectionId} disconnected.");
@@ -28,7 +28,7 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
         [LoggerMessage(0, LogLevel.Information, "{ConnectionId} connected.")]
         partial void LogConnected(string connectionId);
 
-        [LoggerMessage(0, LogLevel.Information, "Message received - Header: ({Header}) -  Payload: ({Payload})")]
+        [LoggerMessage(0, LogLevel.Information, "Message received - Header: ({Header}) - Payload: ({Payload})")]
         partial void LogMessageReceived(IHeader header, string payload);
 
         [LoggerMessage(0, LogLevel.Information, "{ConnectionId} disconnected.")]
