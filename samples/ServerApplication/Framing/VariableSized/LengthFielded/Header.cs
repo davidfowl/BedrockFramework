@@ -5,6 +5,8 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
 {
     internal class Header : IHeader, IEquatable<Header>
     {
+        private byte[] _headerAsArray;
+
         public int PayloadLength { get; }
         public int SomeCustomData { get; }
 
@@ -22,19 +24,24 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
 
         public ReadOnlySpan<byte> AsSpan()
         {
-            var payloadLengthAsArray = BitConverter.GetBytes(PayloadLength);
-            var someCustomDataAsArray = BitConverter.GetBytes(SomeCustomData);
+            // Lazy creating the array.
+            if (_headerAsArray is null)
+            {
+                var payloadLengthAsArray = BitConverter.GetBytes(PayloadLength);
+                var someCustomDataAsArray = BitConverter.GetBytes(SomeCustomData);
 
-            byte[] header = new byte[Helper.HeaderLength];
-            header[0] = payloadLengthAsArray[0];
-            header[1] = payloadLengthAsArray[1];
-            header[2] = payloadLengthAsArray[2];
-            header[3] = payloadLengthAsArray[3];
-            header[4] = someCustomDataAsArray[0];
-            header[5] = someCustomDataAsArray[1];
-            header[6] = someCustomDataAsArray[2];
-            header[7] = someCustomDataAsArray[3];
-            return header.AsSpan();
+                _headerAsArray = new byte[Helper.HeaderLength];
+                _headerAsArray[0] = payloadLengthAsArray[0];
+                _headerAsArray[1] = payloadLengthAsArray[1];
+                _headerAsArray[2] = payloadLengthAsArray[2];
+                _headerAsArray[3] = payloadLengthAsArray[3];
+                _headerAsArray[4] = someCustomDataAsArray[0];
+                _headerAsArray[5] = someCustomDataAsArray[1];
+                _headerAsArray[6] = someCustomDataAsArray[2];
+                _headerAsArray[7] = someCustomDataAsArray[3];
+            }
+            
+            return _headerAsArray.AsSpan();
         }
 
         public override string ToString() => $"Payload length: {PayloadLength} - Some custom data: {SomeCustomData}";
