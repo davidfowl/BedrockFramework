@@ -13,7 +13,7 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
         private readonly ILogger _logger;
         private readonly HeaderFactory _headerFactory;
 
-        public HeaderPrefixedApplication(ILogger<MyCustomProtocol> logger, HeaderFactory headerFactory)
+        public HeaderPrefixedApplication(ILogger<HeaderPrefixedApplication> logger, HeaderFactory headerFactory)
         {
             _logger = logger ?? throw new System.ArgumentNullException(nameof(logger));
             _headerFactory = headerFactory ?? throw new System.ArgumentNullException(nameof(headerFactory));
