@@ -23,7 +23,7 @@ namespace ServerApplication.Framing.VariableSized.LengthFielded
         {
             _logger.LogInformation("{ConnectionId} connected.", connection.ConnectionId);
 
-            // Use a header prefixed protocol
+            // Use the header prefixed protocol
             var headerFactory = _headerFactory; // Capturing members in anonymous methods results memory leak, that's why we introduce a local variable.
             var protocol = new LengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
             var reader = connection.CreateReader();
