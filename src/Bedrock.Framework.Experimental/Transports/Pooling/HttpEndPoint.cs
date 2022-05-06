@@ -29,8 +29,8 @@ namespace Bedrock.Framework
             return comparand is HttpEndPoint other 
                 && base.Equals(comparand) 
                 && other.Kind.Equals(Kind) 
-                && other.Host.Equals(Host) 
-                && other.SslHostName.Equals(SslHostName) 
+                && other.Host.Equals(Host, StringComparison.Ordinal) 
+                && other.SslHostName.Equals(SslHostName, StringComparison.Ordinal) 
                 && other.ProxyUri.Equals(ProxyUri) 
                 && other.MaxConnections == MaxConnections;
         }
