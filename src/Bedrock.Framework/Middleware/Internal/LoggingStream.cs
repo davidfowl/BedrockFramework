@@ -106,7 +106,7 @@ namespace Bedrock.Framework.Infrastructure
             return _inner.WriteAsync(source, cancellationToken);
         }
 
-        private void Log(in string method, in ReadOnlySpan<byte> buffer)
+        private void Log(string method, in ReadOnlySpan<byte> buffer)
         {
             if (_logFormatter != null)
             {
