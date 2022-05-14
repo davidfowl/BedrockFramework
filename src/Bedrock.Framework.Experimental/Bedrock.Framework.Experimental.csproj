@@ -17,11 +17,24 @@
     <ProjectReference Include="..\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
+       </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="6.0.5"  />
+       </ItemGroup>
+    </Otherwise>
+  </Choose>
+	
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 </Project>
