@@ -7,16 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Header.cs" />
-    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Protocols\Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
-    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Helper.cs" />
+     <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Header.cs" />
+     <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Protocols\Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
+     <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Protocols\Framing\VariableSized\LengthFielded\Helper.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
-    <PackageReference Include="xunit" Version="2.4.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
-    <PackageReference Include="coverlet.collector" Version="1.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="3.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
