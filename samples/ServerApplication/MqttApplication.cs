@@ -19,7 +19,7 @@ namespace ServerApplication
         {
             while (true)
             {
-                var packet = await adapter.ReceivePacketAsync(Timeout.InfiniteTimeSpan, default);
+                var packet = await adapter.ReceivePacketAsync(default);
 
                 switch (packet)
                 {
@@ -29,7 +29,7 @@ namespace ServerApplication
                             ReturnCode = MqttConnectReturnCode.ConnectionAccepted,
                             ReasonCode = MqttConnectReasonCode.Success,
                             IsSessionPresent = false
-                        }, Timeout.InfiniteTimeSpan,
+                        },
                         default);
                         break;
                     case MqttDisconnectPacket disconnectPacket:
@@ -48,7 +48,7 @@ namespace ServerApplication
                         };
                         ack.ReasonCodes.Add(MqttSubscribeReasonCode.GrantedQoS0);
 
-                        await adapter.SendPacketAsync(ack, Timeout.InfiniteTimeSpan, default);
+                        await adapter.SendPacketAsync(ack, default);
                         break;
                     default:
                         break;
