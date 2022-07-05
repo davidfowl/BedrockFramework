@@ -112,6 +112,8 @@ namespace Bedrock.Framework
                 _timerAwaitable.Stop();
 
                 await _timerTask.ConfigureAwait(false);
+
+                _timerAwaitable = null;
             }
         }
 
