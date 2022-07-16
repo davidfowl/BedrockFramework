@@ -15,14 +15,13 @@ namespace Bedrock.Framework
         private readonly ILogger<Server> _logger;
         private readonly List<RunningListener> _listeners = new List<RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TimerAwaitable _timerAwaitable;
+        private TimerAwaitable _timerAwaitable;
         private Task _timerTask = Task.CompletedTask;
 
         internal Server(ServerBuilder builder)
         {
             _logger = builder.ApplicationServices.GetLoggerFactory().CreateLogger<Server>();
             _builder = builder;
-            _timerAwaitable = new TimerAwaitable(_builder.HeartBeatInterval, _builder.HeartBeatInterval);
         }
 
         public IEnumerable<EndPoint> EndPoints
@@ -38,6 +37,8 @@ namespace Bedrock.Framework
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
         {
+            _timerAwaitable = new TimerAwaitable(_builder.HeartBeatInterval, _builder.HeartBeatInterval);
+
             try
             {
                 foreach (var binding in _builder.Bindings)
@@ -111,6 +112,8 @@ namespace Bedrock.Framework
                 _timerAwaitable.Stop();
 
                 await _timerTask.ConfigureAwait(false);
+
+                _timerAwaitable = null;
             }
         }
 
