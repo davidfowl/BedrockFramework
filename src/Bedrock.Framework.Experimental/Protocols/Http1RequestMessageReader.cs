@@ -42,8 +42,16 @@ namespace Bedrock.Framework.Protocols
                         return false;
                     }
 
+                    //First char must be / for relative URI
+                    if (path[0] == (byte)'/')
+                    {
+                        _httpRequestMessage.RequestUri = new Uri(Encoding.ASCII.GetString(path), UriKind.Relative);
+                    }
+                    else
+                    {
+                        _httpRequestMessage.RequestUri = new Uri(Encoding.ASCII.GetString(path));
+                    }
                     _httpRequestMessage.Method = new HttpMethod(Encoding.ASCII.GetString(method));
-                    _httpRequestMessage.RequestUri = new Uri(Encoding.ASCII.GetString(path), UriKind.Relative);
                     _httpRequestMessage.Version = new Version(1, 1);
                     // Version = Encoding.ASCII.GetString(version.IsSingleSegment ? version.FirstSpan : version.ToArray());
 
