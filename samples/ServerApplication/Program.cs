@@ -71,7 +71,12 @@ namespace ServerApplication
             }
 
             var tcs = new TaskCompletionSource<object>();
-            Console.CancelKeyPress += (sender, e) => tcs.TrySetResult(null);
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                tcs.TrySetResult(null);
+                e.Cancel = true;
+            };
+
             await tcs.Task;
 
             await server.StopAsync();
