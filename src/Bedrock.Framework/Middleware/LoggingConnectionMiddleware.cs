@@ -3,10 +3,12 @@
 
 using System;
 using System.IO.Pipelines;
+using System.Text;
 using System.Threading.Tasks;
 using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Bedrock.Framework
 {
@@ -15,11 +17,13 @@ namespace Bedrock.Framework
         private readonly ConnectionDelegate _next;
         private readonly ILogger _logger;
         private readonly LoggingFormatter _loggingFormatter;
+        private readonly ObjectPool<StringBuilder> _stringBuilderPool;
 
-        public LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger, LoggingFormatter loggingFormatter = null)
+        public LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger, ObjectPool<StringBuilder> stringBuilderPool, LoggingFormatter loggingFormatter = null)
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _stringBuilderPool = stringBuilderPool ?? throw new ArgumentNullException(nameof(stringBuilderPool));
             _loggingFormatter = loggingFormatter;
         }
 
@@ -29,7 +33,7 @@ namespace Bedrock.Framework
 
             try
             {
-                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, _loggingFormatter))
+                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, _stringBuilderPool, _loggingFormatter))
                 {
                     context.Transport = loggingDuplexPipe;
 
@@ -44,8 +48,8 @@ namespace Bedrock.Framework
 
         private class LoggingDuplexPipe : DuplexPipeStreamAdapter<LoggingStream>
         {
-            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, LoggingFormatter loggingFormatter) :
-                base(transport, stream => new LoggingStream(stream, logger, loggingFormatter))
+            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, ObjectPool<StringBuilder> stringBuilderPool, LoggingFormatter loggingFormatter) :
+                base(transport, stream => new LoggingStream(stream, logger, stringBuilderPool, loggingFormatter))
             {
             }
         }
