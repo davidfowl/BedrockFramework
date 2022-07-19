@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Framing\VariableSized\LengthFielded\Header.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
+    <Compile Include="..\..\samples\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Framing\VariableSized\LengthFielded\Helper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
   </ItemGroup>
 

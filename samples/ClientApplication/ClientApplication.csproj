@@ -6,6 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Framing\VariableSizeLengthFielded\**" />
+    <EmbeddedResource Remove="Framing\VariableSizeLengthFielded\**" />
+    <None Remove="Framing\VariableSizeLengthFielded\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\ServerApplication\Framing\VariableSized\LengthFielded\Header.cs" Link="Framing\VariableSized\LengthFielded\Header.cs" />
+    <Compile Include="..\ServerApplication\Framing\VariableSized\LengthFielded\HeaderFactory.cs" Link="Framing\VariableSized\LengthFielded\HeaderFactory.cs" />
+    <Compile Include="..\ServerApplication\Framing\VariableSized\LengthFielded\Helper.cs" Link="Framing\VariableSized\LengthFielded\Helper.cs" />
     <Compile Include="..\ServerApplication\LengthPrefixedProtocol.cs" Link="LengthPrefixedProtocol.cs" />
   </ItemGroup>
 
@@ -20,6 +29,10 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Framing\VariableSized\LengthFielded\" />
   </ItemGroup>
 
 </Project>

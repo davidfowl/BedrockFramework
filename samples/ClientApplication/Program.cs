@@ -18,6 +18,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
 using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
+using ServerApplication.Framing.VariableSized.LengthFielded;
+using Bedrock.Framework.Experimental.Protocols.Framing.VariableSized.LengthFielded;
 
 namespace ClientApplication
 {
@@ -39,9 +41,10 @@ namespace ClientApplication
             Console.WriteLine("4. Echo Server With TLS enabled");
             Console.WriteLine("5. In Memory Transport Echo Server and client");
             Console.WriteLine("6. Length prefixed custom binary protocol");
-            Console.WriteLine("7. Talk to local docker dameon");
-            Console.WriteLine("8. Memcached protocol");
-            Console.WriteLine("9. RebbitMQ protocol");
+            Console.WriteLine("7. Header prefixed protocol");
+            Console.WriteLine("8. Talk to local docker daemon");
+            Console.WriteLine("9. Memcached protocol");
+            Console.WriteLine("0. RabbitMQ protocol");
 
             while (true)
             {
@@ -79,15 +82,20 @@ namespace ClientApplication
                 }
                 else if (keyInfo.Key == ConsoleKey.D7)
                 {
+                    Console.WriteLine("Variable size length fielded protocol.");
+                    await VariableSizedLengthFieldedProtocol();
+                }
+                else if (keyInfo.Key == ConsoleKey.D8)
+                {
                     Console.WriteLine("Talk to local docker daemon");
                     await DockerDaemon(serviceProvider);
                 }
-                else if (keyInfo.Key == ConsoleKey.D8)
+                else if (keyInfo.Key == ConsoleKey.D9)
                 {
                     Console.WriteLine("Send Request To Memcached");
                     await MemcachedProtocol(serviceProvider);
                 }
-                else if (keyInfo.Key == ConsoleKey.D9)
+                else if (keyInfo.Key == ConsoleKey.D0)
                 {
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
@@ -351,6 +359,50 @@ namespace ClientApplication
 
                 reader.Advance();
             }
+        }
+
+        private static async Task VariableSizedLengthFieldedProtocol()
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder()
+                .UseSockets()
+                .UseConnectionLogging(loggerFactory: loggerFactory)
+                .Build();
+
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5006));
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
+            Console.WriteLine("Enter 'c' to close the connection.");
+
+            var headerFactory = new HeaderFactory();
+            var protocol = new LengthFieldedProtocol(Helper.HeaderLength, (headerSequence) => headerFactory.CreateHeader(headerSequence));
+            await using var writer = connection.CreateWriter();
+
+            while (true)
+            {
+                Console.WriteLine("Enter the text: ");
+                var line = Console.ReadLine();
+                if (line.Equals("c", StringComparison.Ordinal))
+                {
+                    break;
+                }
+
+                Console.WriteLine("Enter a number as custom data: ");
+                int someCustomData = int.Parse(Console.ReadLine());
+
+                var payload = Encoding.UTF8.GetBytes(line);
+                var header = headerFactory.CreateHeader(payload.Length, someCustomData);
+                var frame = new Frame(header, payload);
+
+                await writer.WriteAsync(protocol, frame);
+            }
+
+            connection.Abort();
+            await connection.DisposeAsync();
         }
 
         private static async Task DockerDaemon(IServiceProvider serviceProvider)

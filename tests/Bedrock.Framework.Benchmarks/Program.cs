@@ -1,4 +1,5 @@
-﻿using BenchmarkDotNet.Running;
+﻿using Bedrock.Framework.Benchmarks.Framing.VariableSized.LengthFielded;
+using BenchmarkDotNet.Running;
 using System;
 
 namespace Bedrock.Framework.Benchmarks
@@ -13,6 +14,7 @@ namespace Bedrock.Framework.Benchmarks
         private static readonly Type[] AllBenchmarks = new[]
         {
             typeof(ProtocolReaderBenchmarks),
+            typeof(LengthFieldedProtocolBenchmarks),
             typeof(MessagePipeReaderBenchmarks),
             typeof(HttpHeaderReaderBenchmarks)
         };
