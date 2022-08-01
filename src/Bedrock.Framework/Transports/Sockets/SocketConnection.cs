@@ -21,9 +21,9 @@ namespace Bedrock.Framework
         private readonly SocketSender _sender;
         private readonly SocketReceiver _receiver;
 
-        public SocketConnection(EndPoint endPoint)
+        public SocketConnection(EndPoint endPoint, SocketType socketType, ProtocolType protocolType)
         {
-            _socket = new Socket(endPoint.AddressFamily, SocketType.Stream, DetermineProtocolType(endPoint));
+            _socket = new Socket(endPoint.AddressFamily, socketType, protocolType);
             _endPoint = endPoint;
 
             _sender = new SocketSender(_socket, PipeScheduler.ThreadPool);
@@ -248,17 +248,6 @@ namespace Bedrock.Framework
                 {
                     break;
                 }
-            }
-        }
-
-        private static ProtocolType DetermineProtocolType(EndPoint endPoint)
-        {
-            switch (endPoint)
-            {
-                case UnixDomainSocketEndPoint _:
-                    return ProtocolType.Unspecified;
-                default:
-                    return ProtocolType.Tcp;
             }
         }
     }

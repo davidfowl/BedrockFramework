@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Protocols;
 using Bedrock.Framework.Experimental.Protocols.RabbitMQ.Methods;
+using System.Net.Sockets;
 
 namespace ClientApplication
 {
@@ -42,6 +43,7 @@ namespace ClientApplication
             Console.WriteLine("7. Talk to local docker dameon");
             Console.WriteLine("8. Memcached protocol");
             Console.WriteLine("9. RebbitMQ protocol");
+            Console.WriteLine("U. UDP Transport");
 
             while (true)
             {
@@ -91,6 +93,11 @@ namespace ClientApplication
                 {
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
+                }
+                else if (keyInfo.Key == ConsoleKey.U)
+                {
+                    Console.WriteLine("UDP transport");
+                    await UdpTransport();
                 }
             }
         }
@@ -391,6 +398,44 @@ namespace ClientApplication
 
                 Console.WriteLine();
             }
+        }
+
+        private static async Task UdpTransport()
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.AddConsole();
+            });
+
+            var client = new ClientBuilder()
+                                    .UseSockets(SocketType.Dgram, ProtocolType.Udp)
+                                    .UseConnectionLogging(loggerFactory: loggerFactory)
+                                    .Build();
+
+            await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5007));
+            Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
+            Console.WriteLine("Enter 'c' to close the connection.");
+
+            var protocol = new LengthPrefixedProtocol();
+            await using var reader = connection.CreateReader();
+            await using var writer = connection.CreateWriter();
+
+            while (true)
+            {
+                Console.WriteLine("Enter the text: ");
+                var line = Console.ReadLine();
+                if (line.Equals("c"))
+                {
+                    break;
+                }
+
+                await writer.WriteAsync(protocol, new Message(Encoding.UTF8.GetBytes(line)));
+
+                reader.Advance();
+            }
+
+            connection.Abort();
         }
     }
 
