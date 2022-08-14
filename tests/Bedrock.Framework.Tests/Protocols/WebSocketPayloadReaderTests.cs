@@ -7,7 +7,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Bedrock.Framework.Experimental.Tests.Infrastructure;
+using Bedrock.Framework.Tests.Infrastructure;
 using Bedrock.Framework.Infrastructure;
 using Xunit;
 
@@ -30,6 +30,7 @@ namespace Bedrock.Framework.Protocols.WebSockets.Tests
             SequencePosition pos = default;
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
+            Assert.Equal(0, (long)encoder.BytesRemaining);
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.First.ToArray()));
         }
 
@@ -44,6 +45,7 @@ namespace Bedrock.Framework.Protocols.WebSockets.Tests
             var encoder = new WebSocketPayloadReader(new WebSocketHeader(true, WebSocketOpcode.Binary, true, (ulong)sequence.Length, maskingKey));
             encoder.TryParseMessage(in sequence, ref pos, ref pos, out var outputSequence);
 
+            Assert.Equal(0, (long)encoder.BytesRemaining);
             Assert.Equal(payloadString, Encoding.UTF8.GetString(outputSequence.ToArray()));
         }
 

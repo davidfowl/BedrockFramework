@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
 using System;
+using System.Threading.Tasks;
 
 namespace Bedrock.Framework.Benchmarks
 {
@@ -14,6 +15,7 @@ namespace Bedrock.Framework.Benchmarks
         {
             typeof(ProtocolReaderBenchmarks),
             typeof(MessagePipeReaderBenchmarks),
+            typeof(WebSocketProtocolBenchmarks),
             typeof(HttpHeaderReaderBenchmarks)
         };
     }
