@@ -32,20 +32,21 @@ namespace ClientApplication
             })
             .BuildServiceProvider();
 
-            Console.WriteLine("Samples: ");
-            Console.WriteLine("1. Echo Server");
-            Console.WriteLine("2. HttpClient");
-            Console.WriteLine("3. SignalR");
-            Console.WriteLine("4. Echo Server With TLS enabled");
-            Console.WriteLine("5. In Memory Transport Echo Server and client");
-            Console.WriteLine("6. Length prefixed custom binary protocol");
-            Console.WriteLine("7. Talk to local docker dameon");
-            Console.WriteLine("8. Memcached protocol");
-            Console.WriteLine("9. RebbitMQ protocol");
-
             while (true)
             {
+                Console.WriteLine("Samples: ");
+                Console.WriteLine("1. Echo Server");
+                Console.WriteLine("2. HttpClient");
+                Console.WriteLine("3. SignalR");
+                Console.WriteLine("4. Echo Server With TLS enabled");
+                Console.WriteLine("5. In Memory Transport Echo Server and client");
+                Console.WriteLine("6. Length prefixed custom binary protocol");
+                Console.WriteLine("7. Talk to local docker daemon");
+                Console.WriteLine("8. Memcached protocol");
+                Console.WriteLine("9. RabbitMQ protocol");
+
                 var keyInfo = Console.ReadKey();
+                Console.Clear();
 
                 if (keyInfo.Key == ConsoleKey.D1)
                 {
@@ -92,6 +93,8 @@ namespace ClientApplication
                     Console.WriteLine("RabbitMQ test");
                     await RabbitMQProtocol(serviceProvider);
                 }
+
+                Console.Clear();
             }
         }
 
