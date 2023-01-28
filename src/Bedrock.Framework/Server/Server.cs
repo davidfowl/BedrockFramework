@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Bedrock.Framework
 {
@@ -13,10 +16,12 @@ namespace Bedrock.Framework
     {
         private readonly ServerBuilder _builder;
         private readonly ILogger<Server> _logger;
-        private readonly List<RunningListener> _listeners = new List<RunningListener>();
+        private readonly Dictionary<EndPoint, RunningListener> _listeners = new Dictionary<EndPoint, RunningListener>();
         private readonly TaskCompletionSource<object> _shutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TimerAwaitable _timerAwaitable;
+        private readonly SemaphoreSlim _listenerSemaphore = new SemaphoreSlim(initialCount: 1);
         private Task _timerTask = Task.CompletedTask;
+        private int _stopping;
 
         internal Server(ServerBuilder builder)
         {
@@ -29,7 +34,7 @@ namespace Bedrock.Framework
         {
             get
             {
-                foreach (var listener in _listeners)
+                foreach (var listener in _listeners.Values)
                 {
                     yield return listener.Listener.EndPoint;
                 }
@@ -42,12 +47,7 @@ namespace Bedrock.Framework
             {
                 foreach (var binding in _builder.Bindings)
                 {
-                    await foreach (var listener in binding.BindAsync(cancellationToken).ConfigureAwait(false))
-                    {
-                        var runningListener = new RunningListener(this, binding, listener);
-                        _listeners.Add(runningListener);
-                        runningListener.Start();
-                    }
+                    await StartRunningListenersAsync(binding, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch
@@ -67,7 +67,7 @@ namespace Bedrock.Framework
             {
                 while (await _timerAwaitable)
                 {
-                    foreach (var listener in _listeners)
+                    foreach (var listener in _listeners.Values)
                     {
                         listener.TickHeartbeat();
                     }
@@ -77,40 +77,132 @@ namespace Bedrock.Framework
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            var tasks = new Task[_listeners.Count];
-
-            for (int i = 0; i < _listeners.Count; i++)
+            if (Interlocked.Exchange(ref _stopping, 1) == 1)
             {
-                tasks[i] = _listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
+                return;
             }
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-
-            // Signal to all of the listeners that it's time to start the shutdown process
-            // We call this after unbind so that we're not touching the listener anymore (each loop will dispose the listener)
-            _shutdownTcs.TrySetResult(null);
-
-            for (int i = 0; i < _listeners.Count; i++)
+            await _listenerSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                tasks[i] = _listeners[i].ExecutionTask;
+                var listeners = _listeners.Values.ToList();
+
+                var tasks = new Task[listeners.Count];
+
+                for (int i = 0; i < listeners.Count; i++)
+                {
+                    tasks[i] = listeners[i].Listener.UnbindAsync(cancellationToken).AsTask();
+                }
+
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+
+                // Signal to all of the listeners that it's time to start the shutdown process
+                // We call this after unbind so that we're not touching the listener anymore (each loop will dispose the listener)
+                _shutdownTcs.TrySetResult(null);
+
+                for (int i = 0; i < listeners.Count; i++)
+                {
+                    tasks[i] = listeners[i].ExecutionTask;
+                }
+
+                var shutdownTask = Task.WhenAll(tasks);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    await shutdownTask.WithCancellation(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await shutdownTask.ConfigureAwait(false);
+                }
+
+                if (_timerAwaitable != null)
+                {
+                    _timerAwaitable.Stop();
+
+                    await _timerTask.ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                _listenerSemaphore.Release();
+            }
+        }
+
+        public Task AddSocketListenerAsync(EndPoint endpoint, Action<IConnectionBuilder> configure, CancellationToken cancellationToken = default)
+        {
+            var socketTransportFactory = new SocketTransportFactory(Options.Create(new SocketTransportOptions()), _builder.ApplicationServices.GetLoggerFactory());
+            var connectionBuilder = new ConnectionBuilder(_builder.ApplicationServices);
+
+            configure(connectionBuilder);
+
+            var binding = new EndPointBinding(endpoint, connectionBuilder.Build(), socketTransportFactory);
+            return StartRunningListenersAsync(binding, cancellationToken);
+        }
+
+        public async Task RemoveSocketListener(EndPoint endpoint, CancellationToken cancellationToken = default)
+        {
+            await _listenerSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_stopping == 1)
+            {
+                throw new InvalidOperationException("The server has already been stopped.");
             }
 
-            var shutdownTask = Task.WhenAll(tasks);
-
-            if (cancellationToken.CanBeCanceled)
+            try
             {
-                await shutdownTask.WithCancellation(cancellationToken).ConfigureAwait(false);
+                if (!_listeners.Remove(endpoint, out var listener))
+                {
+                    return;
+                }
+
+                await listener.Listener.UnbindAsync(cancellationToken).ConfigureAwait(false);
+
+                // Signal to the listener that it's time to start the shutdown process
+                // We call this after unbind so that we're not touching the listener anymore
+                listener.ShutdownTcs.TrySetResult(null);
+
+                if (cancellationToken.CanBeCanceled)
+                {
+                    await listener.ExecutionTask.WithCancellation(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await listener.ExecutionTask.ConfigureAwait(false);
+                }
             }
-            else
+            finally
             {
-                await shutdownTask.ConfigureAwait(false);
+                _listenerSemaphore.Release();
+            }
+        }
+
+        private async Task StartRunningListenersAsync(ServerBinding binding, CancellationToken cancellationToken = default)
+        {
+            await _listenerSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+            if (_stopping == 1)
+            {
+                throw new InvalidOperationException("The server has already been stopped.");
             }
 
-            if (_timerAwaitable != null)
+            try
             {
-                _timerAwaitable.Stop();
+                await foreach (var listener in binding.BindAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    var runningListener = new RunningListener(this, binding, listener);
+                    if (!_listeners.TryAdd(runningListener.Listener.EndPoint, runningListener))
+                    {
+                        _logger.LogWarning("Will not start RunningListener, EndPoint already exist");
+                        continue;
+                    }
 
-                await _timerTask.ConfigureAwait(false);
+                    runningListener.Start();
+                }
+            }
+            finally
+            {
+                _listenerSemaphore.Release();
             }
         }
 
@@ -130,10 +222,12 @@ namespace Bedrock.Framework
             public void Start()
             {
                 ExecutionTask = RunListenerAsync();
+                ShutdownTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             }
 
             public IConnectionListener Listener { get; }
             public Task ExecutionTask { get; private set; }
+            public TaskCompletionSource<object> ShutdownTcs { get; private set; }
 
             public void TickHeartbeat()
             {
@@ -215,8 +309,11 @@ namespace Bedrock.Framework
                     id++;
                 }
 
-                // Don't shut down connections until entire server is shutting down
-                await _server._shutdownTcs.Task.ConfigureAwait(false);
+                // Don't shut down connections until this listener or the entire server is shutting down
+                await Task.WhenAny(
+                        ShutdownTcs.Task,
+                        _server._shutdownTcs.Task)
+                    .ConfigureAwait(false);
 
                 // Give connections a chance to close gracefully
                 var tasks = new List<Task>(_connections.Count);
@@ -240,7 +337,6 @@ namespace Bedrock.Framework
 
                 await listener.DisposeAsync().ConfigureAwait(false);
             }
-
 
             private IDisposable BeginConnectionScope(ServerConnection connection)
             {
