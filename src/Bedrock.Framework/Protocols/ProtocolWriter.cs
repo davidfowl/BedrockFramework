@@ -39,16 +39,15 @@ namespace Bedrock.Framework.Protocols
         }
 
         public ValueTask WriteAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage message, CancellationToken cancellationToken = default)
+        TWriteMessage message, CancellationToken cancellationToken = default)
         {
             if (!TryWaitForSingleWriter(0, cancellationToken))
                 return WriteAsyncSlow(writer, message, cancellationToken);
 
-            if (_disposed) return default;
-
             bool release = true, hasWritten = true;
-            try
-            {
+            try {
+                if (_disposed) return default;
+
                 writer.WriteMessage(message, _writer);
                 var flushAsync = _writer.FlushAsync(cancellationToken);
                 release = flushAsync.IsCompleted;
@@ -73,8 +72,7 @@ namespace Bedrock.Framework.Protocols
             async ValueTask awaitFlushAndRelease(ValueTask<FlushResult> flushAsync)
             {
                 bool written = true;
-                try
-                {
+                try {
                     var result = await flushAsync.ConfigureAwait(false);
                     if (result.IsCanceled || result.IsCompleted)
                         written = false;
@@ -97,8 +95,9 @@ namespace Bedrock.Framework.Protocols
             await _singleWriter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             bool hasWritten = true;
-            try
-            {
+            try {
+                if (_disposed) return;
+
                 writer.WriteMessage(message, _writer);
 
                 // REVIEW: is this fast path needed since we already paid the cost of async once ?
@@ -126,11 +125,10 @@ namespace Bedrock.Framework.Protocols
             if (!TryWaitForSingleWriter(0, cancellationToken))
                 return WriteManyAsyncSlow(writer, messages, cancellationToken);
 
-            if (_disposed) return default;
-
             bool release = true, hasWritten = true;
-            try
-            {
+            try {
+                if (_disposed) return default;
+
                 for (int i = 0; i < messages.Length; i++)
                     writer.WriteMessage(messages[i], _writer);
 
@@ -157,8 +155,7 @@ namespace Bedrock.Framework.Protocols
             async ValueTask awaitFlushAndRelease(ValueTask<FlushResult> flushAsync, int messagesWritten)
             {
                 bool written = true;
-                try
-                {
+                try {
                     var result = await flushAsync.ConfigureAwait(false);
                     if (result.IsCanceled || result.IsCompleted)
                         written = false;
@@ -181,8 +178,9 @@ namespace Bedrock.Framework.Protocols
             await _singleWriter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             bool hasWritten = true;
-            try
-            {
+            try {
+                if (_disposed) return;
+
                 for (int i = 0; i < messages.Length; i++)
                     writer.WriteMessage(messages[i], _writer);
 
@@ -211,12 +209,11 @@ namespace Bedrock.Framework.Protocols
             if (!TryWaitForSingleWriter(0, cancellationToken))
                 return WriteManyAsyncSlow(writer, messages, cancellationToken);
 
-            if (_disposed) return default;
-
             int messagesWritten = 0;
             bool release = true, hasWritten = true;
-            try
-            {
+            try {
+                if (_disposed) return default;
+
                 foreach (var message in messages)
                 {
                     writer.WriteMessage(message, _writer);
@@ -273,6 +270,8 @@ namespace Bedrock.Framework.Protocols
             int messagesWritten = 0;
             try
             {
+                if (_disposed) return;
+
                 foreach (var message in messages)
                 {
                     writer.WriteMessage(message, _writer);
