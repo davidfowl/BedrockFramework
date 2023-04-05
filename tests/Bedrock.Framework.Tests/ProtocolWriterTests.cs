@@ -90,6 +90,8 @@ namespace Bedrock.Framework.Tests
             await writer.DisposeAsync();
 
             await writer.WriteAsync(protocol, data);
+            await writer.WriteManyAsync(protocol, new[] { data });
+            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
             Equal(0, writer.MessagesWritten);
 
             await connection.Transport.Output.CompleteAsync();
@@ -111,6 +113,8 @@ namespace Bedrock.Framework.Tests
             singleWriter.Dispose();
 
             await writer.WriteAsync(protocol, data);
+            await writer.WriteManyAsync(protocol, new[] { data });
+            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
             Equal(0, writer.MessagesWritten);
 
             await connection.Transport.Output.CompleteAsync();
@@ -131,6 +135,8 @@ namespace Bedrock.Framework.Tests
             await connection.Transport.Output.CompleteAsync();
 
             await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteAsync(protocol, data));
+            await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteManyAsync(protocol, new[] { data }));
+            await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable()));
             Equal(0, writer.MessagesWritten);
         }
 

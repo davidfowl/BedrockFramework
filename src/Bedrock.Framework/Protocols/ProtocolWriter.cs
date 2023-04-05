@@ -46,7 +46,10 @@ namespace Bedrock.Framework.Protocols
 
             bool release = true, hasWritten = true;
             try {
-                if (_disposed) return default;
+                if (_disposed) {
+                    hasWritten = false;
+                    return default;
+                }
 
                 writer.WriteMessage(message, _writer);
                 var flushAsync = _writer.FlushAsync(cancellationToken);
@@ -63,12 +66,12 @@ namespace Bedrock.Framework.Protocols
 
                 if (result.IsCanceled)
                     throw new OperationCanceledException();
+                
+                return default;
             }
             // the pipe was completed while writing a message, rethrow
             catch (InvalidOperationException) { hasWritten = false; throw; }
             finally { if (release) Release(hasWritten ? 1 : 0); }
-            return default;
-
             async ValueTask awaitFlushAndRelease(ValueTask<FlushResult> flushAsync)
             {
                 bool written = true;
@@ -84,7 +87,7 @@ namespace Bedrock.Framework.Protocols
                         throw new OperationCanceledException();
                 }
                 // the pipe was completed while writing a message, rethrow
-                catch (InvalidOperationException) { hasWritten = false; throw; }
+                catch (InvalidOperationException) { written = false; throw; }
                 finally { Release(written ? 1 : 0); }
             }
         }
@@ -96,7 +99,10 @@ namespace Bedrock.Framework.Protocols
 
             bool hasWritten = true;
             try {
-                if (_disposed) return;
+                if (_disposed) {
+                    hasWritten = false;
+                    return;
+                }
 
                 writer.WriteMessage(message, _writer);
 
@@ -127,7 +133,10 @@ namespace Bedrock.Framework.Protocols
 
             bool release = true, hasWritten = true;
             try {
-                if (_disposed) return default;
+                if (_disposed) {
+                    hasWritten = false;
+                    return default;
+                }
 
                 for (int i = 0; i < messages.Length; i++)
                     writer.WriteMessage(messages[i], _writer);
@@ -146,11 +155,13 @@ namespace Bedrock.Framework.Protocols
 
                 if (result.IsCanceled)
                     throw new OperationCanceledException();
+                
+                return default;
             }
             // the pipe was completed while writing a message, rethrow
             catch (InvalidOperationException) { hasWritten = false; throw; }
             finally { if (release) Release(hasWritten ? messages.Length : 0); }
-            return default;
+            
 
             async ValueTask awaitFlushAndRelease(ValueTask<FlushResult> flushAsync, int messagesWritten)
             {
@@ -167,7 +178,7 @@ namespace Bedrock.Framework.Protocols
                         throw new OperationCanceledException();
                 }
                 // the pipe was completed while writing a message, rethrow
-                catch (InvalidOperationException) { hasWritten = false; throw; }
+                catch (InvalidOperationException) { written = false; throw; }
                 finally { Release(written ? messagesWritten : 0); }
             }
         }
@@ -179,7 +190,10 @@ namespace Bedrock.Framework.Protocols
 
             bool hasWritten = true;
             try {
-                if (_disposed) return;
+                if (_disposed) {
+                    hasWritten = false;
+                    return;
+                }
 
                 for (int i = 0; i < messages.Length; i++)
                     writer.WriteMessage(messages[i], _writer);
@@ -212,10 +226,12 @@ namespace Bedrock.Framework.Protocols
             int messagesWritten = 0;
             bool release = true, hasWritten = true;
             try {
-                if (_disposed) return default;
+                if (_disposed) {
+                    hasWritten = false;
+                    return default;
+                }
 
-                foreach (var message in messages)
-                {
+                foreach (var message in messages) {
                     writer.WriteMessage(message, _writer);
                     messagesWritten++;
                 }
@@ -234,12 +250,12 @@ namespace Bedrock.Framework.Protocols
 
                 if (result.IsCanceled)
                     throw new OperationCanceledException();
+                
+                return default;
             }
             // the pipe was completed while writing a message, rethrow
             catch (InvalidOperationException) { hasWritten = false; throw; }
             finally { if (release) Release(hasWritten ? messagesWritten : 0); }
-            return default;
-
             async ValueTask awaitFlushAndRelease(ValueTask<FlushResult> flushAsync, int msgWritten)
             {
                 bool written = true;
@@ -256,7 +272,7 @@ namespace Bedrock.Framework.Protocols
                         throw new OperationCanceledException();
                 }
                 // the pipe was completed while writing a message, rethrow
-                catch (InvalidOperationException) { hasWritten = false; throw; }
+                catch (InvalidOperationException) { written = false; throw; }
                 finally { Release(written ? msgWritten : 0); }
             }
         }
@@ -268,12 +284,13 @@ namespace Bedrock.Framework.Protocols
 
             bool hasWritten = true;
             int messagesWritten = 0;
-            try
-            {
-                if (_disposed) return;
+            try {
+                if (_disposed) {
+                    hasWritten = false;
+                    return;
+                }
 
-                foreach (var message in messages)
-                {
+                foreach (var message in messages) {
                     writer.WriteMessage(message, _writer);
                     messagesWritten++;
                 }
@@ -313,8 +330,10 @@ namespace Bedrock.Framework.Protocols
 
         protected internal void Release(int messagesWritten)
         {
-            _messagesWritten += messagesWritten;
-            _singleWriter.Release();
+            if (messagesWritten > 0) _messagesWritten += messagesWritten;
+            
+            try { _singleWriter.Release(); }
+            catch (ObjectDisposedException) { /* no-op and dispose if the semaphore has already been disposed */}
         }
 
         public void Dispose()
@@ -332,9 +351,7 @@ namespace Bedrock.Framework.Protocols
             if (_disposed) return;
 
             _disposed = true;
-
-            try { _singleWriter.Release(); }
-            catch (ObjectDisposedException) { /* no-op if the semaphore has already been disposed */ }
+            Release(0);
         }
 
         public async ValueTask DisposeAsync()
@@ -356,7 +373,7 @@ namespace Bedrock.Framework.Protocols
             if (_disposed) return default;
 
             _disposed = true;
-            _singleWriter.Release();
+            Release(0);
             return default;
 
             async ValueTask disposeAsyncSlow()
