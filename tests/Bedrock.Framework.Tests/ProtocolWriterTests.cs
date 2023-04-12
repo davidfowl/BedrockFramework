@@ -125,7 +125,7 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task WritingAfterCompleteThrows()
+        public async Task WritingAfterCompleteNoop()
         {
             await using var connection = CreateNewConnectionContext();
             var data = Encoding.UTF8.GetBytes("Hello world");
@@ -134,9 +134,9 @@ namespace Bedrock.Framework.Tests
             await using var writer = connection.CreateWriter();
             await connection.Transport.Output.CompleteAsync();
 
-            await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteAsync(protocol, data));
-            await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteManyAsync(protocol, new[] { data }));
-            await ThrowsAsync<InvalidOperationException>(async () => await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable()));
+            await writer.WriteAsync(protocol, data);
+            await writer.WriteManyAsync(protocol, new[] { data });
+            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
             Equal(0, writer.MessagesWritten);
         }
 
