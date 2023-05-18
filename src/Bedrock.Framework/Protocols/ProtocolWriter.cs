@@ -7,7 +7,7 @@ using System;
 
 namespace Bedrock.Framework.Protocols
 {
-    public sealed class ProtocolWriter : IAsyncDisposable
+    public class ProtocolWriter : IAsyncDisposable
     {
         private readonly SemaphoreSlim _singleWriter;
         private readonly PipeWriter _pipeWriter;
