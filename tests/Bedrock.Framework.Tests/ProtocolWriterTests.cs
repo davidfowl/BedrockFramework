@@ -6,7 +6,6 @@ using System.IO.Pipelines;
 using static Xunit.Assert;
 using System.Threading;
 using System.Text;
-using System.Linq;
 using System;
 using Xunit;
 
@@ -80,7 +79,7 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task WritingAfterDisposeNoop()
+        public async Task WritingAfterDisposeThrows()
         {
             await using var connection = CreateNewConnectionContext();
             var data = Encoding.UTF8.GetBytes("Hello world");
@@ -89,9 +88,9 @@ namespace Bedrock.Framework.Tests
             var writer = connection.CreateWriter();
             await writer.DisposeAsync();
 
-            await writer.WriteAsync(protocol, data);
-            await writer.WriteManyAsync(protocol, new[] { data });
-            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
+            await ThrowsAsync<ObjectDisposedException>(() => writer.WriteAsync(protocol, data).AsTask());
+            await ThrowsAsync<ObjectDisposedException>(() => writer.WriteManyAsync(protocol, new[] { data }).AsTask());
+
             Equal(0, writer.MessagesWritten);
 
             await connection.Transport.Output.CompleteAsync();
@@ -102,7 +101,7 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task WritingAfterSemaphoreDisposeNoop()
+        public async Task WritingAfterSemaphoreDisposeThrows()
         {
             await using var connection = CreateNewConnectionContext();
             var data = Encoding.UTF8.GetBytes("Hello world");
@@ -112,9 +111,9 @@ namespace Bedrock.Framework.Tests
             var writer = connection.CreateWriter(singleWriter);
             singleWriter.Dispose();
 
-            await writer.WriteAsync(protocol, data);
-            await writer.WriteManyAsync(protocol, new[] { data });
-            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
+            await ThrowsAsync<ObjectDisposedException>(() => writer.WriteAsync(protocol, data).AsTask());
+            await ThrowsAsync<ObjectDisposedException>(() => writer.WriteManyAsync(protocol, new[] { data }).AsTask());
+
             Equal(0, writer.MessagesWritten);
 
             await connection.Transport.Output.CompleteAsync();
@@ -125,7 +124,7 @@ namespace Bedrock.Framework.Tests
         }
 
         [Fact]
-        public async Task WritingAfterCompleteNoop()
+        public async Task WritingAfterCompleteThrows()
         {
             await using var connection = CreateNewConnectionContext();
             var data = Encoding.UTF8.GetBytes("Hello world");
@@ -134,9 +133,7 @@ namespace Bedrock.Framework.Tests
             await using var writer = connection.CreateWriter();
             await connection.Transport.Output.CompleteAsync();
 
-            await writer.WriteAsync(protocol, data);
-            await writer.WriteManyAsync(protocol, new[] { data });
-            await writer.WriteManyAsync(protocol, new[] { data }.AsEnumerable());
+            await ThrowsAsync<ObjectDisposedException>(() => writer.WriteManyAsync(protocol, new[] { data }).AsTask());
             Equal(0, writer.MessagesWritten);
         }
 
@@ -162,12 +159,11 @@ namespace Bedrock.Framework.Tests
                 // release once we cancelled the pending flush
                 singleWriter.Release();
 
-                await ThrowsAsync<OperationCanceledException>(async () => await writeAsync);
+                await ThrowsAsync<OperationCanceledException>(writeAsync.AsTask);
             }
 
             await VerifyThrowsOperationCanceled(() => writer.WriteAsync(protocol, data));
-            await VerifyThrowsOperationCanceled(() => writer.WriteManyAsync(protocol, Array.Empty<byte[]>()));
-            await VerifyThrowsOperationCanceled(() => writer.WriteManyAsync(protocol, Array.Empty<byte[]>().AsEnumerable()));
+            await VerifyThrowsOperationCanceled(() => writer.WriteManyAsync(protocol, new[] { data }));
 
             await writer.WriteAsync(protocol, data);
             Equal(1, writer.MessagesWritten);
@@ -185,16 +181,10 @@ namespace Bedrock.Framework.Tests
             var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            await ThrowsAsync<OperationCanceledException>(async () =>
-                await writer.WriteAsync(protocol, data, cts.Token));
+            await ThrowsAsync<OperationCanceledException>(() => writer.WriteAsync(protocol, data, cts.Token).AsTask());
+            await ThrowsAsync<OperationCanceledException>(() => writer.WriteManyAsync(protocol, new[] { data }, cts.Token).AsTask());
 
-            await ThrowsAsync<OperationCanceledException>(async () =>
-                await writer.WriteManyAsync(protocol, Array.Empty<byte[]>(), cts.Token));
-
-            await ThrowsAsync<OperationCanceledException>(async () =>
-                await writer.WriteManyAsync(protocol, Array.Empty<byte[]>(), cts.Token));
-
-            await writer.WriteAsync(protocol, data);
+            await writer.WriteAsync(protocol, data, CancellationToken.None);
             Equal(1, writer.MessagesWritten);
         }
     }

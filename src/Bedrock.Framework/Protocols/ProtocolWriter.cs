@@ -7,298 +7,200 @@ using System;
 
 namespace Bedrock.Framework.Protocols
 {
-    // REVIEW: Made most members protected internal if we need to add an extension method to write a raw ReadOnlyMemory<T>
-    //         to the pipe writer using the synchronization mechanism provided by this class ?
-    //         (which should be an extension method I assume since the scope of this class is to write messages)
-    public class ProtocolWriter : IAsyncDisposable
+    public sealed class ProtocolWriter : IAsyncDisposable
     {
-        protected internal bool _disposed, _singleWriterDisposed, _shouldDisposeSingleWriter;
-        protected internal SemaphoreSlim _singleWriter;
-        protected internal PipeWriter _writer;
+        private readonly SemaphoreSlim _singleWriter;
+        private readonly PipeWriter _pipeWriter;
+        private readonly bool _dispose;
         private long _messagesWritten;
+        private bool _disposed;
 
-        // REVIEW: should we sync this over the semaphore ?
         public long MessagesWritten => Interlocked.Read(ref _messagesWritten);
 
-        public ProtocolWriter(PipeWriter writer, SemaphoreSlim singleWriter)
-            => (_writer, _singleWriter) = (writer, singleWriter);
+        public ProtocolWriter(PipeWriter pipeWriter, SemaphoreSlim singleWriter)
+            => (_pipeWriter, _singleWriter) = (pipeWriter, singleWriter);
 
-        public ProtocolWriter(Stream writer, SemaphoreSlim singleWriter)
-            : this(PipeWriter.Create(writer), singleWriter)
+        public ProtocolWriter(Stream pipeWriter, SemaphoreSlim singleWriter)
+            : this(PipeWriter.Create(pipeWriter), singleWriter)
         {
         }
 
-        public ProtocolWriter(PipeWriter writer) : this(writer, new SemaphoreSlim(1, 1))
-            => _shouldDisposeSingleWriter = true;
+        public ProtocolWriter(PipeWriter pipeWriter) : this(pipeWriter, new SemaphoreSlim(1, 1)) => _dispose = true;
 
-        public ProtocolWriter(Stream writer) : this(PipeWriter.Create(writer))
+        public ProtocolWriter(Stream stream) : this(PipeWriter.Create(stream))
         {
         }
 
-        public ValueTask WriteAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage message, CancellationToken cancellationToken = default)
+        public ValueTask WriteAsync<TMessage>(IMessageWriter<TMessage> writer, TMessage message, CancellationToken cancellationToken = default)
         {
-            // Try to grab the lock synchronously first, if we can't then go async
-#pragma warning disable CA2016 // This will always finish synchronously so we do not need to bother with cancel
-            if (!TryWaitForSingleWriter(0)) return WriteAsyncSlow(writer, message, cancellationToken);
-#pragma warning restore CA2016
+            // This will always finish synchronously so we do not need to bother with cancel
+            if (!TryWaitForSingleWriter(cancellationToken: CancellationToken.None))
+                return WriteAsyncSlow(writer, message, cancellationToken);
 
-            // no need to enter the try/finally if the semaphore has been disposed
-            if (_singleWriterDisposed)
-                return _disposed // dispose this instance if it hasn't been disposed yet
-                    ? default
-                    : DisposeAsync();
-
-            bool release = true, hasWritten = false, dispose = false;
+            bool release = true, hasWritten = false;
             try
             {
-                if (_disposed) return default;
+                if (_disposed) throw new ObjectDisposedException(nameof(ProtocolWriter));
 
-                var task = WriteCore(writer, in message, cancellationToken);
-
-                if (!task.IsCompletedSuccessfully)
-                {
-                    release = false; // do not release if we need to go async to complete the write
-                    return new ValueTask(CompleteWriteAsync(task, 1));
-                }
-                else
+                var task = WriteCore(writer, message, cancellationToken);
+                if (task.IsCompletedSuccessfully)
                 {
                     // If it's a IValueTaskSource backed ValueTask,
                     // inform it its result has been read so it can reset
                     var result = task.GetAwaiter().GetResult();
 
                     if (result.IsCanceled)
-                        throw new OperationCanceledException();
+                        throw new OperationCanceledException(cancellationToken);
 
-                    if (!result.IsCompleted)
-                        hasWritten = true;
-                    else
-                        dispose = true;
+                    hasWritten = !result.IsCompleted;
+
+                    return hasWritten 
+                        ? default(ValueTask)
+                        // REVIEW : could DisposeAsyncCore(false) here if we add a !_dispose check between disposing && !TryWaitForSingleWriter()
+                        //          but it'd require to implement a ThrowAfter extension method for ValueTask
+                        : throw new ObjectDisposedException(nameof(ProtocolWriter));
+                }
+                else
+                {
+                    release = false; // do not release if we need to go async to complete the write
+                    return new ValueTask(CompleteWriteAsync(task, messagesWritten: 1));
                 }
             }
             finally { if (release) ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            return dispose ? DisposeAsync() : default;
         }
 
-        private async ValueTask WriteAsyncSlow<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage message, CancellationToken cancellationToken = default)
+        private async ValueTask WriteAsyncSlow<TMessage>(IMessageWriter<TMessage> writer, TMessage message, CancellationToken cancellationToken = default)
         {
             await _singleWriter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-            bool hasWritten = false, dispose = false;
+            bool hasWritten = false;
             try
             {
-                if (_disposed) return;
+                if (_disposed) throw new ObjectDisposedException(nameof(ProtocolWriter));
 
-                var result = await WriteCore(writer, in message, cancellationToken).ConfigureAwait(false);
+                // REVIEW: is this fast path needed since we already paid the cost of async ?
+                var task = WriteCore(writer, message, cancellationToken);
+                var result = task.IsCompletedSuccessfully
+                    ? task.GetAwaiter().GetResult()
+                    : await task.ConfigureAwait(false);
 
                 if (result.IsCanceled)
-                    throw new OperationCanceledException();
+                    throw new OperationCanceledException(cancellationToken);
 
-                if (!result.IsCompleted)
-                    hasWritten = true;
-                else
-                    dispose = true;
+                hasWritten = !result.IsCompleted;
+                if (!hasWritten) throw new ObjectDisposedException(nameof(ProtocolWriter));
             }
             finally { ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            if (dispose) await DisposeAsync().ConfigureAwait(false);
         }
 
-        public ValueTask WriteManyAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage[] messages, CancellationToken cancellationToken = default)
+        public ValueTask WriteManyAsync<TMessage>(IMessageWriter<TMessage> writer, IEnumerable<TMessage> messages,
+        CancellationToken cancellationToken = default)
         {
-            // Try to grab the lock synchronously first, if we can't then go async
-#pragma warning disable CA2016 // This will always finish synchronously so we do not need to bother with cancel
-            if (!TryWaitForSingleWriter(0)) return WriteManyAsyncSlow(writer, messages, cancellationToken);
-#pragma warning restore CA2016
+            // This will always finish synchronously so we do not need to bother with cancel
+            if (!TryWaitForSingleWriter(cancellationToken: CancellationToken.None))
+                return WriteManyAsyncSlow(writer, messages, cancellationToken);
 
-            // no need to enter the try/finally if the semaphore has been disposed
-            if (_singleWriterDisposed)
-                return _disposed // dispose this instance if it hasn't been disposed yet
-                    ? default
-                    : DisposeAsync();
-
-            bool release = true, hasWritten = false, dispose = false;
+            bool release = true, hasWritten = false;
             try
             {
-                if (_disposed) return default;
+                if (_disposed) throw new ObjectDisposedException(nameof(ProtocolWriter));
 
                 var task = WriteManyCore(writer, messages, cancellationToken);
-
-                if (!task.IsCompletedSuccessfully)
-                {
-                    release = false; // do not release if we need to go async to complete the write
-                    return new ValueTask(CompleteWriteAsync(task, 1));
-                }
-                else
+                if (task.IsCompletedSuccessfully)
                 {
                     // If it's a IValueTaskSource backed ValueTask,
                     // inform it its result has been read so it can reset
                     var result = task.GetAwaiter().GetResult();
 
                     if (result.IsCanceled)
-                        throw new OperationCanceledException();
+                        throw new OperationCanceledException(cancellationToken);
 
-                    if (!result.IsCompleted)
-                        hasWritten = true;
-                    else
-                        dispose = true;
+                    hasWritten = !result.IsCompleted;
+
+                    return hasWritten
+                        ? default(ValueTask)
+                        // REVIEW : could DisposeAsyncCore(false) here if we add a !_dispose check between disposing && !TryWaitForSingleWriter()
+                        //          but it'd require to implement a ThrowAfter extension method for ValueTask
+                        : throw new ObjectDisposedException(nameof(ProtocolWriter));
+                }
+                else
+                {
+                    release = false; // do not release if we need to go async to complete the write
+                    return new ValueTask(CompleteWriteAsync(task, messagesWritten: 1));
                 }
             }
             finally { if (release) ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            return dispose ? DisposeAsync() : default;
         }
 
-        private async ValueTask WriteManyAsyncSlow<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage[] messages, CancellationToken cancellationToken = default)
+        private async ValueTask WriteManyAsyncSlow<TMessage>(IMessageWriter<TMessage> writer, IEnumerable<TMessage> messages,
+            CancellationToken cancellationToken = default)
         {
             await _singleWriter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
-            bool hasWritten = false, dispose = false;
+            bool hasWritten = false;
             try
             {
-                if (_disposed) return;
+                if (_disposed) throw new ObjectDisposedException(nameof(ProtocolWriter));
 
-                var result = await WriteManyCore(writer, messages, cancellationToken).ConfigureAwait(false);
-
-                if (result.IsCanceled)
-                    throw new OperationCanceledException();
-
-                if (!result.IsCompleted)
-                    hasWritten = true;
-                else
-                    dispose = true;
-            }
-            finally { ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            if (dispose) await DisposeAsync().ConfigureAwait(false);
-        }
-
-        public ValueTask WriteManyAsync<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            IEnumerable<TWriteMessage> messages, CancellationToken cancellationToken = default)
-        {
-            // Try to grab the lock synchronously first, if we can't then go async
-#pragma warning disable CA2016 // This will always finish synchronously so we do not need to bother with cancel
-            if (!TryWaitForSingleWriter(0)) return WriteManyAsyncSlow(writer, messages, cancellationToken);
-#pragma warning restore CA2016
-
-            // no need to enter the try/finally if the semaphore has been disposed
-            if (_singleWriterDisposed)
-                return _disposed // dispose this instance if it hasn't been disposed yet
-                    ? default
-                    : DisposeAsync();
-
-            bool release = true, hasWritten = false, dispose = false;
-            try
-            {
-                if (_disposed) return default;
-
+                // REVIEW: is this fast path needed since we already paid the cost of async ?
                 var task = WriteManyCore(writer, messages, cancellationToken);
-
-                if (!task.IsCompletedSuccessfully)
-                {
-                    release = false; // do not release if we need to go async to complete the write
-                    return new ValueTask(CompleteWriteAsync(task, 1));
-                }
-                else
-                {
-                    // If it's a IValueTaskSource backed ValueTask,
-                    // inform it its result has been read so it can reset
-                    var result = task.GetAwaiter().GetResult();
-
-                    if (result.IsCanceled)
-                        throw new OperationCanceledException();
-
-                    if (!result.IsCompleted)
-                        hasWritten = true;
-                    else
-                        dispose = true;
-                }
-            }
-            finally { if (release) ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            return dispose ? DisposeAsync() : default;
-        }
-
-        private async ValueTask WriteManyAsyncSlow<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            IEnumerable<TWriteMessage> messages, CancellationToken cancellationToken = default)
-        {
-            await _singleWriter.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-            bool hasWritten = false, dispose = false;
-            try
-            {
-                if (_disposed) return;
-
-                var result = await WriteManyCore(writer, messages, cancellationToken).ConfigureAwait(false);
+                var result = task.IsCompletedSuccessfully
+                    ? task.GetAwaiter().GetResult()
+                    : await task.ConfigureAwait(false);
 
                 if (result.IsCanceled)
-                    throw new OperationCanceledException();
+                    throw new OperationCanceledException(cancellationToken);
 
-                if (!result.IsCompleted)
-                    hasWritten = true;
-                else
-                    dispose = true;
+                hasWritten = !result.IsCompleted;
+                if (!hasWritten) throw new ObjectDisposedException(nameof(ProtocolWriter));
             }
             finally { ReleaseSingleWriter(hasWritten ? 1 : 0); }
-
-            if (dispose) await DisposeAsync().ConfigureAwait(false);
         }
 
-        private const string NoWritingAllowed = "System.IO.Pipelines.ThrowHelper.ThrowInvalidOperationException_NoWritingAllowed()";
+        private static bool IsPipeInvalidOperationException(Exception e)
+            => e is { Source: "System.IO.Pipelines", Message: "Writing is not allowed after writer was completed." };
 
-        private ValueTask<FlushResult> WriteCore<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            in TWriteMessage message, CancellationToken cancellationToken)
+        private ValueTask<FlushResult> WriteCore<TMessage>(IMessageWriter<TMessage> writer, TMessage message, CancellationToken cancellationToken)
         {
             try
             {
-                writer.WriteMessage(message, _writer); // this could throw if the pipe was completed
-                return _writer.FlushAsync(cancellationToken);
+                // this will throw if the pipe was completed
+                writer.WriteMessage(message, _pipeWriter);
+                return _pipeWriter.FlushAsync(cancellationToken);
             }
-            catch (InvalidOperationException _) when (_.StackTrace?.Contains(NoWritingAllowed) ?? false)
+            catch (InvalidOperationException e) when (IsPipeInvalidOperationException(e))
             {
                 return new ValueTask<FlushResult>(new FlushResult(cancellationToken.IsCancellationRequested, isCompleted: true));
             }
         }
 
-        private ValueTask<FlushResult> WriteManyCore<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            TWriteMessage[] messages, CancellationToken cancellationToken)
+        private ValueTask<FlushResult> WriteManyCore<TMessage>(IMessageWriter<TMessage> writer, IEnumerable<TMessage> messages,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                for (int i = 0; i < messages.Length; i++)
-                    writer.WriteMessage(messages[i], _writer);
+                if (messages is TMessage[] array)
+                {
+                    foreach (ref readonly var message in array.AsSpan())
+                        writer.WriteMessage(message, _pipeWriter);
+                }
+                else
+                {
+                    foreach (var message in messages)
+                        writer.WriteMessage(message, _pipeWriter);
+                }
 
-                return _writer.FlushAsync(cancellationToken);
+                return _pipeWriter.FlushAsync(cancellationToken);
             }
-            catch (InvalidOperationException _) when (_.StackTrace?.Contains(NoWritingAllowed) ?? false)
+            catch (InvalidOperationException e) when (IsPipeInvalidOperationException(e))
             {
                 return new ValueTask<FlushResult>(new FlushResult(cancellationToken.IsCancellationRequested, isCompleted: true));
             }
         }
 
-        private ValueTask<FlushResult> WriteManyCore<TWriteMessage>(IMessageWriter<TWriteMessage> writer,
-            IEnumerable<TWriteMessage> messages, CancellationToken cancellationToken)
+        private async Task CompleteWriteAsync(ValueTask<FlushResult> flushAsync, int messagesWritten)
         {
-            try
-            {
-                foreach (var message in messages)
-                    writer.WriteMessage(message, _writer);
-
-                return _writer.FlushAsync(cancellationToken);
-            }
-            catch (InvalidOperationException _) when (_.StackTrace?.Contains(NoWritingAllowed) ?? false)
-            {
-                return new ValueTask<FlushResult>(new FlushResult(cancellationToken.IsCancellationRequested, isCompleted: true));
-            }
-        }
-
-        protected internal async Task CompleteWriteAsync(ValueTask<FlushResult> flushAsync, int messagesWritten)
-        {
-            bool hasWritten = false, dispose = false;
+            bool hasWritten = false;
             try
             {
                 var result = await flushAsync.ConfigureAwait(false);
@@ -306,82 +208,61 @@ namespace Bedrock.Framework.Protocols
                 if (result.IsCanceled)
                     throw new OperationCanceledException();
 
-                if (!result.IsCompleted)
-                    hasWritten = true;
-                else
-                    dispose = true;
+                hasWritten = !result.IsCompleted;
+                if (!hasWritten) throw new ObjectDisposedException(nameof(ProtocolWriter));
             }
             finally { ReleaseSingleWriter(hasWritten ? messagesWritten : 0); }
-
-            if (dispose) await DisposeAsync().ConfigureAwait(false);
         }
 
-        protected internal bool TryWaitForSingleWriter(int timeout, CancellationToken cancellationToken = default)
+        private bool TryWaitForSingleWriter(int timeout = 0, CancellationToken cancellationToken = default)
         {
             try { return _singleWriter.Wait(timeout, cancellationToken); }
-            catch (ObjectDisposedException) { // swallow and no-op if the semaphore has already been disposed
-                if (_shouldDisposeSingleWriter) _shouldDisposeSingleWriter = false;
-                if (!_singleWriterDisposed) _singleWriterDisposed = true;
-
-                return true; // consider the lock acquired, the dispose state should then be checked
-            }
+            catch (ObjectDisposedException e) { throw new ObjectDisposedException(nameof(ProtocolWriter), e); }
         }
 
-        protected internal int ReleaseSingleWriter(int messagesWritten)
+        private bool ReleaseSingleWriter(int messagesWritten)
         {
-            if (messagesWritten > 0)
+            try
+            {
                 _messagesWritten += messagesWritten;
-
-            try { return _singleWriter.Release(); }
-            catch (ObjectDisposedException) { // swallow and no-op if the semaphore has already been disposed
-                if (_shouldDisposeSingleWriter) _shouldDisposeSingleWriter = false;
-                if (!_singleWriterDisposed) _singleWriterDisposed = true;
-
-                return 0;
+                return _singleWriter.Release() == 1; // REVIEW: should we throw if the release count doesn't match ?
             }
+            catch (ObjectDisposedException e) { throw new ObjectDisposedException(nameof(ProtocolWriter), e); }
         }
 
         public async ValueTask DisposeAsync()
         {
             // Perform async cleanup.
-            await DisposeAsyncCore().ConfigureAwait(false);
+            await DisposeAsyncCore(true).ConfigureAwait(false);
 
             // Suppress finalization.
             GC.SuppressFinalize(this);
         }
 
-        protected virtual ValueTask DisposeAsyncCore()
+        private ValueTask DisposeAsyncCore(bool disposing)
         {
-            if (_singleWriterDisposed && _disposed) return default;
-            if (!TryWaitForSingleWriter(0)) return disposeAsyncSlow();
+            if (disposing && !TryWaitForSingleWriter())
+                return DisposeAsyncSlow();
 
-            DisposeCore();
+            DisposeCore(disposing);
             return default;
 
-            void DisposeCore()
+            void DisposeCore(bool release)
             {
                 try
                 {
                     if (_disposed) return;
 
                     _disposed = true;
+                    if (_dispose) _singleWriter.Dispose();
                 }
-                finally
-                {
-                    if (_shouldDisposeSingleWriter)
-                    {
-                        try { _singleWriter.Dispose(); } catch { /* discard any exception here */ }
-                        _shouldDisposeSingleWriter = false;
-                        _singleWriterDisposed = true;
-                    }
-                    else ReleaseSingleWriter(0);
-                }
+                finally { if (!_dispose && release) ReleaseSingleWriter(0); }
             }
-            async ValueTask disposeAsyncSlow()
+            async ValueTask DisposeAsyncSlow()
             {
                 await _singleWriter.WaitAsync().ConfigureAwait(false);
 
-                DisposeCore();
+                DisposeCore(release: true);
             }
         }
     }
