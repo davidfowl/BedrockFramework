@@ -27,13 +27,5 @@
         /// Whether the reading operation was completed (true) or not (false). 
         /// </summary>
         public bool IsCompleted { get; }
-
-        /// <summary>
-        /// Whether the reading operation was faulty (true) or not (false).
-        /// </summary>
-        /// <remarks>
-        /// This property will be true if <see cref="Message"/> was null. 
-        /// </remarks>
-        public bool IsFaulted => Message is null;
     }
 }
