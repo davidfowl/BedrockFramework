@@ -9,15 +9,42 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    # Build SubModule dependencies first
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Build Submodule (unity-named-pipes)
+      shell: pwsh
+      run: |
+        cd deps\unity-named-pipes
+        if ($IsWindows) 
+        {
+            Write-Host "Building 64Bit"
+            ./build-library.ps1 -make64bit
+
+            Write-Host "Building 32Bit"
+            ./build-library.ps1
+        }
+        elseif ($IsMacOS)
+        {
+            sh ./build-mac-library.sh
+        }
+        else
+        {
+            sh ./build-linux-library.sh
+        }
 
     - uses: aarnott/nbgv@v0.4.0
       with:
         setAllVars: true
 
     - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v1.7.2
+      uses: actions/setup-dotnet@v4
       with:
-        version: 3.1.100
+        dotnet-version: 8.0.x
      
     - name: dotnet build
       run: dotnet build BedrockFramework.sln -c Release
@@ -29,19 +56,19 @@ jobs:
       run: dotnet pack BedrockFramework.sln -c Release --no-build --include-source --include-symbols
 
     - name: setup nuget
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: NuGet/setup-nuget@v1.0.5
       with:
         nuget-version: latest
 
     - name: Set API key
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: nuget setapikey ${{ secrets.NUGET_TOKEN_INTERNAL }} -Config nuget.config -Source ${{ vars.NUGET_SOURCE_PUBLIC }}
 
     - name: Set symbols API key
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/symbols
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: nuget setapikey ${{ secrets.NUGET_TOKEN_INTERNAL }} -Config nuget.config -Source ${{ vars.NUGET_SOURCE_SYMBOLS_PUBLIC }}
 
     - name: push packages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: dotnet nuget push **/*.nupkg -s https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json -ss https://f.feedz.io/davidfowl/bedrockframework/symbols --skip-duplicate
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet nuget push **/*.nupkg -s ${{ vars.NUGET_SOURCE_PUBLIC }} -ss ${{ vars.NUGET_SOURCE_SYMBOLS_PUBLIC }} --skip-duplicate

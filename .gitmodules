@@ -1,0 +1,3 @@
+[submodule "deps/unity-named-pipes"]
+	path = deps/unity-named-pipes
+	url = https://github.com/mos-ai/unity-named-pipes.git

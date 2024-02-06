@@ -78,7 +78,7 @@ namespace Bedrock.Framework.Transports.Memory
 
             internal Channel<ConnectionContext> AcceptQueue { get; } = Channel.CreateUnbounded<ConnectionContext>();
 
-            public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
+            public async ValueTask<ConnectionContext?> AcceptAsync(CancellationToken cancellationToken = default)
             {
                 if (await AcceptQueue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
                 {

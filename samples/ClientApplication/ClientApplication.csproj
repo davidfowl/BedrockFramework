@@ -2,8 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFrameworks>net4.6.1</TargetFrameworks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="DnsCachingConnectionFactory.cs" />
+    <Compile Remove="HubBuilderExtensions.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="..\ServerApplication\LengthPrefixedProtocol.cs" Link="LengthPrefixedProtocol.cs" />
@@ -12,14 +17,17 @@
   <ItemGroup>
     <Content Include="..\Certs\testcert.pfx" Link="testcert.pfx" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.5" />
-    <PackageReference Include="MQTTnet.AspNetCore" Version="3.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
   </ItemGroup>
-  
+
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
+    <!--<ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />-->
+	  <ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
   </ItemGroup>
 
 </Project>

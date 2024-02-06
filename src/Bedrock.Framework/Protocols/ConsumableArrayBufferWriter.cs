@@ -44,12 +44,12 @@ namespace Bedrock.Framework.Protocols
         /// <summary>
         /// Returns the unconsumed data written to the underlying buffer so far, as a <see cref="ReadOnlyMemory{byte}"/>.
         /// </summary>
-        public ReadOnlyMemory<byte> WrittenMemory => _buffer.AsMemory(_consumedCount.._index);
+        public ReadOnlyMemory<byte> WrittenMemory => _buffer.AsMemory(_consumedCount, _index);
 
         /// <summary>
         /// Returns the unconsumed data written to the underlying buffer so far, as a <see cref="ReadOnlySpan{byte}"/>.
         /// </summary>
-        public ReadOnlySpan<byte> WrittenSpan => _buffer.AsSpan(_consumedCount.._index);
+        public ReadOnlySpan<byte> WrittenSpan => _buffer.AsSpan(_consumedCount, _index);
 
         /// <summary>
         /// Returns the amount of unconsumed data written to the underlying buffer so far.

@@ -6,15 +6,32 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Chat.cs" />
+    <Compile Remove="HttpApplication.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="..\Certs\testcert.pfx" Link="testcert.pfx" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MQTTnet.AspNetCore" Version="3.1.2" />
+    <None Include="Chat.cs" />
+    <None Include="HttpApplication.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="MQTTnet.AspNetCore" Version="3.1.2" />
   </ItemGroup>
+
+  <!--<ItemGroup>
+    <ProjectReference Include="..\..\src\Bedrock.Framework.Experimental\Bedrock.Framework.Experimental.csproj" />
+  </ItemGroup>-->
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Bedrock.Framework\Bedrock.Framework.csproj" />
+	</ItemGroup>
 
 </Project>

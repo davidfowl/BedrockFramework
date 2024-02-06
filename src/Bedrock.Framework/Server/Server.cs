@@ -242,7 +242,7 @@ namespace Bedrock.Framework
             }
 
 
-            private IDisposable BeginConnectionScope(ServerConnection connection)
+            private IDisposable? BeginConnectionScope(ServerConnection connection)
             {
                 if (_server._logger.IsEnabled(LogLevel.Critical))
                 {

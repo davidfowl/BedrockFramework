@@ -75,7 +75,11 @@ namespace Bedrock.Framework.Infrastructure
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+#else
         public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+#endif
         {
             return ReadAsyncInternal(destination, cancellationToken);
         }
@@ -85,7 +89,7 @@ namespace Bedrock.Framework.Infrastructure
             WriteAsync(buffer, offset, count).GetAwaiter().GetResult();
         }
 
-        public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        public override async Task WriteAsync(byte[]? buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer != null)
             {
@@ -95,7 +99,11 @@ namespace Bedrock.Framework.Infrastructure
             await _output.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+#else
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+#endif
         {
             _output.Write(source.Span);
             await _output.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -147,7 +155,7 @@ namespace Bedrock.Framework.Infrastructure
             }
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
         }
@@ -157,7 +165,7 @@ namespace Bedrock.Framework.Infrastructure
             return TaskToApm.End<int>(asyncResult);
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return TaskToApm.Begin(WriteAsync(buffer, offset, count), callback, state);
         }

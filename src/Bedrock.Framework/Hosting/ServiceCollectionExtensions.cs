@@ -8,7 +8,7 @@ namespace Bedrock.Framework
     {
         public static IHostBuilder ConfigureServer(this IHostBuilder builder, Action<ServerBuilder> configure)
         {
-            return builder.ConfigureServices(services =>
+            return builder.ConfigureServices((builder, services) =>
             {
                 services.AddHostedService<ServerHostedService>();
 

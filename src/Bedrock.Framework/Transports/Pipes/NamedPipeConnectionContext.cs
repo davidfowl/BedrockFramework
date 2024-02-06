@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Features;
+
+using System;
 using System.Collections.Generic;
 using System.IO.Pipelines;
 using System.IO.Pipes;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace Bedrock.Framework
 {
@@ -31,7 +31,7 @@ namespace Bedrock.Framework
 
         public override IFeatureCollection Features { get; } = new FeatureCollection();
 
-        public override IDictionary<object, object> Items { get; set; } = new ConnectionItems();
+        public override IDictionary<object, object?> Items { get; set; } = new ConnectionItems();
         public override IDuplexPipe Transport { get; set; }
 
         public override void Abort()
@@ -40,6 +40,16 @@ namespace Bedrock.Framework
             base.Abort();
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public override ValueTask DisposeAsync()
+        {
+            Input.Complete();
+            Output.Complete();
+
+            _stream.Dispose();
+            return default; // ValueTask.CompletedTask
+        }
+#else
         public override async ValueTask DisposeAsync()
         {
             Input.Complete();
@@ -47,5 +57,6 @@ namespace Bedrock.Framework
 
             await _stream.DisposeAsync();
         }
+#endif
     }
 }

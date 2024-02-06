@@ -12,9 +12,9 @@ namespace Bedrock.Framework
     internal class ConnectionContextWithDelegate : ConnectionContext
     {
         private readonly ConnectionContext _connection;
-        private readonly TaskCompletionSource<object> _executionTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private Task _middlewareTask;
-        private ConnectionDelegate _connectionDelegate;
+        private readonly TaskCompletionSource<object?> _executionTcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private Task? _middlewareTask;
+        private readonly ConnectionDelegate _connectionDelegate;
 
         public ConnectionContextWithDelegate(ConnectionContext connection, ConnectionDelegate connectionDelegate)
         {
@@ -54,7 +54,7 @@ namespace Bedrock.Framework
 
         public override IFeatureCollection Features => _connection.Features;
 
-        public override IDictionary<object, object> Items
+        public override IDictionary<object, object?> Items
         {
             get => _connection.Items;
             set => _connection.Items = value;
@@ -66,13 +66,13 @@ namespace Bedrock.Framework
             set => _connection.Transport = value;
         }
 
-        public override EndPoint LocalEndPoint
+        public override EndPoint? LocalEndPoint
         {
             get => _connection.LocalEndPoint;
             set => _connection.LocalEndPoint = value;
         }
 
-        public override EndPoint RemoteEndPoint
+        public override EndPoint? RemoteEndPoint
         {
             get => _connection.RemoteEndPoint;
             set => _connection.RemoteEndPoint = value;
@@ -99,6 +99,9 @@ namespace Bedrock.Framework
             await _connection.DisposeAsync().ConfigureAwait(false);
 
             _executionTcs.TrySetResult(null);
+
+            if (_middlewareTask is null)
+                return;
 
             await _middlewareTask.ConfigureAwait(false);
         }

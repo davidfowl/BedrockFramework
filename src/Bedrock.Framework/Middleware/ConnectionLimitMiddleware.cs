@@ -24,7 +24,11 @@ namespace Bedrock.Framework
             // Wait 10 seconds for a connection
             var task = _limiter.WaitAsync(TimeSpan.FromSeconds(10));
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+            if(task.Status != TaskStatus.RanToCompletion)
+#else
             if (!task.IsCompletedSuccessfully)
+#endif
             {
                 _logger.LogInformation("{ConnectionId} queued", connectionContext.ConnectionId);
 

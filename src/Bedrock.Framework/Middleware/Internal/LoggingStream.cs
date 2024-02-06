@@ -84,8 +84,11 @@ namespace Bedrock.Framework.Infrastructure
             Log("Read", new ReadOnlySpan<byte>(buffer, offset, read));
             return read;
         }
-
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public int Read(Span<byte> destination)
+#else
         public override int Read(Span<byte> destination)
+#endif
         {
             int read = _inner.Read(destination);
             Log("Read", destination.Slice(0, read));
@@ -99,7 +102,11 @@ namespace Bedrock.Framework.Infrastructure
             return read;
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+#else
         public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
+#endif
         {
             int read = await _inner.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
             Log("ReadAsync", destination.Span.Slice(0, read));
@@ -122,7 +129,11 @@ namespace Bedrock.Framework.Infrastructure
             _inner.Write(buffer, offset, count);
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public void Write(ReadOnlySpan<byte> source)
+#else
         public override void Write(ReadOnlySpan<byte> source)
+#endif
         {
             Log("Write", source);
             _inner.Write(source);
@@ -134,7 +145,11 @@ namespace Bedrock.Framework.Infrastructure
             return _inner.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+        public ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+#else
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
+#endif
         {
             Log("WriteAsync", source.Span);
             return _inner.WriteAsync(source, cancellationToken);

@@ -112,7 +112,11 @@ namespace Bedrock.Framework
                 try
                 {
                     var task = entry.Key.Invoke(entry.Value);
+#if (NETFRAMEWORK || NETSTANDARD2_0 || NETCOREAPP2_0)
+                    if (task.Status != TaskStatus.RanToCompletion)
+#else
                     if (!task.IsCompletedSuccessfully)
+#endif
                     {
                         return CompleteAsyncAwaited(task, onCompleted);
                     }

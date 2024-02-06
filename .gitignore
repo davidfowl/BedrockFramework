@@ -43,3 +43,6 @@ UpgradeLog.htm
 
 # DocFX site generation (for now)
 _site/
+
+# Include files in the refs folder.
+!/src/Bedrock.Framework/refs/*

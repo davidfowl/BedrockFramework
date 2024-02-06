@@ -3,8 +3,8 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
+//using Microsoft.Extensions.Caching.Memory;
+//using Microsoft.Extensions.Options;
 using Bedrock.Framework;
 
 namespace ClientApplication
@@ -23,7 +23,7 @@ namespace ClientApplication
     public class DnsCachingConnectionFactory : IConnectionFactory
     {
         private readonly TimeSpan _timeout;
-        private readonly MemoryCache _memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
+        //private readonly MemoryCache _memoryCache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
 
         public DnsCachingConnectionFactory(TimeSpan timeout)
         {
@@ -77,10 +77,10 @@ namespace ClientApplication
 
                 if (connectionContext != null)
                 {
-                    _memoryCache.Set(dnsEndPoint.Host, resolvedEndPoint, new MemoryCacheEntryOptions
-                    {
-                        AbsoluteExpirationRelativeToNow = _timeout
-                    });
+                    //_memoryCache.Set(dnsEndPoint.Host, resolvedEndPoint, new MemoryCacheEntryOptions
+                    //{
+                    //    AbsoluteExpirationRelativeToNow = _timeout
+                    //});
 
                     return connectionContext;
                 }

@@ -3,18 +3,18 @@
   <PropertyGroup>
     <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
     <NoWarn>$(NoWarn);NU5105</NoWarn>
-    <RepositoryUrl>https://github.com/davidfowl/BedrockFramework</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/davidfowl/BedrockFramework</PackageProjectUrl>
-    <PackageReleaseNotes>https://github.com/davidfowl/BedrockFramework/releases</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/mos-ai/BedrockFramework</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mos-ai/BedrockFramework</PackageProjectUrl>
+    <PackageReleaseNotes>https://github.com/mos-ai/BedrockFramework/releases</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>cloud microservice networking sockets websockets tcp</PackageTags>
+    <PackageTags>cloud microservice networking sockets websockets tcp namedpipes</PackageTags>
   </PropertyGroup>
   <ItemGroup Condition="$(IsPackable) == 'true'">
     <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>3.3.37</Version>
+      <Version>3.6.133</Version>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 </Project>
