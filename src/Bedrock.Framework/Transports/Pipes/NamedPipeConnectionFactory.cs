@@ -13,7 +13,7 @@ namespace Bedrock.Framework
     {
         public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
         {
-            if (!(endpoint is NamedPipeEndPoint np))
+            if (endpoint is not NamedPipeEndPoint np)
             {
                 throw new NotSupportedException($"{endpoint.GetType()} is not supported");
             }

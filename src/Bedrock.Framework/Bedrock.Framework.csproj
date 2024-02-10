@@ -29,15 +29,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Transports\Pipes\Native\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\deps\unity-named-pipes\artifacts\NativeNamedPipe_x86.dll" Link="NativeNamedPipe_x86.dll">
+    <None Include="..\..\deps\unity-named-pipes\artifacts\NativeNamedPipe_x86.dll" Link="runtimes/win-x86/native/NativeNamedPipe_x86.dll" Pack="true" PackagePath="runtimes/win-x86/native/">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	  <None Include="..\..\deps\unity-named-pipes\artifacts\NativeNamedPipe.dll" Link="NativeNamedPipe.dll">
-		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+    <None Include="..\..\deps\unity-named-pipes\artifacts\NativeNamedPipe.dll" Link="runtimes/win-x64/native/NativeNamedPipe.dll" Pack="true" PackagePath="runtimes/win-x64/native/">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Bedrock.Framework.Infrastructure;
-using Microsoft.AspNetCore.Connections;
+﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+
+using System;
 
 namespace Bedrock.Framework
 {
