@@ -8,16 +8,18 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
 
     - uses: aarnott/nbgv@v0.4.0
       with:
         setAllVars: true
 
     - name: Setup .NET Core SDK
-      uses: actions/setup-dotnet@v1.7.2
+      uses: actions/setup-dotnet@v4
       with:
-        version: 3.1.100
+        dotnet-version: |
+          8.0.x
+          9.0.x
      
     - name: dotnet build
       run: dotnet build BedrockFramework.sln -c Release

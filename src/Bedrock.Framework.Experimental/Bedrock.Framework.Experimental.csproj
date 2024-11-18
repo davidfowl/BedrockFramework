@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageDescription>Experimental protocols and transports for Bedrock.Framework.</PackageDescription>
     <Authors>David Fowler</Authors>
@@ -18,20 +18,21 @@
   </ItemGroup>
 
   <Choose>
-    <When Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <When Condition="'$(TargetFramework)' == 'net8.0'">
       <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="3.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="8.0.11" />
        </ItemGroup>
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="6.0.5"  />
+        <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="9.0.0" />
        </ItemGroup>
     </Otherwise>
   </Choose>
 	
   <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.6.146" />
   </ItemGroup>
 
   <ItemGroup>

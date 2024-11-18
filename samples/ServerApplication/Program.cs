@@ -49,7 +49,7 @@ namespace ServerApplication
                             sockets.Listen(IPAddress.Loopback, 5004,
                                 builder => builder.UseServerTls(options =>
                                 {
-                                    options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
+                                    options.LocalCertificate = X509CertificateLoader.LoadPkcs12FromFile("testcert.pfx", "testcert");
 
                                     // NOTE: Do not do this in a production environment
                                     options.AllowAnyRemoteCertificate();

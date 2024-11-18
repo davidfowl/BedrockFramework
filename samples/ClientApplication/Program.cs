@@ -268,7 +268,7 @@ namespace ClientApplication
                                             o.TargetHost = "foo";
                                         };
 
-                                        options.LocalCertificate = new X509Certificate2("testcert.pfx", "testcert");
+                                        options.LocalCertificate = X509CertificateLoader.LoadPkcs12FromFile("testcert.pfx", "testcert");
 
                                         // NOTE: Do not do this in a production environment
                                         options.AllowAnyRemoteCertificate();
@@ -360,7 +360,7 @@ namespace ClientApplication
                         .UseConnectionLogging()
                         .Build();
 
-            await using var connection = await client.ConnectAsync(new NamedPipeEndPoint("docker_engine"));
+            await using var connection = await client.ConnectAsync(new Bedrock.Framework.NamedPipeEndPoint("docker_engine"));
 
             // Use the HTTP/1.1 protocol
             var httpProtocol = new HttpClientProtocol(connection);

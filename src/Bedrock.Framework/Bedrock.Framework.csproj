@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
     <PackageDescription>High performance, low level networking APIs for building custom severs and clients.</PackageDescription>
     <Authors>David Fowler</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,11 +11,21 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.IO.Pipelines" Version="6.0.3" />
-  </ItemGroup>
+  <Choose>
+  	<When Condition="'$(TargetFramework)' == 'net8.0'">
+  		<ItemGroup>
+			<PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
+  		</ItemGroup>
+  	</When>
+  	<Otherwise>
+  		<ItemGroup>
+			<PackageReference Include="System.IO.Pipelines" Version="9.0.0" />
+  		</ItemGroup>
+  	</Otherwise>
+  </Choose>
 
   <ItemGroup>
-    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.6.146" />
   </ItemGroup>
 </Project>
