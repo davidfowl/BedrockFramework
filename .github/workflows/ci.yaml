@@ -9,8 +9,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - uses: aarnott/nbgv@v0.4.0
+    - uses: dotnet/nbgv@v0.4.2
       with:
         setAllVars: true
 
