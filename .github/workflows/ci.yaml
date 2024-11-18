@@ -33,19 +33,19 @@ jobs:
       run: dotnet pack BedrockFramework.sln -c Release --no-build --include-source --include-symbols
 
     - name: setup nuget
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: NuGet/setup-nuget@v1.0.5
       with:
         nuget-version: latest
 
     - name: Set API key
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json
 
     - name: Set symbols API key
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: nuget setapikey ${{ secrets.FEEDZ_TOKEN }} -Config nuget.config -Source https://f.feedz.io/davidfowl/bedrockframework/symbols
 
     - name: push packages
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: dotnet nuget push **/*.nupkg -s https://f.feedz.io/davidfowl/bedrockframework/nuget/index.json -ss https://f.feedz.io/davidfowl/bedrockframework/symbols --skip-duplicate
