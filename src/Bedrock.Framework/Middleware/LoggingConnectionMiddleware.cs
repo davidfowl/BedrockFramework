@@ -8,46 +8,33 @@ using Bedrock.Framework.Infrastructure;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
-namespace Bedrock.Framework
+namespace Bedrock.Framework;
+
+internal class LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger, LoggingFormatter loggingFormatter = null)
 {
-    internal class LoggingConnectionMiddleware
+    private readonly ConnectionDelegate _next = next ?? throw new ArgumentNullException(nameof(next));
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    public async Task OnConnectionAsync(ConnectionContext context)
     {
-        private readonly ConnectionDelegate _next;
-        private readonly ILogger _logger;
-        private readonly LoggingFormatter _loggingFormatter;
+        var oldTransport = context.Transport;
 
-        public LoggingConnectionMiddleware(ConnectionDelegate next, ILogger logger, LoggingFormatter loggingFormatter = null)
+        try
         {
-            _next = next ?? throw new ArgumentNullException(nameof(next));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _loggingFormatter = loggingFormatter;
-        }
+            await using var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, loggingFormatter);
 
-        public async Task OnConnectionAsync(ConnectionContext context)
+            context.Transport = loggingDuplexPipe;
+
+            await _next(context).ConfigureAwait(false);
+        }
+        finally
         {
-            var oldTransport = context.Transport;
-
-            try
-            {
-                await using (var loggingDuplexPipe = new LoggingDuplexPipe(context.Transport, _logger, _loggingFormatter))
-                {
-                    context.Transport = loggingDuplexPipe;
-
-                    await _next(context).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                context.Transport = oldTransport;
-            }
+            context.Transport = oldTransport;
         }
+    }
 
-        private class LoggingDuplexPipe : DuplexPipeStreamAdapter<LoggingStream>
-        {
-            public LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, LoggingFormatter loggingFormatter) :
-                base(transport, stream => new LoggingStream(stream, logger, loggingFormatter))
-            {
-            }
-        }
+    private class LoggingDuplexPipe(IDuplexPipe transport, ILogger logger, LoggingFormatter loggingFormatter) : 
+        DuplexPipeStreamAdapter<LoggingStream>(transport, stream => new LoggingStream(stream, logger, loggingFormatter))
+    {
     }
 }

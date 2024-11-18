@@ -29,7 +29,7 @@ namespace Bedrock.Framework.Tests
                 var position = stream.Position;
                 stream.Position = written;
                 protocol.WriteMessage(bytes, writer);
-                await writer.FlushAsync().ConfigureAwait(false);
+                await writer.FlushAsync();
                 written = stream.Position;
                 stream.Position = position;
             };
@@ -39,14 +39,14 @@ namespace Bedrock.Framework.Tests
         private static async Task<MessagePipeReader> CreateReaderOverBytes(byte[] bytes)
         {
             var reader = CreateReader(out var writeFunc);
-            await writeFunc(bytes).ConfigureAwait(false);
+            await writeFunc(bytes);
             return reader;
         }
 
         [Fact]
         public async Task CanRead()
         {
-            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World")).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -63,8 +63,8 @@ namespace Bedrock.Framework.Tests
         public async Task ReadAsyncReturnsFullBacklogWhenNotFullyConsumed()
         {
             var reader = CreateReader(out var writeFunc);
-            await writeFunc(Encoding.ASCII.GetBytes("Hello ")).ConfigureAwait(false);
-            await writeFunc(Encoding.ASCII.GetBytes("World")).ConfigureAwait(false);
+            await writeFunc(Encoding.ASCII.GetBytes("Hello "));
+            await writeFunc(Encoding.ASCII.GetBytes("World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -81,7 +81,7 @@ namespace Bedrock.Framework.Tests
             Assert.True(buffer.IsSingleSegment);
             Assert.Equal("lo World", Encoding.ASCII.GetString(buffer.ToArray()));
 
-            await writeFunc(Encoding.ASCII.GetBytes("\nLorem Ipsum")).ConfigureAwait(false);
+            await writeFunc(Encoding.ASCII.GetBytes("\nLorem Ipsum"));
             reader.AdvanceTo(buffer.GetPosition(2));
             readResult = await reader.ReadAsync();
             buffer = readResult.Buffer;
@@ -96,7 +96,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything()
         {
-            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World")).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -116,7 +116,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task TryReadReturnsFalseIfBufferedBytesAndEverythingConsumed()
         {
-            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World")).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -131,7 +131,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task TryReadReturnsFalseIfBufferedBytesAndEverythingExamined()
         {
-            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World")).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(Encoding.ASCII.GetBytes("Hello World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -147,8 +147,8 @@ namespace Bedrock.Framework.Tests
         public async Task TryReadReturnsTrueIfBufferedBytesAndEverythingExaminedButMoreDataSynchronouslyAvailabe()
         {
             var reader = CreateReader(out var writeFunc);
-            await writeFunc(Encoding.ASCII.GetBytes("Hello ")).ConfigureAwait(false);
-            await writeFunc(Encoding.ASCII.GetBytes("World")).ConfigureAwait(false);
+            await writeFunc(Encoding.ASCII.GetBytes("Hello "));
+            await writeFunc(Encoding.ASCII.GetBytes("World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -169,8 +169,8 @@ namespace Bedrock.Framework.Tests
         public async Task TryReadReturnsTrueIfBufferedBytesAndEverythingConsumedButMoreDataSynchronouslyAvailabe()
         {
             var reader = CreateReader(out var writeFunc);
-            await writeFunc(Encoding.ASCII.GetBytes("Hello ")).ConfigureAwait(false);
-            await writeFunc(Encoding.ASCII.GetBytes("World")).ConfigureAwait(false);
+            await writeFunc(Encoding.ASCII.GetBytes("Hello "));
+            await writeFunc(Encoding.ASCII.GetBytes("World"));
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -199,7 +199,7 @@ namespace Bedrock.Framework.Tests
                 var index = 0;
                 while (true)
                 {
-                    var readResult = await reader.ReadAsync().ConfigureAwait(false);
+                    var readResult = await reader.ReadAsync();
 
                     if (readResult.IsCompleted)
                     {
@@ -221,7 +221,7 @@ namespace Bedrock.Framework.Tests
                 {
                     writer.WriteEmpty(protocol, bufferSizes[i]);
                     waitForRead = new TaskCompletionSource<object>();
-                    await writer.FlushAsync().ConfigureAwait(false);
+                    await writer.FlushAsync();
                     await waitForRead.Task;
                 }
 
@@ -247,7 +247,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task CanConsumeAllBytes()
         {
-            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[100]);
             var buffer = (await reader.ReadAsync()).Buffer;
 
             reader.AdvanceTo(buffer.End);
@@ -258,7 +258,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task CanConsumeNoBytes()
         {
-            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[100]);
             var buffer = (await reader.ReadAsync()).Buffer;
 
             reader.AdvanceTo(buffer.Start);
@@ -269,7 +269,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task CanExamineAllBytes()
         {
-            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[100]);
             var buffer = (await reader.ReadAsync()).Buffer;
 
             reader.AdvanceTo(buffer.Start, buffer.End);
@@ -280,7 +280,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task CanExamineNoBytes()
         {
-            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[100]);
             var buffer = (await reader.ReadAsync()).Buffer;
 
             reader.AdvanceTo(buffer.Start, buffer.Start);
@@ -314,7 +314,7 @@ namespace Bedrock.Framework.Tests
             var reader = new MessagePipeReader(PipeReader.Create(stream), protocol);
 
             protocol.WriteMessage(Encoding.ASCII.GetBytes("Hello World"), writer);
-            await writer.FlushAsync().ConfigureAwait(false);
+            await writer.FlushAsync();
             stream.Position = 0;
 
             var readResult = await reader.ReadAsync();
@@ -343,7 +343,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task AdvanceAfterCompleteThrows()
         {
-            var reader = await CreateReaderOverBytes(new byte[100]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[100]);
             var buffer = (await reader.ReadAsync()).Buffer;
 
             reader.Complete();
@@ -541,7 +541,7 @@ namespace Bedrock.Framework.Tests
         [Fact]
         public async Task CanReadLargeMessages()
         {
-            var reader = await CreateReaderOverBytes(new byte[10000]).ConfigureAwait(false);
+            var reader = await CreateReaderOverBytes(new byte[10000]);
 
             var readResult = await reader.ReadAsync();
             Assert.Equal(10000, readResult.Buffer.Length);
@@ -553,9 +553,9 @@ namespace Bedrock.Framework.Tests
         public async Task EmptyMessageCausesResultToBeCompleted()
         {
             var reader = CreateReader(out var writeFunc);
-            await writeFunc(new byte[100]).ConfigureAwait(false);
-            await writeFunc(new byte[0]).ConfigureAwait(false);
-            await writeFunc(new byte[100]).ConfigureAwait(false);
+            await writeFunc(new byte[100]);
+            await writeFunc(new byte[0]);
+            await writeFunc(new byte[100]);
 
             var readResult = await reader.ReadAsync();
             var buffer = readResult.Buffer;
@@ -663,10 +663,10 @@ namespace Bedrock.Framework.Tests
                 for (var i = 0; i < 3; i++)
                 {
                     protocol.WriteMessage(data, writer);
-                    await writer.FlushAsync().ConfigureAwait(false);
+                    await writer.FlushAsync();
                 }
 
-                await writer.CompleteAsync().ConfigureAwait(false);
+                await writer.CompleteAsync();
             }
 
             async Task ReadingTask()
@@ -675,7 +675,7 @@ namespace Bedrock.Framework.Tests
 
                 while (true)
                 {
-                    var result = await reader.ReadAsync().ConfigureAwait(false);
+                    var result = await reader.ReadAsync();
                     var buffer = result.Buffer;
 
                     if (buffer.Length < 3 * data.Length)
@@ -687,7 +687,7 @@ namespace Bedrock.Framework.Tests
                     Assert.Equal(Enumerable.Repeat(data, 3).SelectMany(a => a).ToArray(), buffer.ToArray());
                     
                     reader.AdvanceTo(buffer.End);
-                    result = await reader.ReadAsync().ConfigureAwait(false);
+                    result = await reader.ReadAsync();
                     Assert.True(result.IsCompleted);
                     break;
                 }
