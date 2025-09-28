@@ -1,7 +1,9 @@
 ﻿using Bedrock.Framework.Protocols;
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Bedrock.Framework.Protocols.WebSockets
@@ -9,8 +11,13 @@ namespace Bedrock.Framework.Protocols.WebSockets
     /// <summary>
     /// An implementation of IMessageReader that parses WebSocket message frames.
     /// </summary>
-    public struct WebSocketFrameReader : IMessageReader<WebSocketReadFrame>
+    public class WebSocketFrameReader : IMessageReader<WebSocketReadFrame>
     {
+        /// <summary>
+        /// An instance of the WebSocketFrameReader.
+        /// </summary>
+        private WebSocketPayloadReader _payloadReader;
+
         /// <summary>
         /// Attempts to parse a message from a sequence.
         /// </summary>
@@ -21,8 +28,6 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <returns>True if parsed successfully, false otherwise.</returns>
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out WebSocketReadFrame message)
         {
-            var reader = new SequenceReader<byte>(input);
-
             //We need to at least be able to read the start of frame header
             if (input.Length < 2)
             {
@@ -30,8 +35,52 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 return false;
             }
 
-            reader.TryRead(out var finOpcodeByte);
-            reader.TryRead(out var maskLengthByte);
+            if (input.IsSingleSegment || input.FirstSpan.Length >= 14)
+            {
+                if (TryParseSpan(input.FirstSpan, input.Length, out var bytesRead, out message))
+                {
+                    consumed = input.GetPosition(bytesRead);
+                    examined = consumed;
+
+                    return true;
+                }
+
+                return false;
+
+            }
+            else
+            {
+                Span<byte> tempSpan = stackalloc byte[14];
+
+                var bytesToCopy = Math.Min(input.Length, tempSpan.Length);
+                input.Slice(0, bytesToCopy).CopyTo(tempSpan);
+
+                if (TryParseSpan(tempSpan, input.Length, out var bytesRead, out message))
+                {
+                    consumed = input.GetPosition(bytesRead);
+                    examined = consumed;
+
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Attempts to parse a span for a WebSocket frame header.
+        /// </summary>
+        /// <param name="span">The span to attempt to parse.</param>
+        /// <param name="inputLength">The input sequence length.</param>
+        /// <param name="bytesRead">The number of bytes read from the span.</param>
+        /// <param name="message">The WebSocketReadFrame read from the span.</param>
+        /// <returns>True if the span could be parsed, false otherwise.</returns>
+        private bool TryParseSpan(in ReadOnlySpan<byte> span, long inputLength, out int bytesRead, out WebSocketReadFrame message)
+        {
+            bytesRead = 0;
+
+            var finOpcodeByte = span[0];
+            var maskLengthByte = span[1];
 
             var masked = (maskLengthByte & 0b1000_0000) != 0;
             ulong initialPayloadLength = (ulong)(maskLengthByte & 0b0111_1111);
@@ -49,25 +98,23 @@ namespace Bedrock.Framework.Protocols.WebSockets
                     break;
             }
 
-            if (reader.Remaining < extendedPayloadLengthSize + maskSize)
+            if (inputLength < extendedPayloadLengthSize + maskSize + 2)
             {
                 message = default;
                 return false;
             }
-            
+
             var fin = (finOpcodeByte & 0b1000_0000) != 0;
             var opcode = (WebSocketOpcode)(finOpcodeByte & 0b0000_1111);
 
             ulong payloadLength = 0;
             if (extendedPayloadLengthSize == 2)
             {
-                reader.TryReadBigEndian(out short length);
-                payloadLength = (ushort)length;
+                payloadLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2));
             }
             else if (extendedPayloadLengthSize == 8)
             {
-                reader.TryReadBigEndian(out long length);
-                payloadLength = (ulong)length;
+                payloadLength = BinaryPrimitives.ReadUInt64BigEndian(span.Slice(2));
             }
             else
             {
@@ -77,18 +124,22 @@ namespace Bedrock.Framework.Protocols.WebSockets
             int maskingKey = 0;
             if (masked)
             {
-                Span<byte> maskBytes = stackalloc byte[sizeof(int)];
-                reader.TryCopyTo(maskBytes);
-
-                maskingKey = BitConverter.ToInt32(maskBytes);
-                reader.Advance(sizeof(int));
+                maskingKey = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(2 + extendedPayloadLengthSize));
             }
 
             var header = new WebSocketHeader(fin, opcode, masked, payloadLength, maskingKey);
-            message = new WebSocketReadFrame(header, new WebSocketPayloadReader(header));
 
-            consumed = input.GetPosition(2 + extendedPayloadLengthSize + maskSize);
-            examined = consumed;
+            if(_payloadReader == null)
+            {
+                _payloadReader = new WebSocketPayloadReader(header);
+            }
+            else
+            {
+                _payloadReader.Reset(header);
+            }
+
+            message = new WebSocketReadFrame(header, _payloadReader);
+            bytesRead = 2 + extendedPayloadLengthSize + maskSize;
             return true;
         }
     }

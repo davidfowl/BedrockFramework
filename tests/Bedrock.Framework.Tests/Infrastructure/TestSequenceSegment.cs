@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Bedrock.Framework.Experimental.Tests.Infrastructure
+namespace Bedrock.Framework.Tests.Infrastructure
 {
     /// <summary>
     /// A utility class for creating sequence segments from byte arrays during unit testing.

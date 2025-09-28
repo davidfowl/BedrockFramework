@@ -15,12 +15,12 @@ namespace Bedrock.Framework.Protocols.WebSockets
     /// <summary>
     /// Reads a WebSocket payload from a sequence.
     /// </summary>
-    public struct WebSocketPayloadReader : IMessageReader<ReadOnlySequence<byte>>
+    public class WebSocketPayloadReader : IMessageReader<ReadOnlySequence<byte>>
     {
         /// <summary>
         /// The number of bytes remaining in the payload.
         /// </summary>
-        private ulong _payloadBytesRemaining;
+        public ulong BytesRemaining { get; private set; }
 
         /// <summary>
         /// Whether or not the payload is masked.
@@ -38,9 +38,21 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <param name="header">The WebSocketHeader associated with this payload.</param>
         public WebSocketPayloadReader(WebSocketHeader header)
         {
-            _payloadBytesRemaining = header.PayloadLength;
+            BytesRemaining = header.PayloadLength;
             _payloadEncoder = new WebSocketPayloadEncoder(header.MaskingKey);
             _masked = header.Masked;
+        }
+
+        /// <summary>
+        /// Resets the payload reader.
+        /// </summary>
+        /// <param name="header">The WebSocketHeader associated with this payload.</param>
+        public void Reset(WebSocketHeader header)
+        {
+            BytesRemaining = header.PayloadLength;
+            _masked = header.Masked;
+
+            _payloadEncoder.Reset(header.MaskingKey);
         }
 
         /// <summary>
@@ -55,7 +67,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
         {
             message = input;
 
-            if (_payloadBytesRemaining == 0)
+            if (BytesRemaining == 0)
             {
                 message = default;
                 consumed = input.Start;
@@ -73,7 +85,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
             long bytesRead = 0;
             if (!_masked)
             {
-                bytesRead = Math.Min((long)_payloadBytesRemaining, input.Length);
+                bytesRead = Math.Min((long)BytesRemaining, input.Length);
                 var position = input.GetPosition(bytesRead);
 
                 consumed = position;
@@ -81,11 +93,16 @@ namespace Bedrock.Framework.Protocols.WebSockets
             }
             else
             {
-                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, out consumed);
+                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, BytesRemaining, out consumed);
                 examined = consumed;
             }
 
-            _payloadBytesRemaining -= (ulong)bytesRead;
+            if(bytesRead < input.Length)
+            {
+                message = message.Slice(0, consumed);
+            }
+
+            BytesRemaining -= (ulong)bytesRead;
             return true;
         }
     }
