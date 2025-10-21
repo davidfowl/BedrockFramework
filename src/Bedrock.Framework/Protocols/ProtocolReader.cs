@@ -241,6 +241,27 @@ namespace Bedrock.Framework.Protocols
             _hasMessage = false;
         }
 
+        public void CancelPendingRead()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            _reader.CancelPendingRead();
+            _isCanceled = true;
+        }
+
+        public async ValueTask CompleteAsync()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            await _reader.CompleteAsync();
+        }
+
         public ValueTask DisposeAsync()
         {
             _disposed = true;
