@@ -1,42 +1,29 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace System.IO.Pipelines
+namespace System.IO.Pipelines;
+
+internal class DuplexPipe(PipeReader reader, PipeWriter writer) : IDuplexPipe
 {
-    internal class DuplexPipe : IDuplexPipe
+    public PipeReader Input { get; } = reader;
+
+    public PipeWriter Output { get; } = writer;
+
+    public static DuplexPipePair CreateConnectionPair(PipeOptions inputOptions, PipeOptions outputOptions)
     {
-        public DuplexPipe(PipeReader reader, PipeWriter writer)
-        {
-            Input = reader;
-            Output = writer;
-        }
+        var input = new Pipe(inputOptions);
+        var output = new Pipe(outputOptions);
 
-        public PipeReader Input { get; }
+        var transportToApplication = new DuplexPipe(output.Reader, input.Writer);
+        var applicationToTransport = new DuplexPipe(input.Reader, output.Writer);
 
-        public PipeWriter Output { get; }
+        return new DuplexPipePair(applicationToTransport, transportToApplication);
+    }
 
-        public static DuplexPipePair CreateConnectionPair(PipeOptions inputOptions, PipeOptions outputOptions)
-        {
-            var input = new Pipe(inputOptions);
-            var output = new Pipe(outputOptions);
-
-            var transportToApplication = new DuplexPipe(output.Reader, input.Writer);
-            var applicationToTransport = new DuplexPipe(input.Reader, output.Writer);
-
-            return new DuplexPipePair(applicationToTransport, transportToApplication);
-        }
-
-        // This class exists to work around issues with value tuple on .NET Framework
-        public readonly struct DuplexPipePair
-        {
-            public IDuplexPipe Transport { get; }
-            public IDuplexPipe Application { get; }
-
-            public DuplexPipePair(IDuplexPipe transport, IDuplexPipe application)
-            {
-                Transport = transport;
-                Application = application;
-            }
-        }
+    // This class exists to work around issues with value tuple on .NET Framework
+    public readonly struct DuplexPipePair(IDuplexPipe transport, IDuplexPipe application)
+    {
+        public IDuplexPipe Transport { get; } = transport;
+        public IDuplexPipe Application { get; } = application;
     }
 }

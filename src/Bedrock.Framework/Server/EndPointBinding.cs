@@ -4,31 +4,19 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.AspNetCore.Connections;
 
-namespace Bedrock.Framework
+namespace Bedrock.Framework;
+
+public class EndPointBinding(EndPoint endPoint, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory) : ServerBinding
 {
-    public class EndPointBinding : ServerBinding
+    public override ConnectionDelegate Application => application;
+
+    public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken)
     {
-        private readonly ConnectionDelegate _application;
-        public EndPointBinding(EndPoint endPoint, ConnectionDelegate application, IConnectionListenerFactory connectionListenerFactory)
-        {
-            EndPoint = endPoint;
-            _application = application;
-            ConnectionListenerFactory = connectionListenerFactory;
-        }
+        yield return await connectionListenerFactory.BindAsync(endPoint, cancellationToken);
+    }
 
-        private EndPoint EndPoint { get; }
-        private IConnectionListenerFactory ConnectionListenerFactory { get; }
-
-        public override ConnectionDelegate Application => _application;
-
-        public override async IAsyncEnumerable<IConnectionListener> BindAsync([EnumeratorCancellation]CancellationToken cancellationToken)
-        {
-            yield return await ConnectionListenerFactory.BindAsync(EndPoint, cancellationToken);
-        }
-
-        public override string ToString()
-        {
-            return EndPoint?.ToString();
-        }
+    public override string ToString()
+    {
+        return endPoint?.ToString();
     }
 }

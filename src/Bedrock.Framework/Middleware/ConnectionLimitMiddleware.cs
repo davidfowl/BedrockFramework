@@ -4,45 +4,35 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 
-namespace Bedrock.Framework
-{
-    public class ConnectionLimitMiddleware
-    {
-        private readonly ConnectionDelegate _next;
-        private readonly SemaphoreSlim _limiter;
-        private readonly ILogger _logger;
+namespace Bedrock.Framework;
 
-        public ConnectionLimitMiddleware(ConnectionDelegate next, ILogger logger, int limit)
+public class ConnectionLimitMiddleware(ConnectionDelegate next, ILogger logger, int limit)
+{
+    private readonly SemaphoreSlim _limiter = new(limit);
+
+    public async Task OnConnectionAsync(ConnectionContext connectionContext)
+    {
+        // Wait 10 seconds for a connection
+        var task = _limiter.WaitAsync(TimeSpan.FromSeconds(10));
+
+        if (!task.IsCompletedSuccessfully)
         {
-            _next = next;
-            _logger = logger;
-            _limiter = new SemaphoreSlim(limit);
+            logger.LogInformation("{ConnectionId} queued", connectionContext.ConnectionId);
+
+            if (!await task.ConfigureAwait(false))
+            {
+                logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.ConnectionId);
+                return;
+            }
         }
 
-        public async Task OnConnectionAsync(ConnectionContext connectionContext)
+        try
         {
-            // Wait 10 seconds for a connection
-            var task = _limiter.WaitAsync(TimeSpan.FromSeconds(10));
-
-            if (!task.IsCompletedSuccessfully)
-            {
-                _logger.LogInformation("{ConnectionId} queued", connectionContext.ConnectionId);
-
-                if (!await task.ConfigureAwait(false))
-                {
-                    _logger.LogInformation("{ConnectionId} timed out in the connection queue", connectionContext.ConnectionId);
-                    return;
-                }
-            }
-
-            try
-            {
-                await _next(connectionContext).ConfigureAwait(false);
-            }
-            finally
-            {
-                _limiter.Release();
-            }
+            await next(connectionContext).ConfigureAwait(false);
+        }
+        finally
+        {
+            _limiter.Release();
         }
     }
 }

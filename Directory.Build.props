@@ -12,9 +12,9 @@
   </PropertyGroup>
   <ItemGroup Condition="$(IsPackable) == 'true'">
     <PackageReference Include="Nerdbank.GitVersioning">
-      <Version>3.3.37</Version>
+      <Version>3.6.146</Version>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 </Project>

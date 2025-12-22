@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Connections;
 using MQTTnet.Adapter;
 using MQTTnet.AspNetCore;
 using MQTTnet.Packets;
@@ -8,11 +7,18 @@ using MQTTnet.Protocol;
 
 namespace ServerApplication
 {
-    public class MqttApplication : MqttConnectionHandler
+    public class MqttApplication : ConnectionHandler
     {
+        private MqttConnectionHandler _mqttHandler = new();
+
         public MqttApplication()
         {
-            ClientHandler = OnClientConnectedAsync;
+            _mqttHandler.ClientHandler = OnClientConnectedAsync;
+        }
+
+        public override async Task OnConnectedAsync(ConnectionContext connection)
+        {
+            await _mqttHandler.OnConnectedAsync(connection);
         }
 
         private async Task OnClientConnectedAsync(IMqttChannelAdapter adapter)
@@ -43,8 +49,7 @@ namespace ServerApplication
                     case MqttSubscribePacket mqttSubscribePacket:
                         var ack = new MqttSubAckPacket
                         {
-                            PacketIdentifier = mqttSubscribePacket.PacketIdentifier,
-                            ReturnCodes = new List<MqttSubscribeReturnCode> { MqttSubscribeReturnCode.SuccessMaximumQoS0 }
+                            PacketIdentifier = mqttSubscribePacket.PacketIdentifier
                         };
                         ack.ReasonCodes.Add(MqttSubscribeReasonCode.GrantedQoS0);
 

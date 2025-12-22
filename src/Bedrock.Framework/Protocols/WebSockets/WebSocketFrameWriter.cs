@@ -81,7 +81,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 headerSpan[1] |= 0b1000_0000;
 
                 var maskingKey = message.Header.MaskingKey;               
-                MemoryMarshal.Write(headerSpan.Slice(maskPosition), ref maskingKey);
+                MemoryMarshal.Write(headerSpan.Slice(maskPosition), in maskingKey);
 
                 if (!message.MaskingComplete)
                 {
