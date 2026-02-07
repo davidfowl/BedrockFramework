@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <PackageDescription>Lightweight transports (socket, memory, named pipe, connection pooling) for building custom servers and clients using Microsoft.AspNetCore.Connections.Abstractions.</PackageDescription>
+    <Authors>David Fowler</Authors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'net8.0'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="8.0.0" />
+        <PackageReference Include="System.IO.Pipelines" Version="8.0.0" />
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="9.0.0" />
+        <PackageReference Include="System.IO.Pipelines" Version="9.0.0" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+
+  <ItemGroup>
+    <PackageReference Update="Nerdbank.GitVersioning" Version="3.6.146" />
+  </ItemGroup>
+
+</Project>

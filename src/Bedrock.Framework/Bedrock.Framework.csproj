@@ -11,6 +11,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Bedrock.Framework.Transports\Bedrock.Framework.Transports.csproj" />
+  </ItemGroup>
+
   <Choose>
   	<When Condition="'$(TargetFramework)' == 'net8.0'">
   		<ItemGroup>

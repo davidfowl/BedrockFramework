@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
@@ -53,9 +54,9 @@ internal class SocketConnection : ConnectionContext, IConnectionInherentKeepAliv
         // Completing these loops will cause ExecuteAsync to Dispose the socket.
     }
 
-    public async ValueTask<ConnectionContext> StartAsync()
+    public async ValueTask<ConnectionContext> StartAsync(CancellationToken cancellationToken = default)
     {
-        await _socket.ConnectAsync(_endPoint).ConfigureAwait(false);
+        await _socket.ConnectAsync(_endPoint, cancellationToken).ConfigureAwait(false);
 
         var pair = DuplexPipe.CreateConnectionPair(PipeOptions.Default, PipeOptions.Default);
 

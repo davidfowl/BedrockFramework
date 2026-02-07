@@ -1,0 +1,25 @@
+ M BedrockFramework.sln
+ M src/Bedrock.Framework.Experimental/Bedrock.Framework.Experimental.csproj
+ D src/Bedrock.Framework.Experimental/Infrastructure/TaskCompletionSourceWithCancellation.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pipes/NamedPipeConnectionContext.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pipes/NamedPipeConnectionFactory.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pipes/NamedPipeConnectionListener.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pipes/NamedPipeConnectionListenerFactory.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pipes/NamedPipeEndPoint.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pooling/ConnectionPoolingFactory.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pooling/EndPointPool.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pooling/IEndPointPool.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pooling/IMaxConnectionFeature.cs
+ D src/Bedrock.Framework.Experimental/Transports/Pooling/PooledConnectionContext.cs
+ M src/Bedrock.Framework/Bedrock.Framework.csproj
+ D src/Bedrock.Framework/Infrastructure/DuplexPipe.cs
+ D src/Bedrock.Framework/Transports/Memory/MemoryEndPoint.cs
+ D src/Bedrock.Framework/Transports/Memory/MemoryTransport.cs
+ D src/Bedrock.Framework/Transports/Sockets/BufferExtensions.cs
+ D src/Bedrock.Framework/Transports/Sockets/SocketAwaitable.cs
+ D src/Bedrock.Framework/Transports/Sockets/SocketConnection.cs
+ D src/Bedrock.Framework/Transports/Sockets/SocketConnectionFactory.cs
+ D src/Bedrock.Framework/Transports/Sockets/SocketReceiver.cs
+ D src/Bedrock.Framework/Transports/Sockets/SocketSender.cs
+?? src/Bedrock.Framework.Transports/
+?? temp_status.txt

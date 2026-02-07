@@ -9,6 +9,6 @@ public class SocketConnectionFactory : IConnectionFactory
 {
     public ValueTask<ConnectionContext> ConnectAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
     {
-        return new SocketConnection(endpoint).StartAsync();
+        return new SocketConnection(endpoint).StartAsync(cancellationToken);
     }
 }
