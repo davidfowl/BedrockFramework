@@ -47,6 +47,10 @@ builder.ConfigureServer(server =>
 
         sockets.Listen(IPAddress.Loopback, 5005,
             builder => builder.UseConnectionLogging().UseConnectionHandler<MyCustomProtocol>());
+
+        // Native WebSocket echo server (ws://localhost:5006/ws)
+        sockets.Listen(IPAddress.Loopback, 5006,
+            builder => builder.UseConnectionLogging().RunWebSocket(WebSocketApplication.RunAsync, WebSocketApplication.Configure));
     });
 });
 

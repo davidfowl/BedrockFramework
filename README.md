@@ -13,6 +13,20 @@ This project is split into 2 packages:
 - **Bedrock.Framework** - The core framework, server and client builder APIs, built in middleware and transports (sockets and memory).
 - **Bedrock.Framework.Experimental** - A set of protocol and transport implementations that may eventually make their way into core. Some of them are incomplete at this time.
 
+## Blazor WebAssembly
+
+**Bedrock.Framework** has a `net9.0-browser` build for clients running in the browser. Browsers have no raw sockets, so connect with the browser's WebSocket through the `ClientWebSocket` transport. Any Bedrock protocol that marks its own message boundaries (a length prefix, say) runs over it unchanged:
+
+```C#
+var client = new ClientBuilder(services)
+    .UseClientWebSocket(options => options.AddSubProtocol("my-protocol"))
+    .Build();
+
+await using var connection = await client.ConnectAsync(new UriEndPoint(new Uri("wss://example.com/ws")));
+```
+
+The app's project must target `net9.0-browser` (`<TargetFramework>net9.0-browser</TargetFramework>`) so that NuGet selects the browser build. The socket transport and TLS middleware aren't included there; the browser handles TLS for `wss://`.
+
 ## Using CI builds
 
 To use CI builds add the following nuget feed:

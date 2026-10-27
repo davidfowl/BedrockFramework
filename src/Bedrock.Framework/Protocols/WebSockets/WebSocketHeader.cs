@@ -40,6 +40,26 @@ namespace Bedrock.Framework.Protocols.WebSockets
         public int MaskingKey { get; }
 
         /// <summary>
+        /// The first reserved bit of the frame. Used by extensions such as permessage-deflate to indicate a compressed message.
+        /// </summary>
+        public bool Rsv1 { get; }
+
+        /// <summary>
+        /// The second reserved bit of the frame, for use by extensions.
+        /// </summary>
+        public bool Rsv2 { get; }
+
+        /// <summary>
+        /// The third reserved bit of the frame, for use by extensions.
+        /// </summary>
+        public bool Rsv3 { get; }
+
+        /// <summary>
+        /// Whether or not this frame is a control frame (Close, Ping, Pong or a reserved control opcode).
+        /// </summary>
+        public bool IsControlFrame => ((byte)Opcode & 0b0000_1000) != 0;
+
+        /// <summary>
         /// Creates an instance of a WebSocketHeader.
         /// </summary>
         /// <param name="fin">Whether or not this is the final frame in the message.</param>
@@ -48,12 +68,31 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <param name="payloadLength">The length of the frame payload.</param>
         /// <param name="maskingKey">The masking key used to unmask the payload, if masked. This mask must be a cryptographically random value.</param>
         public WebSocketHeader(bool fin, WebSocketOpcode opcode, bool masked, ulong payloadLength, int maskingKey)
+            : this(fin, opcode, masked, payloadLength, maskingKey, rsv1: false, rsv2: false, rsv3: false)
+        {
+        }
+
+        /// <summary>
+        /// Creates an instance of a WebSocketHeader, including the reserved extension bits.
+        /// </summary>
+        /// <param name="fin">Whether or not this is the final frame in the message.</param>
+        /// <param name="opcode">The opcode of the frame.</param>
+        /// <param name="masked">Whether the frame payload is masked.</param>
+        /// <param name="payloadLength">The length of the frame payload.</param>
+        /// <param name="maskingKey">The masking key used to unmask the payload, if masked. This mask must be a cryptographically random value.</param>
+        /// <param name="rsv1">The first reserved bit.</param>
+        /// <param name="rsv2">The second reserved bit.</param>
+        /// <param name="rsv3">The third reserved bit.</param>
+        public WebSocketHeader(bool fin, WebSocketOpcode opcode, bool masked, ulong payloadLength, int maskingKey, bool rsv1, bool rsv2, bool rsv3)
         {
             Fin = fin;
             Opcode = opcode;
             Masked = masked;
             PayloadLength = payloadLength;
             MaskingKey = maskingKey;
+            Rsv1 = rsv1;
+            Rsv2 = rsv2;
+            Rsv3 = rsv3;
         }
 
         /// <summary>
@@ -106,7 +145,10 @@ namespace Bedrock.Framework.Protocols.WebSockets
             && x.Opcode == y.Opcode
             && x.Masked == y.Masked
             && x.PayloadLength == y.PayloadLength
-            && x.MaskingKey == y.MaskingKey;
+            && x.MaskingKey == y.MaskingKey
+            && x.Rsv1 == y.Rsv1
+            && x.Rsv2 == y.Rsv2
+            && x.Rsv3 == y.Rsv3;
 
         /// <summary>	
         /// Checks two WebSocketHeader values for inequality.	
@@ -119,7 +161,10 @@ namespace Bedrock.Framework.Protocols.WebSockets
             || x.Opcode != y.Opcode
             || x.Masked != y.Masked
             || x.PayloadLength != y.PayloadLength
-            || x.MaskingKey != y.MaskingKey;
+            || x.MaskingKey != y.MaskingKey
+            || x.Rsv1 != y.Rsv1
+            || x.Rsv2 != y.Rsv2
+            || x.Rsv3 != y.Rsv3;
 
         /// <summary>	
         /// Checks to see if a WebSocketHeader value is equal to this value.	
@@ -142,12 +187,12 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// Gets the hashcode of the WebSocketHeader value.	
         /// </summary>	
         /// <returns>The value hashcode.</returns>
-        public override int GetHashCode() => HashCode.Combine(Fin, Opcode, Masked, PayloadLength, MaskingKey);
+        public override int GetHashCode() => HashCode.Combine(Fin, Opcode, Masked, PayloadLength, MaskingKey, Rsv1, Rsv2, Rsv3);
 
         /// <summary>
         /// Creates a string representation of the WebSocketHeader.
         /// </summary>
         /// <returns>A string representation of the WebSocketHeader.</returns>
-        public override string ToString() => $"Fin: {Fin} | Opcode: {Opcode} | Masked: {Masked} | Payload Length: {PayloadLength} | Masking Key: {MaskingKey:X8}";
+        public override string ToString() => $"Fin: {Fin} | Opcode: {Opcode} | Masked: {Masked} | Payload Length: {PayloadLength} | Masking Key: {MaskingKey:X8} | RSV: {(Rsv1 ? 1 : 0)}{(Rsv2 ? 1 : 0)}{(Rsv3 ? 1 : 0)}";
     }
 }

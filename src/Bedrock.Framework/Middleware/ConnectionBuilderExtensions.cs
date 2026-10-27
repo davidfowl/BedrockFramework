@@ -1,5 +1,7 @@
 ﻿using System;
+#if !BROWSER
 using Bedrock.Framework.Middleware.Tls;
+#endif
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,6 +32,8 @@ public static class ConnectionBuilderExtensions
         return builder;
     }
 
+#if !BROWSER
+    // TLS is provided by the browser itself and SslStream is unavailable there
     public static TBuilder UseServerTls<TBuilder>(
         this TBuilder builder,
         Action<TlsOptions> configure) where TBuilder : IConnectionBuilder
@@ -77,4 +81,5 @@ public static class ConnectionBuilderExtensions
         });
         return builder;
     }
+#endif
 }

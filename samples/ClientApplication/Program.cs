@@ -10,6 +10,7 @@ using Bedrock.Framework;
 using Bedrock.Framework.Experimental.Protocols.RabbitMQ;
 using Bedrock.Framework.Experimental.Protocols.Memcached;
 using Bedrock.Framework.Protocols;
+using Bedrock.Framework.Experimental.Protocols.WebSockets;
 using Bedrock.Framework.Transports.Memory;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -36,6 +37,7 @@ Console.WriteLine("6. Length prefixed custom binary protocol");
 Console.WriteLine("7. Talk to local docker dameon");
 Console.WriteLine("8. Memcached protocol");
 Console.WriteLine("9. RebbitMQ protocol");
+Console.WriteLine("0. Native WebSocket client (run the server sample first)");
 
 while (true)
 {
@@ -86,6 +88,49 @@ while (true)
         Console.WriteLine("RabbitMQ test");
         await RabbitMQProtocol(serviceProvider);
     }
+    else if (keyInfo.Key == ConsoleKey.D0)
+    {
+        Console.WriteLine("Native WebSocket client");
+        await WebSocketClient(serviceProvider);
+    }
+}
+
+static async Task WebSocketClient(IServiceProvider serviceProvider)
+{
+    var client = new ClientBuilder(serviceProvider)
+                    .UseSockets()
+                    .UseConnectionLogging()
+                    .Build();
+
+    await using var connection = await client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5006));
+
+    var options = new WebSocketClientOptions { Compression = new WebSocketCompressionOptions() };
+    options.SubProtocols.Add("echo");
+
+    await using var session = await connection.ConnectWebSocketAsync(new Uri("ws://localhost:5006/ws"), options);
+    Console.WriteLine($"Connected (subprotocol: {session.SubProtocol}, compression: {session.Compression?.ToString() ?? "none"}). Type messages, empty line to close.");
+
+    var receiving = Task.Run(async () =>
+    {
+        while (true)
+        {
+            var message = await session.ReadMessageAsync();
+            if (message.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
+            {
+                Console.WriteLine($"Closed: {message.CloseStatus} {message.CloseStatusDescription}");
+                return;
+            }
+            Console.WriteLine($"echo> {message.GetText()}");
+        }
+    });
+
+    while (Console.ReadLine() is { Length: > 0 } line)
+    {
+        await session.SendTextAsync(line);
+    }
+
+    await session.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "bye");
+    await receiving;
 }
 
 static async Task RabbitMQProtocol(IServiceProvider serviceProvider)

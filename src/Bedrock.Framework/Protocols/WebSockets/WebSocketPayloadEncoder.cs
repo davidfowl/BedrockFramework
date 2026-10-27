@@ -13,7 +13,7 @@ namespace Bedrock.Framework.Protocols.WebSockets
     /// Masks or unmasks a WebSocket payload according to the provided masking key, tracking the
     /// masking key index accross mask or unmasking requests.
     /// </summary>
-    internal struct WebSocketPayloadEncoder
+    public struct WebSocketPayloadEncoder
     {
         /// <summary>
         /// The masking key to use to mask or unmask the payload.
@@ -44,35 +44,40 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// </remarks>
         /// <param name="input">The sequence to mask or unmask.</param>
         /// <param name="length">The length of the total payload remaining.</param>
-        /// <param name="position">The position in the consumed portion of the sequence.</param>
-        /// <returns>The number of bytes consumed, which may be less than the number of total payload bytes.</returns>
+        /// <param name="position">The position in the sequence directly after the last byte masked or unmasked.</param>
+        /// <returns>The number of bytes masked or unmasked, which may be less than the number of total payload bytes remaining.</returns>
         public unsafe long MaskUnmaskPayload(in ReadOnlySequence<byte> input, ulong length, out SequencePosition position)
         {
-            var lengthRemaining = (long)length;
-            var consumed = 0;
-            position = input.Start;
+            var bytesToProcess = (long)Math.Min(length, (ulong)input.Length);
+            position = input.GetPosition(bytesToProcess);
 
             if (input.IsSingleSegment)
             {
-                var bytesToRead = (int)Math.Min(lengthRemaining, input.First.Length);
-                MaskUnmaskSpan(input.FirstSpan, bytesToRead);
-
-                position = input.GetPosition(bytesToRead);
-                return lengthRemaining - bytesToRead;
+                MaskUnmaskSpan(input.FirstSpan, bytesToProcess);
+                return bytesToProcess;
             }
 
+            var lengthRemaining = bytesToProcess;
             foreach (var memory in input)
             {
+                if (lengthRemaining == 0)
+                {
+                    break;
+                }
+
                 var bytesToRead = (int)Math.Min(lengthRemaining, memory.Length);
                 MaskUnmaskSpan(memory.Span, bytesToRead);
-
-                consumed += bytesToRead;
-                position = input.GetPosition(consumed);
                 lengthRemaining -= bytesToRead;
             }
 
-            return lengthRemaining;
+            return bytesToProcess;
         }
+
+        /// <summary>
+        /// Masks or unmasks a span in-place, continuing from the current masking key index.
+        /// </summary>
+        /// <param name="span">The span to mask or unmask.</param>
+        public void MaskUnmask(Span<byte> span) => MaskUnmaskSpan(span, span.Length);
 
         /// <summary>
         /// Masks or unmasks a WebSocket payload span.

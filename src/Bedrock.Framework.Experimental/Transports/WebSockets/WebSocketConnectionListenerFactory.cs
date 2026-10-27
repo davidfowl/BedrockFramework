@@ -38,6 +38,7 @@ namespace Bedrock.Framework
         {
             IPEndPoint iPEndPoint = null;
             var path = "";
+            var useHttps = true;
             switch (endpoint)
             {
                 // Kestrel doesn't natively support UriEndpoints as yet
@@ -49,10 +50,11 @@ namespace Bedrock.Framework
                     }
                     else
                     {
-                        IPAddress.Parse(uriEndPoint.Uri.Host);
+                        address = IPAddress.Parse(uriEndPoint.Uri.Host);
                     }
                     iPEndPoint = new IPEndPoint(address, uriEndPoint.Uri.Port);
                     path = uriEndPoint.Uri.LocalPath != "/" ? uriEndPoint.Uri.LocalPath : "";
+                    useHttps = uriEndPoint.Uri.Scheme is "https" or "wss";
                     break;
                 case IPEndPoint ip:
                     iPEndPoint = ip;
@@ -77,7 +79,10 @@ namespace Bedrock.Framework
             // Bind an HTTP/1 endpoint
             server.Options.Listen(iPEndPoint, o =>
             {
-                o.UseHttps();
+                if (useHttps)
+                {
+                    o.UseHttps();
+                }
                 o.Protocols = HttpProtocols.Http1;
                 // Storing the options so we can get the resolved EndPoint later
                 listenOptions = o;

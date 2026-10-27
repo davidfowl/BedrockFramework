@@ -7,7 +7,7 @@ namespace Bedrock.Framework;
 public static class ServiceCollectionExtensions
 {
     public static IHostBuilder ConfigureServer(this IHostBuilder builder, Action<ServerBuilder> configure) => 
-        builder.ConfigureServices(services => ConfigureServices(configure, services));
+        builder.ConfigureServices((_, services) => ConfigureServices(configure, services));
 
     public static IHostApplicationBuilder ConfigureServer(this IHostApplicationBuilder builder, Action<ServerBuilder> configure)
     {

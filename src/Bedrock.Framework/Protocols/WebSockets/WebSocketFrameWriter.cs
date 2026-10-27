@@ -61,6 +61,21 @@ namespace Bedrock.Framework.Protocols.WebSockets
                 headerSpan[0] |= 0b1000_0000;
             }
 
+            if (message.Header.Rsv1)
+            {
+                headerSpan[0] |= 0b0100_0000;
+            }
+
+            if (message.Header.Rsv2)
+            {
+                headerSpan[0] |= 0b0010_0000;
+            }
+
+            if (message.Header.Rsv3)
+            {
+                headerSpan[0] |= 0b0001_0000;
+            }
+
             switch (extendedPayloadLengthSize)
             {
                 case 2:
@@ -80,27 +95,36 @@ namespace Bedrock.Framework.Protocols.WebSockets
             {
                 headerSpan[1] |= 0b1000_0000;
 
-                var maskingKey = message.Header.MaskingKey;               
+                var maskingKey = message.Header.MaskingKey;
                 MemoryMarshal.Write(headerSpan.Slice(maskPosition), in maskingKey);
-
-                if (!message.MaskingComplete)
-                {
-                    var encoder = new WebSocketPayloadEncoder(message.Header.MaskingKey);
-                    encoder.MaskUnmaskPayload(message.Payload, message.Header.PayloadLength, out var _);
-                    message.MaskingComplete = true;
-                }
             }
 
             output.Write(headerSpan);
-            if (message.Payload.IsSingleSegment)
-            {
-                output.Write(message.Payload.FirstSpan);
-            }
-            else
+
+            if (!message.Header.Masked || message.MaskingComplete)
             {
                 foreach (var memory in message.Payload)
                 {
                     output.Write(memory.Span);
+                }
+                return;
+            }
+
+            // Mask into the output buffer so that the caller's payload is never modified
+            var encoder = new WebSocketPayloadEncoder(message.Header.MaskingKey);
+            foreach (var memory in message.Payload)
+            {
+                var source = memory.Span;
+                while (!source.IsEmpty)
+                {
+                    var destination = output.GetSpan();
+                    var length = Math.Min(destination.Length, source.Length);
+
+                    source.Slice(0, length).CopyTo(destination);
+                    encoder.MaskUnmask(destination.Slice(0, length));
+                    output.Advance(length);
+
+                    source = source.Slice(length);
                 }
             }
         }

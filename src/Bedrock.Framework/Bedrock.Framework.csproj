@@ -1,14 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net9.0-browser</TargetFrameworks>
     <PackageDescription>High performance, low level networking APIs for building custom severs and clients.</PackageDescription>
     <Authors>David Fowler</Authors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!--
+    Browser (Blazor WebAssembly) build: the ASP.NET Core shared framework is not available there, so the individual
+    packages are referenced instead. Raw sockets and SslStream are unavailable in the browser, so the socket transport
+    and TLS middleware are left out (the browser provides TLS for wss://). Use the ClientWebSocket transport
+    (ClientBuilder.UseClientWebSocket) instead.
+  -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <DefineConstants>$(DefineConstants);BROWSER</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Remove="Transports/Sockets/**" />
+    <Compile Remove="Middleware/Tls/**" />
+    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
   </ItemGroup>
 
   <Choose>

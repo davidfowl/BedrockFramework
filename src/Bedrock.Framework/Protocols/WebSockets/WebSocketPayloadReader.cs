@@ -44,6 +44,16 @@ namespace Bedrock.Framework.Protocols.WebSockets
         }
 
         /// <summary>
+        /// The number of payload bytes that have not yet been read.
+        /// </summary>
+        public ulong BytesRemaining => _payloadBytesRemaining;
+
+        /// <summary>
+        /// Whether or not the entire payload has been read.
+        /// </summary>
+        public bool IsComplete => _payloadBytesRemaining == 0;
+
+        /// <summary>
         /// Attempts to read the WebSocket payload from a sequence.
         /// </summary>
         /// <param name="input">The sequence to parse messages from.</param>
@@ -53,8 +63,6 @@ namespace Bedrock.Framework.Protocols.WebSockets
         /// <returns>True if any data could be read or the payload is complete, false if the sequence was empty but payload data remains.</returns>
         public bool TryParseMessage(in ReadOnlySequence<byte> input, ref SequencePosition consumed, ref SequencePosition examined, out ReadOnlySequence<byte> message)
         {
-            message = input;
-
             if (_payloadBytesRemaining == 0)
             {
                 message = default;
@@ -65,25 +73,27 @@ namespace Bedrock.Framework.Protocols.WebSockets
 
             if (input.IsEmpty)
             {
+                message = default;
                 consumed = input.Start;
                 examined = input.Start;
                 return false;
             }
 
-            long bytesRead = 0;
+            long bytesRead;
+            SequencePosition position;
             if (!_masked)
             {
-                bytesRead = Math.Min((long)_payloadBytesRemaining, input.Length);
-                var position = input.GetPosition(bytesRead);
-
-                consumed = position;
-                examined = position;
+                bytesRead = (long)Math.Min(_payloadBytesRemaining, (ulong)input.Length);
+                position = input.GetPosition(bytesRead);
             }
             else
             {
-                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, out consumed);
-                examined = consumed;
+                bytesRead = _payloadEncoder.MaskUnmaskPayload(input, _payloadBytesRemaining, out position);
             }
+
+            message = input.Slice(0, position);
+            consumed = position;
+            examined = position;
 
             _payloadBytesRemaining -= (ulong)bytesRead;
             return true;
